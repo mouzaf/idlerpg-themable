@@ -1841,16 +1841,13 @@ sub godsend { # bless the unworthy
     }
     else {
         my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        my $actioned;
         if (!open(Q,$opts{eventsfile})) {
             return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
         }
-        my $i;
+        my($i,$actioned);
         while (my $line = <Q>) {
             chomp($line);
-            if ($line =~ /^G (.*)/ && rand(++$i) < 1) {
-                $actioned = $1;
-            }
+            if ($line =~ /^G (.*)/ && rand(++$i) < 1) { $actioned = $1; }
         }
         chanmsg(clog("$player $actioned! This wondrous godsend has ".
                      "accelerated them ".duration($time)." towards level ".
