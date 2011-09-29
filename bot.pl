@@ -1969,73 +1969,58 @@ sub backup() {
 }
 
 sub penalize {
+    my %why = (#quit=>'', part=>'', # don't talk to them after they leave
+               privmsg=>'privmsg', notice=>'notice',
+               nick=>"nick change", kick=>'being kicked', 'logout'=>'logging out');
+
     my $username = shift;
     return 0 if !defined($username);
     return 0 if !exists($rps{$username});
     my $type = shift;
     my $pen = 0;
+    my $why = $why{$type};
+    my $pentype;
     questpencheck($username);
     if ($type eq "quit") {
         $pen = int(20 * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_quit}+=$pen;
+        $pentype = 'pen_quit';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "nick") {
         my $newnick = shift;
         $pen = int(30 * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_nick}+=$pen;
+        $pentype = 'pen_nick';
         $rps{$username}{nick} = substr($newnick,1);
         substr($rps{$username}{userhost},0,length($rps{$username}{nick})) =
             substr($newnick,1);
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "nick change.",$rps{$username}{nick});
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
         $pen = int(shift(@_) * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_mesg}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               $type.".",$rps{$username}{nick});
+        $pentype = 'pen_mesg';
     }
     elsif ($type eq "part") {
         $pen = int(200 * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_part}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "parting.",$rps{$username}{nick});
+        $pentype = 'pen_part';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "kick") {
         $pen = int(250 * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_kick}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "being kicked.",$rps{$username}{nick});
+        $pentype = 'pen_kick';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "logout") {
         $pen = int(20 * ($opts{rppenstep}**$rps{$username}{level}));
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_logout} += $pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "LOGOUT command.",$rps{$username}{nick});
+        $pentype = 'pen_logout';
         $rps{$username}{online}=0;
     }
+    if ($opts{limitpen} && $pen > $opts{limitpen}) {
+        $pen = $opts{limitpen};
+    }
+    #debug("penalize($username,$type) -> why=$why, pen=$pen, pentype=$pentype",0);
+    $rps{$username}{$pentype}+=$pen;
     $rps{$username}{next} += $pen;
+    notice("Penalty of ".duration($pen)." added to your timer for $why.",
+           $rps{$username}{nick}) if(defined($why));
     return 1; # successfully penalized a user! woohoo!
 }
 
