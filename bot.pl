@@ -324,7 +324,7 @@ sub parse {
         }
         elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
-            (my $opcmd = $opts{botopcmd}) =~ s/%botnick%/$opts{botnick}/eg;
+            (my $opcmd = $opts{botopcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($opcmd);
             $lasttime = time(); # start rpcheck()
         }
@@ -372,7 +372,8 @@ sub parse {
     }
     elsif ($arg[1] eq '001') {
         # send our identify command, set our usermode, join channel
-        sts($opts{botident});
+        (my $identcmd = $opts{botident}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
+        sts($identcmd);
         sts("MODE $opts{botnick} :$opts{botmodes}");
         sts("JOIN $opts{botchan}");
         $opts{botchan} =~ s/ .*//; # strip channel key if present
@@ -1196,7 +1197,8 @@ sub rpcheck { # check levels, update database
     }
     if ($rpreport%1800==0) { # 30 mins
         if ($opts{botnick} ne $primnick) {
-            sts($opts{botghostcmd}) if $opts{botghostcmd};
+            (my $ghostcmd = $opts{botghostcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
+            sts($ghostcmd) if $ghostcmd;
             sts("NICK $primnick");
         }
     }
