@@ -32,11 +32,11 @@ use IO::Select;
 use Data::Dumper;
 use Getopt::Long;
 
+my $version = "3.1.2_modFP";
+
 my %opts;
 
 readconfig();
-
-my $version = "3.1.2";
 
 # command line overrides .irpg.conf
 GetOptions(\%opts,
