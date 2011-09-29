@@ -103,6 +103,32 @@ debug("Config: read $_: ".Dumper($opts{$_})) for keys(%opts);
 my @items = ("ring","amulet","charm","weapon","helm",
              "tunic","pair of gloves","shield",
              "set of leggings","pair of boots");
+
+my @calamity =
+    (undef,
+     " fell, chipping the stone in his amulet!",
+     " slipped and dropped his charm in a dirty bog",
+     " left his weapon out in the rain to rust!",
+     undef,
+     " spilled a level 7 shrinking potion on his tunic!",
+     undef,
+     "\'s shield was damaged by a dragon's fiery breath!",
+     " burned a hole through his leggings while ironing them!",
+     undef);
+
+my @godsend =
+    (undef,
+     "\'s amulet was blessed by a passing cleric!",
+     "\'s charm ate a bolt of lightning!",
+     " sharpened the edge of his weapon!",
+     undef,
+     "\'s tunic was blessed by a magician casting a spell of Rigidity!",
+     undef,
+     " reinforced his shield with a dragon's scales!",
+     "\'s pants were enchanted by a local wizard\'s Spirit of Fortitude spell!",
+     undef);
+
+# could in theory calculate these from the calamaties and godsend arrays
 my @fragileitems = (1, 2, 3, 5, 8, 7);
 
 my $outbytes = 0; # sent bytes
@@ -1767,35 +1793,12 @@ sub calamity { # suffer a little one
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
-        my $type = $items[$fragileitems[rand(@fragileitems)]];
-        if ($type eq "amulet") {
-            chanmsg(clog("$player fell, chipping the stone in his amulet! ".
-                         "$player\'s $type loses 10% of its effectiveness."));
-        }
-        elsif ($type eq "charm") {
-            chanmsg(clog("$player slipped and dropped his charm in a dirty ".
-                         "bog! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        elsif ($type eq "weapon") {
-            chanmsg(clog("$player left his weapon out in the rain to rust! ".
-                         "$player\'s $type loses 10% of its effectiveness."));
-        }
-        elsif ($type eq "tunic") {
-            chanmsg(clog("$player spilled a level 7 shrinking potion on his ".
-                         "tunic! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        elsif ($type eq "shield") {
-            chanmsg(clog("$player\'s shield was damaged by a dragon's fiery ".
-                         "breath! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        else {
-            chanmsg(clog("$player burned a hole through his leggings while ".
-                         "ironing them! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
+        my $typeid = $fragileitems[rand(@fragileitems)];
+        my $type = $items[$typeid];
+        my $calamity = "${player}$calamity[$typeid]" .
+            " $player\'s $type loses 10% of its effectiveness.";
+        chanmsg(clog($calamity));
+
         my $suffix="";
         if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
         $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * .9);
@@ -1825,32 +1828,12 @@ sub godsend { # bless the unworthy
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
-        my $type = $items[$fragileitems[rand(@fragileitems)]];
-        if ($type eq "amulet") {
-            chanmsg(clog("$player\'s amulet was blessed by a passing cleric! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "charm") {
-            chanmsg(clog("$player\'s charm ate a bolt of lightning! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "weapon") {
-            chanmsg(clog("$player sharpened the edge of his weapon! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "tunic") {
-            chanmsg(clog("A magician cast a spell of Rigidity on $player\'s ".
-                         "tunic! $player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "shield") {
-            chanmsg(clog("$player reinforced his shield with a dragon's ".
-                         "scales! $player\'s $type gains 10% effectiveness."));
-        }
-        else {
-            chanmsg(clog("The local wizard imbued $player\'s pants with a ".
-                         "Spirit of Fortitude! $player\'s $type gains 10% ".
-                         "effectiveness."));
-        }
+        my $typeid = $fragileitems[rand(@fragileitems)];
+        my $type = $items[$typeid];
+        my $godsend = "${player}$godsend[$typeid]" .
+            " $player\'s $type gains 10% effectiveness.";
+        chanmsg(clog($godsend));
+
         my $suffix="";
         if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
         $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * 1.1);
