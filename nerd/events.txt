@@ -1,0 +1,62 @@
+W Knuth looked upon %player%, and %his% clever use of goto to simplify error paths, so pushed %him%
+W Dennis Ritchie thinks that %player% is quirky, flawed, and an enormous success, so pushed %him%
+W Seymore Cray thinks that with %player%'s clever ideas he can push his cores to over %{2.0#+0.1#8.0}% GHz, so advanced %him%
+L Dijkstra frowned upon %player% and %her% haphazard use of goto to create spaghetti code, so slowed %her%
+L John McCarthy, perturbed by %player%'s jumble of brackets that was not worthy to be called either code or data, delayed %him%
+L Dan Bernstein rants and raves bout how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%
+C used the US format for dates in %his% logs
+C was hacked by %{lulzsec|Iranians|Kevin Mitnick|the NSA|aliens|Russian mafia}%
+C has a very brown power supply
+C forgot %{1##6}% characters in %his% password
+C suffered from very brown electricity
+C had damaging electrical spikes of up to %{300#+100#20000}% volts
+C 's webserver got hit by a %{CSS flaw|SQL injection|DDoS}%
+C 's ISP had downtime
+C had upstream routing problems
+C was rooted
+C ran out of storage space
+C forgot to make backups for %{1##10}% %{days|weeks|months}%
+C %{was arrested|was apprehended|had %his% computers confiscated}% by the %{NSA|Interpol|the Serious Crime Squad|U.N.I.T.}%
+C was DDoSed off the net by over %{100#+10#1000}% machines
+C tried installing Windows %{XP|Vista|7}%
+C rebooted into %{Net|Open|Free}%BSD for %{5##60}% minutes
+C couldn't use %{1##30}% sticky keys on %his% keyboard
+C lost the ball from %his% mouse
+C did 'emerge -u world' in %his% gentoo system
+C filled in too many TPS reports, about %{30##80}% in total
+C dropped %his% laptop
+C can't boot any more
+C lost %his% VPN key
+C started playing Farmville
+C replied to all %his% spam
+C fell to a phishing scheme
+C got locked out of %{Google+|LinkedIn|GMail}%
+C got -%{1##50}% karma on slashdot
+G reverse engineered how overclocking works in %his% BIOS
+G cracked %{Bill Gates'|Richard Stallman's|Hans Peter Anvin's|Linus Torvald's|Miguel de Icaza's}% password
+G installed a rootkit on %{100##2000}% US government machines, forming a botnet
+G discovered new optimisation flags for %his% compiler
+G cracked %his% neighbours wifi
+G pulled an all-nighter, thanks to %{5##20}% cups of coffee
+G got root access to the local university's supercluster
+G upgraded %his% compiler
+G learned %{LUA|Python|Perl|Ruby}%
+G found a SQL injection exploit on /.
+G bought a 2nd hand Nokia N900 for $%{199#-1#30}%
+G installed NetBSD on %his% iPad
+G installed a surge suppressor
+G became drinking buddies with the sysadmin
+G found the world's largest prime
+G worked out how to factor large prime numbers
+G became a member of the Cult of the Dead Cow
+G cleared all %{1##500}% GB of porn off %his% hard disks
+G uninstalled all %{3##15}% toolbars from %his% browser
+Q2 225 415 280 460 retrieve the original paper tapes to the mighty Colossus and return them to Bletchley Park
+Q2 480 415 325 270 locate the original Unics master tapes and leave them in the care of Ken Thompson
+Q1 quell the riot that has sprung up between Mac-weenies and PC-weenies
+Q1 quell the riot that has sprung up between Linux-weenies and BSD-weenies
+Q1 quell the riot that has sprung up between Gnome-weenies and KDE-weenies
+Q1 quell the riot that has sprung up between Android-weenies and iPhone-weenies
+Q2 400 475 480 380 teach the One True Brace Style to the non-believers at Cl'guba
+Q1 Locate and slay the beastly dragon foretold by the sages Aho and Ullman
+Q2 290 65 325 270 Gather the finest craftsmen in the land, so that Charles Babbage may complete his Analytical Engine
