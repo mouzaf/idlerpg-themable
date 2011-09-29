@@ -247,8 +247,8 @@ if (! -e $opts{dbfile}) {
     $rps{$uname}{y} = int(rand($opts{mapy}));
     $rps{$uname}{alignment}="n";
     $rps{$uname}{isadmin} = 1;
-    for my $item (@items) {
-        $rps{$uname}{item}{$item} = 0;
+    for my $item (0..$#items) {
+        $rps{$uname}{item}[$item] = 0;
     }
     for my $pen ("pen_mesg","pen_nick","pen_part",
                  "pen_kick","pen_quit","pen_quest",
@@ -603,8 +603,8 @@ sub parse {
                         $rps{$arg[4]}{y} = int(rand($opts{mapy}));
                         $rps{$arg[4]}{alignment}="n";
                         $rps{$arg[4]}{isadmin} = 0;
-                        for my $item (@items) {
-                            $rps{$arg[4]}{item}{$item} = 0;
+                        for my $item (0..$#items) {
+                            $rps{$arg[4]}{item}[$item] = 0;
                         }
                         for my $pen ("pen_mesg","pen_nick","pen_part",
                                      "pen_kick","pen_quit","pen_quest",
@@ -1351,15 +1351,16 @@ sub challenge_opp { # pit argument player against random player
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my $type = $items[rand(@items)];
-            if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
+            my $typeid = int(rand(@items));
+            my $type = $items[$typeid];
+            if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
                 chanmsg_l("In the fierce battle, $opp dropped his level ".
-                          int($rps{$opp}{item}{$type})." $type! $u picks ".
+                          int($rps{$opp}{item}[$typeid])." $type! $u picks ".
                           "it up, tossing his old level ".
-                          int($rps{$u}{item}{$type})." $type to $opp.");
-                my $tempitem = $rps{$u}{item}{$type};
-                $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
-                $rps{$opp}{item}{$type} = $tempitem;
+                          int($rps{$u}{item}[$typeid])." $type to $opp.");
+                my $tempitem = $rps{$u}{item}[$typeid];
+                $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
+                $rps{$opp}{item}[$typeid] = $tempitem;
             }
         }
     }
@@ -1418,7 +1419,8 @@ sub unique_notice($$$) {
 
 sub find_item { # find item for argument player
     my $u = shift;
-    my $type = $items[rand(@items)];
+    my $typeid = int(rand(@items));
+    my $type = $items[$typeid];
     my $level = 1;
     my $ulevel;
     for my $num (1 .. int($rps{$u}{level}*1.5)) {
@@ -1430,24 +1432,24 @@ sub find_item { # find item for argument player
         my $uniq = $uniques[$m];
         if ($rps{$u}{level} >= $uniq->{userlevel} && rand(40) < 1) {
             $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
-            my $typeid = $uniq->{typeid};
-            if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{$items[$typeid]})) {
+            my $utypeid = $uniq->{typeid};
+            if ($ulevel >= $level && $ulevel > int($rps{$u}{item}[$utypeid])) {
                 my $notice=unique_notice($uniq->{desc}, $ulevel, $rps{$u}{nick});
                 notice($notice, $rps{$u}{nick});
-                $rps{$u}{item}{$items[$typeid]} = "$ulevel$uniq->{suffix}";
+                $rps{$u}{item}[$utypeid] = "$ulevel$uniq->{suffix}";
                 return;
             }
         }
     }
-    if ($level > int($rps{$u}{item}{$type})) {
+    if ($level > int($rps{$u}{item}[$typeid])) {
         notice("You found a level $level $type! Your current $type is only ".
-               "level ".int($rps{$u}{item}{$type}).", so it seems Luck is ".
+               "level ".int($rps{$u}{item}[$typeid]).", so it seems Luck is ".
                "with you!",$rps{$u}{nick});
-        $rps{$u}{item}{$type} = $level;
+        $rps{$u}{item}[$typeid] = $level;
     }
     else {
         notice("You found a level $level $type. Your current $type is level ".
-               int($rps{$u}{item}{$type}).", so it seems Luck is against you. ".
+               int($rps{$u}{item}[$typeid]).", so it seems Luck is against you. ".
                "You toss the $type.",$rps{$u}{nick});
     }
 }
@@ -1493,16 +1495,16 @@ sub loaddb { # load the players database
         $rps{$i[0]}{pen_logout},
         $rps{$i[0]}{created},
         $rps{$i[0]}{lastlogin},
-        $rps{$i[0]}{item}{amulet},
-        $rps{$i[0]}{item}{charm},
-        $rps{$i[0]}{item}{helm},
-        $rps{$i[0]}{item}{"pair of boots"},
-        $rps{$i[0]}{item}{"pair of gloves"},
-        $rps{$i[0]}{item}{ring},
-        $rps{$i[0]}{item}{"set of leggings"},
-        $rps{$i[0]}{item}{shield},
-        $rps{$i[0]}{item}{tunic},
-        $rps{$i[0]}{item}{weapon},
+        $rps{$i[0]}{item}[0],
+        $rps{$i[0]}{item}[1],
+        $rps{$i[0]}{item}[2],
+        $rps{$i[0]}{item}[3],
+        $rps{$i[0]}{item}[4],
+        $rps{$i[0]}{item}[5],
+        $rps{$i[0]}{item}[6],
+        $rps{$i[0]}{item}[7],
+        $rps{$i[0]}{item}[8],
+        $rps{$i[0]}{item}[9],
         $rps{$i[0]}{alignment}) = (@i[1..7],($sock?$i[8]:0),@i[9..$#i]);
     }
     close(RPS);
@@ -1710,7 +1712,7 @@ sub itemsum {
         return $sum+1;
     }
     if (!exists($rps{$user})) { return -1; }
-    $sum += int($rps{$user}{item}{$_}) for keys(%{$rps{$user}{item}});
+    $sum += int($rps{$user}{item}[$_]) for (0..$#items);
     if ($battle) {
         return $rps{$user}{alignment} eq 'e' ? int($sum*.9) :
                $rps{$user}{alignment} eq 'g' ? int($sum*1.1) :
@@ -1764,9 +1766,9 @@ sub modify_item($) {
         chanmsg_l($change);
 
         my $suffix="";
-        if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
-        $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * (1+$_[0]*.1));
-        $rps{$player}{item}{$type}.=$suffix;
+        if ($rps{$player}{item}[$typeid] =~ /(\D)$/) { $suffix=$1; }
+        $rps{$player}{item}[$typeid] = int(int($rps{$player}{item}[$typeid]) * (1+$_[0]*.1));
+        $rps{$player}{item}[$typeid].=$suffix;
     }
     else {
         my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
@@ -2009,15 +2011,16 @@ sub collision_fight {
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my $type = $items[rand(@items)];
-            if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
+            my $typeid = int(rand(@items));
+            my $type = $items[$typeid];
+            if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
                 chanmsg_l("In the fierce battle, $opp dropped his level ".
-                          int($rps{$opp}{item}{$type})." $type! $u picks it up, ".
-                          "tossing his old level ".int($rps{$u}{item}{$type}).
+                          int($rps{$opp}{item}[$typeid])." $type! $u picks it up, ".
+                          "tossing his old level ".int($rps{$u}{item}[$typeid]).
                           " $type to $opp.");
-                my $tempitem = $rps{$u}{item}{$type};
-                $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
-                $rps{$opp}{item}{$type} = $tempitem;
+                my $tempitem = $rps{$u}{item}[$typeid];
+                $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
+                $rps{$opp}{item}[$typeid] = $tempitem;
             }
         }
     }
@@ -2098,15 +2101,16 @@ sub evilness {
                           $rps{$_}{online} } keys(%rps);
         return unless @good;
         my $target = $good[rand(@good)];
-        my $type = $items[rand(@items)];
-        if (int($rps{$target}{item}{$type}) > int($rps{$me}{item}{$type})) {
-            my $tempitem = $rps{$me}{item}{$type};
-            $rps{$me}{item}{$type} = $rps{$target}{item}{$type};
-            $rps{$target}{item}{$type} = $tempitem;
+        my $typeid = int(rand(@items));
+        my $type = $items[$typeid];
+        if (int($rps{$target}{item}[$typeid]) > int($rps{$me}{item}[$typeid])) {
+            my $tempitem = $rps{$me}{item}[$typeid];
+            $rps{$me}{item}[$typeid] = $rps{$target}{item}[$typeid];
+            $rps{$target}{item}[$typeid] = $tempitem;
             chanmsg_l("$me stole $target\'s level ".
-                      int($rps{$me}{item}{$type})." $type while they were ".
+                      int($rps{$me}{item}[$typeid])." $type while they were ".
                       "sleeping! $me leaves his old level ".
-                      int($rps{$target}{item}{$type})." $type behind, ".
+                      int($rps{$target}{item}[$typeid])." $type behind, ".
                       "which $target then takes.");
         }
         else {
@@ -2161,16 +2165,16 @@ sub writedb {
                         "pen_logout",
                         "created",
                         "last login",
-                        "amulet",
-                        "charm",
-                        "helm",
-                        "boots",
-                        "gloves",
-                        "ring",
-                        "leggings",
-                        "shield",
-                        "tunic",
-                        "weapon",
+                        "item0",
+                        "item1",
+                        "item2",
+                        "item3",
+                        "item4",
+                        "item5",
+                        "item6",
+                        "item7",
+                        "item8",
+                        "item9",
                         "alignment")."\n";
     my $k;
     keys(%rps); # reset internal pointer
@@ -2197,16 +2201,16 @@ sub writedb {
                                 $rps{$k}{pen_logout},
                                 $rps{$k}{created},
                                 $rps{$k}{lastlogin},
-                                $rps{$k}{item}{amulet},
-                                $rps{$k}{item}{charm},
-                                $rps{$k}{item}{helm},
-                                $rps{$k}{item}{"pair of boots"},
-                                $rps{$k}{item}{"pair of gloves"},
-                                $rps{$k}{item}{ring},
-                                $rps{$k}{item}{"set of leggings"},
-                                $rps{$k}{item}{shield},
-                                $rps{$k}{item}{tunic},
-                                $rps{$k}{item}{weapon},
+                                $rps{$k}{item}[0],
+                                $rps{$k}{item}[1],
+                                $rps{$k}{item}[2],
+                                $rps{$k}{item}[3],
+                                $rps{$k}{item}[4],
+                                $rps{$k}{item}[5],
+                                $rps{$k}{item}[6],
+                                $rps{$k}{item}[7],
+                                $rps{$k}{item}[8],
+                                $rps{$k}{item}[9],
                                 $rps{$k}{alignment})."\n";
         }
     }
