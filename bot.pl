@@ -1828,6 +1828,7 @@ sub modify_item($) {
                 $actioned = $1;
             }
         }
+        close(Q);
         chanmsg(clog("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
                      "This $timechange[$good] them ".
                      duration($time)." $tofrom[$good] level ".
@@ -2287,5 +2288,6 @@ sub readconfig {
             elsif ($key eq "okurl") { push(@{$opts{okurl}},$val); }
             else { $opts{$key} = $val; }
         }
+        close(CONF);
     }
 }
