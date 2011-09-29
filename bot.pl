@@ -712,16 +712,16 @@ sub parse {
                     privmsg("Time to level for $arg[4] ($rps{$arg[4]}{next}s) ".
                             "is lower than $arg[5]; setting TTL to 0.",
                             $usernick, 1);
-                    chanmsg("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
-                            "seconds toward level ".($rps{$arg[4]}{level}+1));
+                    chanmsg(clog("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
+                                 "seconds toward level ".($rps{$arg[4]}{level}+1)));
                     $rps{$arg[4]}{next}=0;
                 }
                 else {
                     $rps{$arg[4]}{next} -= $arg[5];
-                     chanmsg("$usernick has pushed $arg[4] $arg[5] seconds ".
-                             "toward level ".($rps{$arg[4]}{level}+1).". ".
-                             "$arg[4] reaches next level in ".
-                             duration($rps{$arg[4]}{next}).".");
+                     chanmsg(clog("$usernick has pushed $arg[4] $arg[5] seconds ".
+                                  "toward level ".($rps{$arg[4]}{level}+1).". ".
+                                  "$arg[4] reaches next level in ".
+                                  duration($rps{$arg[4]}{next})."."));
                 }
             }
             elsif ($arg[3] eq "logout") {
@@ -2116,10 +2116,10 @@ sub collision_fight {
                          "pair of boots");
             my $type = $items[rand(@items)];
             if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
-                chanmsg("In the fierce battle, $opp dropped his level ".
-                        int($rps{$opp}{item}{$type})." $type! $u picks it up, ".
-                        "tossing his old level ".int($rps{$u}{item}{$type}).
-                        " $type to $opp.");
+                chanmsg(clog("In the fierce battle, $opp dropped his level ".
+                             int($rps{$opp}{item}{$type})." $type! $u picks it up, ".
+                             "tossing his old level ".int($rps{$u}{item}{$type}).
+                             " $type to $opp."));
                 my $tempitem = $rps{$u}{item}{$type};
                 $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
                 $rps{$opp}{item}{$type} = $tempitem;
