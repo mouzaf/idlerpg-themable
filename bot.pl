@@ -89,6 +89,7 @@ GetOptions(\%opts,
     "modesperline=i",
     "okurl|k=s@",
     "eventsfile=s",
+    "itemsfile=s",
     "rpstep=f",
     "rpbase=i",
     "rppenstep=f",
@@ -99,82 +100,12 @@ $opts{help} and do { help(); exit 0; };
 
 debug("Config: read $_: ".Dumper($opts{$_})) for keys(%opts);
 
-# centralise item definitions, so that they can be parametrised later
-my @items = ("ring","amulet","charm","weapon","helm",
-             "tunic","pair of gloves","shield",
-             "set of leggings","pair of boots");
-
-my @calamity =
-    (undef,
-     " fell, chipping the stone in his amulet!",
-     " slipped and dropped his charm in a dirty bog",
-     " left his weapon out in the rain to rust!",
-     undef,
-     " spilled a level 7 shrinking potion on his tunic!",
-     undef,
-     "\'s shield was damaged by a dragon's fiery breath!",
-     " burned a hole through his leggings while ironing them!",
-     undef);
-
-my @godsend =
-    (undef,
-     "\'s amulet was blessed by a passing cleric!",
-     "\'s charm ate a bolt of lightning!",
-     " sharpened the edge of his weapon!",
-     undef,
-     "\'s tunic was blessed by a magician casting a spell of Rigidity!",
-     undef,
-     " reinforced his shield with a dragon's scales!",
-     "\'s pants were enchanted by a local wizard\'s Spirit of Fortitude spell!",
-     undef);
-
-# could in theory calculate these from the calamaties and godsend arrays
-my @fragileitems = (1, 2, 3, 5, 8, 7);
-
-# unique items
-my @uniques =
-    (
-     { userlevel=>25, baselevel=>50, levelrange=>25, typeid=>4, suffix=>'a',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Mattt's Omniscience Grand Crown! ".
-           "Your enemies fall before you as you anticipate their ".
-           "every move." },
-     { userlevel=>25, baselevel=>50, levelrange=>25, typeid=>0, suffix=>'h',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Juliet's Glorious Ring of ".
-           "Sparkliness! You enemies are blinded by both its glory ".
-           "and their greed as you bring desolation upon them." },
-     { userlevel=>30, baselevel=>75, levelrange=>25, typeid=>5, suffix=>'b',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Res0's Protectorate Plate Mail! ".
-           "Your enemies cower in fear as their attacks have no ".
-           "effect on you." },
-     { userlevel=>35, baselevel=>100, levelrange=>25, typeid=>2, suffix=>'c',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Dwyn's Storm Magic Amulet! Your ".
-           "enemies are swept away by an elemental fury before the ".
-           "war has even begun" },
-     { userlevel=>40, baselevel=>150, levelrange=>25, typeid=>3, suffix=>'d',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Jotun's Fury Colossal Sword! Your ".
-           "enemies' hatred is brought to a quick end as you arc your ".
-           "wrist, dealing the crushing blow." },
-     { userlevel=>45, baselevel=>175, levelrange=>26, typeid=>3, suffix=>'e',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Drdink's Cane of Blind Rage! Your ".
-           "enemies are tossed aside as you blindly swing your arm ".
-           "around hitting stuff."},
-     { userlevel=>48, baselevel=>250, levelrange=>51, typeid=>9, suffix=>'f',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Mrquick's Magical Boots of ".
-           "Swiftness! Your enemies are left choking on your dust as ".
-           "you run from them very, very quickly." },
-     { userlevel=>52, baselevel=>300, levelrange=>51, typeid=>3, suffix=>'g',
-       desc=>"The light of the gods shines down upon you! You have ".
-           "found the level %ulevel% Jeff's Cluehammer of Doom! Your ".
-           "enemies are left with a sudden and intense clarity of ".
-           "mind... even as you relieve them of it." },
-     );
+my @items;
+my @calamity;
+my @godsend;
+my @uniques;
+my @fragileitems;
+read_items();
 
 # This is a utility variable that lots of parametrised functions can use
 my @tofrom = ('from', 'toward');
@@ -718,7 +649,8 @@ sub parse {
                 }
                 else {
                     readconfig();
-                    privmsg("Reread config file.",$usernick,1);
+                    read_items();
+                    privmsg("Reread config file and items.",$usernick,1);
                     $opts{botchan} =~ s/ .*//; # strip channel key if present
                 }
             }
@@ -1414,7 +1346,7 @@ sub unique_notice($$$) {
     my $string=$_[0];
     $string =~ s/%ulevel%/$_[1]/g;
     $string =~ s/%nick%/$_[2]/g;
-    return $string;
+    return "The light of the gods shines down upon you! You have found the level $_[1] $string";
 }
 
 sub find_item { # find item for argument player
@@ -2248,4 +2180,60 @@ sub readconfig {
         }
         close(CONF);
     }
+}
+
+sub read_items {
+    my $fn = $opts{itemsfile} || 'items.txt';
+    if(!-e $fn) {
+        debug("Error: items file $fn not found, please fix",1);
+    }
+    open(IF,"<$fn") or do {
+        debug("Failed to open items file $fn: $!",1);
+    };
+    @items=@calamity=@godsend=@uniques=@fragileitems = ();
+    my ($got, $gotu)=(0,0);
+    my ($line,$ix,$key,$val);
+    while($line=<IF>) {
+        next if $line =~ /^#/; # skip comments
+        $line =~ s/^\s+//g;
+        my $context;
+        if($line =~ s/^item(\d):\s*//) {
+            my $typeid=int($1);
+            if($got>>$typeid & 1 and $line =~ m/n=/) {
+                debug("Already have item$typeid = $items[$typeid]",0);
+            }
+            my $corg=0;
+            while($line =~ s/([ncg])="([^\"]*)"\s+// or
+                  $line =~ s/([ncg])=(\w+)\s+//) {
+                if($1 eq 'n') { $items[$typeid] = $2; $got|=1<<$typeid; }
+                elsif($1 eq 'c') { $calamity[$typeid] = $2; $corg=1; }
+                elsif($1 eq 'g') { $godsend[$typeid] = $2; $corg=1; }
+            }
+            $context="in item $typeid";
+            if($corg) { push(@fragileitems, $typeid); }
+        }
+        elsif($line =~ s/^unique:\s*//) {
+            my %hash=();
+            while($line =~ s/([ubrtsd])="([^\"]*)"\s+// or
+                  $line =~ s/([ubrtsd])=(\w+)\s+//) {
+                if($1 eq 'u') { $hash{'userlevel'} = int($2); }
+                elsif($1 eq 'b') { $hash{'baselevel'} = int($2); }
+                elsif($1 eq 'r') { $hash{'levelrange'} = int($2); }
+                elsif($1 eq 't') { $hash{'typeid'} = int($2); }
+                elsif($1 eq 's') { $hash{'suffix'} = $2; }
+                elsif($1 eq 'd') { $hash{'desc'} = $2; }
+            }
+            $context="";
+            if(!length($line)) { push(@uniques, \%hash); ++$gotu; }
+        }
+        if(defined($context) and length($line)) {
+            chomp($line);
+            debug("Error: What's '$line'$context in $fn",0);
+        }
+    }
+    if($got != 0x3ff) {
+        debug("Error: Didn't find 10 items in $fn",1);
+    }
+    debug("Got all 10 normal items and $gotu unique items.",0);
+    close(IF);
 }
