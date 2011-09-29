@@ -99,6 +99,12 @@ $opts{help} and do { help(); exit 0; };
 
 debug("Config: read $_: ".Dumper($opts{$_})) for keys(%opts);
 
+# centralise item definitions, so that they can be parametrised later
+my @items = ("ring","amulet","charm","weapon","helm",
+             "tunic","pair of gloves","shield",
+             "set of leggings","pair of boots");
+my @fragileitems = (1, 2, 3, 5, 8, 7);
+
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
 my $inbytes = 0; # received bytes
@@ -167,9 +173,7 @@ if (! -e $opts{dbfile}) {
     $rps{$uname}{y} = int(rand($opts{mapy}));
     $rps{$uname}{alignment}="n";
     $rps{$uname}{isadmin} = 1;
-    for my $item ("ring","amulet","charm","weapon","helm",
-                  "tunic","pair of gloves","shield",
-                  "set of leggings","pair of boots") {
+    for my $item (@items) {
         $rps{$uname}{item}{$item} = 0;
     }
     for my $pen ("pen_mesg","pen_nick","pen_part",
@@ -526,9 +530,7 @@ sub parse {
                         $rps{$arg[4]}{y} = int(rand($opts{mapy}));
                         $rps{$arg[4]}{alignment}="n";
                         $rps{$arg[4]}{isadmin} = 0;
-                        for my $item ("ring","amulet","charm","weapon","helm",
-                                      "tunic","pair of gloves","shield",
-                                      "set of leggings","pair of boots") {
+                        for my $item (@items) {
                             $rps{$arg[4]}{item}{$item} = 0;
                         }
                         for my $pen ("pen_mesg","pen_nick","pen_part",
@@ -1276,9 +1278,6 @@ sub challenge_opp { # pit argument player against random player
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                         "pair of gloves","set of leggings","shield",
-                         "pair of boots");
             my $type = $items[rand(@items)];
             if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
                 chanmsg(clog("In the fierce battle, $opp dropped his level ".
@@ -1339,8 +1338,6 @@ sub team_battle { # pit three players against three other players
 
 sub find_item { # find item for argument player
     my $u = shift;
-    my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                 "pair of gloves","set of leggings","shield","pair of boots");
     my $type = $items[rand(@items)];
     my $level = 1;
     my $ulevel;
@@ -1770,9 +1767,7 @@ sub calamity { # suffer a little one
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
-        my @items = ("amulet","charm","weapon","tunic","set of leggings",
-                     "shield");
-        my $type = $items[rand(@items)];
+        my $type = $items[$fragileitems[rand(@fragileitems)]];
         if ($type eq "amulet") {
             chanmsg(clog("$player fell, chipping the stone in his amulet! ".
                          "$player\'s $type loses 10% of its effectiveness."));
@@ -1830,9 +1825,7 @@ sub godsend { # bless the unworthy
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
-        my @items = ("amulet","charm","weapon","tunic","set of leggings",
-                     "shield");
-        my $type = $items[rand(@items)];
+        my $type = $items[$fragileitems[rand(@fragileitems)]];
         if ($type eq "amulet") {
             chanmsg(clog("$player\'s amulet was blessed by a passing cleric! ".
                          "$player\'s $type gains 10% effectiveness."));
@@ -2114,9 +2107,6 @@ sub collision_fight {
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                         "pair of gloves","set of leggings","shield",
-                         "pair of boots");
             my $type = $items[rand(@items)];
             if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
                 chanmsg(clog("In the fierce battle, $opp dropped his level ".
@@ -2206,9 +2196,6 @@ sub evilness {
                           $rps{$_}{online} } keys(%rps);
         return unless @good;
         my $target = $good[rand(@good)];
-        my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                     "pair of gloves","set of leggings","shield",
-                     "pair of boots");
         my $type = $items[rand(@items)];
         if (int($rps{$target}{item}{$type}) > int($rps{$me}{item}{$type})) {
             my $tempitem = $rps{$me}{item}{$type};
