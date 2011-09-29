@@ -131,6 +131,9 @@ my @godsend =
 # could in theory calculate these from the calamaties and godsend arrays
 my @fragileitems = (1, 2, 3, 5, 8, 7);
 
+# This is a utility variable that lots of parametrised functions can use
+my @tofrom = ('from', 'toward');
+
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
 my $inbytes = 0; # received bytes
@@ -1788,20 +1791,25 @@ sub daemonize() {
     close(PIDFILE);
 }
 
-sub calamity { # suffer a little one
+sub modify_item($) {
+    my @change = ('loses', 'gains');
+    my @timechange = ('terrible calamity has slowed',
+                      'wondrous godsend has accelerated');
+    my $good = ($_[0] > 0);
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
         my $typeid = $fragileitems[rand(@fragileitems)];
         my $type = $items[$typeid];
-        my $calamity = "${player}$calamity[$typeid]" .
-            " $player\'s $type loses 10% of its effectiveness.";
-        chanmsg(clog($calamity));
+        my $change = "${player}" .
+            ($good ? $godsend[$typeid] : $calamity[$typeid]) .
+            " $player\'s $type $change[$good] 10% of its effectiveness.";
+        chanmsg(clog($change));
 
         my $suffix="";
         if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
-        $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * .9);
+        $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * (1+$_[0]*.1));
         $rps{$player}{item}{$type}.=$suffix;
     }
     else {
@@ -1812,51 +1820,22 @@ sub calamity { # suffer a little one
         my($i,$actioned);
         while (my $line = <Q>) {
             chomp($line);
-            if ($line =~ /^C (.*)/ && rand(++$i) < 1) { $actioned = $1; }
+            if (($good ? $line =~ /^G (.*)/ : $line =~ /^C (.*)/) &&
+                rand(++$i) < 1) {
+                $actioned = $1;
+            }
         }
-        chanmsg(clog("$player $actioned. This terrible calamity has slowed ".
-                     "them ".duration($time)." from level ".
+        chanmsg(clog("$player $actioned. This $timechange[$good] them ".
+                     duration($time)." $tofrom[$good] level ".
                      ($rps{$player}{level}+1)."."));
-        $rps{$player}{next} += $time;
+        $rps{$player}{next} -= $time * ($_[0] <=> 0);
         chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
                 ".");
     }
 }
 
-sub godsend { # bless the unworthy
-    my @players = grep { $rps{$_}{online} } keys(%rps);
-    return unless @players;
-    my $player = $players[rand(@players)];
-    if (rand(10) < 1) {
-        my $typeid = $fragileitems[rand(@fragileitems)];
-        my $type = $items[$typeid];
-        my $godsend = "${player}$godsend[$typeid]" .
-            " $player\'s $type gains 10% effectiveness.";
-        chanmsg(clog($godsend));
-
-        my $suffix="";
-        if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
-        $rps{$player}{item}{$type} = int(int($rps{$player}{item}{$type}) * 1.1);
-        $rps{$player}{item}{$type}.=$suffix;
-    }
-    else {
-        my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        if (!open(Q,$opts{eventsfile})) {
-            return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-        }
-        my($i,$actioned);
-        while (my $line = <Q>) {
-            chomp($line);
-            if ($line =~ /^G (.*)/ && rand(++$i) < 1) { $actioned = $1; }
-        }
-        chanmsg(clog("$player $actioned! This wondrous godsend has ".
-                     "accelerated them ".duration($time)." towards level ".
-                     ($rps{$player}{level}+1)."."));
-        $rps{$player}{next} -= $time;
-        chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
-                ".");
-    }
-}
+sub calamity { modify_item(-1); }  # suffer a little one
+sub godsend { modify_item(+1); } # bless the unworthy
 
 sub quest {
     @{$quest{questers}} = grep { $rps{$_}{online} && $rps{$_}{level} > 39 &&
