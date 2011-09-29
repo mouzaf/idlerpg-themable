@@ -131,6 +131,51 @@ my @godsend =
 # could in theory calculate these from the calamaties and godsend arrays
 my @fragileitems = (1, 2, 3, 5, 8, 7);
 
+# unique items
+my @uniques =
+    (
+     { userlevel=>25, baselevel=>50, levelrange=>25, typeid=>4, suffix=>'a',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Mattt's Omniscience Grand Crown! ".
+           "Your enemies fall before you as you anticipate their ".
+           "every move." },
+     { userlevel=>25, baselevel=>50, levelrange=>25, typeid=>0, suffix=>'h',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Juliet's Glorious Ring of ".
+           "Sparkliness! You enemies are blinded by both its glory ".
+           "and their greed as you bring desolation upon them." },
+     { userlevel=>30, baselevel=>75, levelrange=>25, typeid=>5, suffix=>'b',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Res0's Protectorate Plate Mail! ".
+           "Your enemies cower in fear as their attacks have no ".
+           "effect on you." },
+     { userlevel=>35, baselevel=>100, levelrange=>25, typeid=>2, suffix=>'c',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Dwyn's Storm Magic Amulet! Your ".
+           "enemies are swept away by an elemental fury before the ".
+           "war has even begun" },
+     { userlevel=>40, baselevel=>150, levelrange=>25, typeid=>3, suffix=>'d',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Jotun's Fury Colossal Sword! Your ".
+           "enemies' hatred is brought to a quick end as you arc your ".
+           "wrist, dealing the crushing blow." },
+     { userlevel=>45, baselevel=>175, levelrange=>26, typeid=>3, suffix=>'e',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Drdink's Cane of Blind Rage! Your ".
+           "enemies are tossed aside as you blindly swing your arm ".
+           "around hitting stuff."},
+     { userlevel=>48, baselevel=>250, levelrange=>51, typeid=>9, suffix=>'f',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Mrquick's Magical Boots of ".
+           "Swiftness! Your enemies are left choking on your dust as ".
+           "you run from them very, very quickly." },
+     { userlevel=>52, baselevel=>300, levelrange=>51, typeid=>3, suffix=>'g',
+       desc=>"The light of the gods shines down upon you! You have ".
+           "found the level %ulevel% Jeff's Cluehammer of Doom! Your ".
+           "enemies are left with a sudden and intense clarity of ".
+           "mind... even as you relieve them of it." },
+     );
+
 # This is a utility variable that lots of parametrised functions can use
 my @tofrom = ('from', 'toward');
 
@@ -1365,6 +1410,13 @@ sub team_battle { # pit three players against three other players
     }
 }
 
+sub unique_notice($$$) {
+    my $string=$_[0];
+    $string =~ s/%ulevel%/$_[1]/g;
+    $string =~ s/%nick%/$_[2]/g;
+    return $string;
+}
+
 sub find_item { # find item for argument player
     my $u = shift;
     my $type = $items[rand(@items)];
@@ -1375,94 +1427,17 @@ sub find_item { # find item for argument player
             $level = $num;
         }
     }
-    if ($rps{$u}{level} >= 25 && rand(40) < 1) {
-        $ulevel = 50+int(rand(25));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{helm})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Mattt's Omniscience Grand Crown! ".
-                   "Your enemies fall before you as you anticipate their ".
-                   "every move.",$rps{$u}{nick});
-            $rps{$u}{item}{helm} = $ulevel."a";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 25 && rand(40) < 1) {
-        $ulevel = 50+int(rand(25));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{ring})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Juliet's Glorious Ring of ".
-                   "Sparkliness! You enemies are blinded by both its glory ".
-                   "and their greed as you bring desolation upon them.",
-                   $rps{$u}{nick});
-            $rps{$u}{item}{ring} = $ulevel."h";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 30 && rand(40) < 1) {
-        $ulevel = 75+int(rand(25));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{tunic})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Res0's Protectorate Plate Mail! ".
-                   "Your enemies cower in fear as their attacks have no ".
-                   "effect on you.",$rps{$u}{nick});
-            $rps{$u}{item}{tunic} = $ulevel."b";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 35 && rand(40) < 1) {
-        $ulevel = 100+int(rand(25));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{amulet})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Dwyn's Storm Magic Amulet! Your ".
-                   "enemies are swept away by an elemental fury before the ".
-                   "war has even begun",$rps{$u}{nick});
-            $rps{$u}{item}{amulet} = $ulevel."c";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 40 && rand(40) < 1) {
-        $ulevel = 150+int(rand(25));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{weapon})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Jotun's Fury Colossal Sword! Your ".
-                   "enemies' hatred is brought to a quick end as you arc your ".
-                   "wrist, dealing the crushing blow.",$rps{$u}{nick});
-            $rps{$u}{item}{weapon} = $ulevel."d";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 45 && rand(40) < 1) {
-        $ulevel = 175+int(rand(26));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{weapon})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Drdink's Cane of Blind Rage! Your ".
-                   "enemies are tossed aside as you blindly swing your arm ".
-                   "around hitting stuff.",$rps{$u}{nick});
-            $rps{$u}{item}{weapon} = $ulevel."e";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 48 && rand(40) < 1) {
-        $ulevel = 250+int(rand(51));
-        if ($ulevel >= $level && $ulevel >
-            int($rps{$u}{item}{"pair of boots"})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Mrquick's Magical Boots of ".
-                   "Swiftness! Your enemies are left choking on your dust as ".
-                   "you run from them very, very quickly.",$rps{$u}{nick});
-            $rps{$u}{item}{"pair of boots"} = $ulevel."f";
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 52 && rand(40) < 1) {
-        $ulevel = 300+int(rand(51));
-        if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{weapon})) {
-            notice("The light of the gods shines down upon you! You have ".
-                   "found the level $ulevel Jeff's Cluehammer of Doom! Your ".
-                   "enemies are left with a sudden and intense clarity of ".
-                   "mind... even as you relieve them of it.",$rps{$u}{nick});
-            $rps{$u}{item}{weapon} = $ulevel."g";
-            return;
+    for my $m (0 .. $#uniques) {
+        my $uniq = $uniques[$m];
+        if ($rps{$u}{level} >= $uniq->{userlevel} && rand(40) < 1) {
+            $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
+            my $typeid = $uniq->{typeid};
+            if ($ulevel >= $level && $ulevel > int($rps{$u}{item}{$items[$typeid]})) {
+                my $notice=unique_notice($uniq->{desc}, $ulevel, $rps{$u}{nick});
+                notice($notice, $rps{$u}{nick});
+                $rps{$u}{item}{$items[$typeid]} = "$ulevel$uniq->{suffix}";
+                return;
+            }
         }
     }
     if ($level > int($rps{$u}{item}{$type})) {
