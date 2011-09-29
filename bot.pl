@@ -1800,10 +1800,13 @@ sub modify_item($) {
     return unless @players;
     my $player = $players[rand(@players)];
     if (rand(10) < 1) {
-        my $typeid = $fragileitems[rand(@fragileitems)];
+        my($typeid,$change);
+        while(!$change) {
+            $typeid = $fragileitems[rand(@fragileitems)];
+            $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
+        }
         my $type = $items[$typeid];
-        my $change = "${player}" .
-            ($good ? $godsend[$typeid] : $calamity[$typeid]) .
+        $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg(clog($change));
 
