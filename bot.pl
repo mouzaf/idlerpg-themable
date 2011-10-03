@@ -107,6 +107,10 @@ my @uniques;
 my @fragileitems;
 read_items();
 
+my @quests;
+my %events;
+read_events();
+
 # This is a utility variable that lots of parametrised functions can use
 my @tofrom = ('from', 'toward');
 
@@ -650,7 +654,8 @@ sub parse {
                 else {
                     readconfig();
                     read_items();
-                    privmsg("Reread config file and items.",$usernick,1);
+                    read_events();
+                    privmsg("Reread config file, items, and events.",$usernick,1);
                     $opts{botchan} =~ s/ .*//; # strip channel key if present
                 }
             }
@@ -1110,22 +1115,13 @@ sub ts { # timestamp
 sub hog { # summon the hand of god
     my @players = grep { $rps{$_}{online} } keys(%rps);
     my $player = $players[rand(@players)];
-    my $win = int(rand(5));
+    my $win = !!int(rand(5));
     my $time = int(((5 + int(rand(71)))/100) * $rps{$player}{next});
-    if ($win) {
-        chanmsg_l("Verily I say unto thee, the Heavens have burst forth, ".
-                  "and the blessed hand of God carried $player ".
-                  duration($time)." toward level ".($rps{$player}{level}+1).
-                  ".");
-        $rps{$player}{next} -= $time;
-    }
-    else {
-        chanmsg_l("Thereupon He stretched out His little finger among them ".
-                  "and consumed $player with fire, slowing the heathen ".
-                  duration($time)." from level ".($rps{$player}{level}+1).
-                  ".");
-        $rps{$player}{next} += $time;
-    }
+    my $template = get_event($win?'W':'L');
+    $template =~ s/%player%/$player/g;
+    chanmsg_l("$template ".duration($time)." $tofrom[$win] level ".
+              ($rps{$player}{level}+1).".");
+    $rps{$player}{next} += $win ? -$time : $time;
     chanmsg("$player reaches next level in ".duration($rps{$player}{next}).".");
 }
 
@@ -1705,18 +1701,7 @@ sub modify_item($) {
     }
     else {
         my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        if (!open(Q,$opts{eventsfile})) {
-            return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-        }
-        my($i,$actioned);
-        while (my $line = <Q>) {
-            chomp($line);
-            if (($good ? $line =~ /^G (.*)/ : $line =~ /^C (.*)/) &&
-                rand(++$i) < 1) {
-                $actioned = $1;
-            }
-        }
-        close(Q);
+        my $actioned = get_event($good?'G':'C');
         chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
                   "This $timechange[$good] them ".
                   duration($time)." $tofrom[$good] level ".
@@ -1731,35 +1716,16 @@ sub calamity { modify_item(-1); }  # suffer a little one
 sub godsend { modify_item(+1); } # bless the unworthy
 
 sub quest {
-    @{$quest{questers}} = grep { $rps{$_}{online} && $rps{$_}{level} > 39 &&
-                                 time()-$rps{$_}{lastlogin}>36000 } keys(%rps);
-    if (@{$quest{questers}} < 4) { return undef(@{$quest{questers}}); }
-    while (@{$quest{questers}} > 4) {
-        splice(@{$quest{questers}},int(rand(@{$quest{questers}})),1);
+    my @questers = grep { $rps{$_}{online} && $rps{$_}{level} > 39 &&
+                              time()-$rps{$_}{lastlogin}>36000 } keys(%rps);
+    if (@questers < 4) { return undef; }
+    while (@questers > 4) {
+        splice(@questers,int(rand(@questers)),1);
     }
-    if (!open(Q,$opts{eventsfile})) {
-        return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-    }
-    my $i;
-    while (my $line = <Q>) {
-        chomp($line);
-        if ($line =~ /^Q/ && rand(++$i) < 1) {
-            if ($line =~ /^Q1 (.*)/) {
-                $quest{text} = $1;
-                $quest{type} = 1;
-                $quest{qtime} = time() + 43200 + int(rand(43201)); # 12-24 hours
-            }
-            elsif ($line =~ /^Q2 (\d+) (\d+) (\d+) (\d+) (.*)/) {
-                $quest{p1} = [$1,$2];
-                $quest{p2} = [$3,$4];
-                $quest{text} = $5;
-                $quest{type} = 2;
-                $quest{stage} = 1;
-            }
-        }
-    }
-    close(Q);
+    %quest = %{get_quest()};
+    $quest{questers} = \@questers;
     if ($quest{type} == 1) {
+        $quest{qtime} = time()+43200+int(rand(43201));
         chanmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
                 "$quest{questers}->[3] have been chosen by the gods to ".
                 "$quest{text}. Quest to end in ".duration($quest{qtime}-time()).
@@ -2180,6 +2146,36 @@ sub readconfig {
         }
         close(CONF);
     }
+}
+
+sub read_events {
+    if (!open(Q,$opts{eventsfile})) {
+        return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
+    }
+    @quests = ();
+    %events = (G => [], C => [], W => [], L => []);
+    while (my $line = <Q>) {
+        if ($line =~ /^([GCWL])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        elsif ($line =~ /^Q1 (.*)/) {
+            push(@quests, { type=>1, text=>$1 });
+        }
+        elsif ($line =~ /^Q2 (\d+) (\d+) (\d+) (\d+) (.*)/) {
+            push(@quests,
+                 { type=>2, text=>$5, stage=>1, p1=>[$1,$2], p2=>[$3,$4] });
+        }
+        else { debug("Event in $opts{eventsfile} unknown: $line",0); }
+    }
+    close(Q);
+    # Must be at least one HOG win and lose line
+    if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
+    if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
+}
+
+sub get_event($) {
+    return $events{$_[0]}[int(rand(@{$events{$_[0]}}))];
+}
+sub get_quest($) {
+    return $quests[int(rand(scalar(@quests)))];
 }
 
 sub read_items {
