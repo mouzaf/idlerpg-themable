@@ -1828,7 +1828,8 @@ sub modify_item($) {
                 $actioned = $1;
             }
         }
-        chanmsg(clog("$player $actioned. This $timechange[$good] them ".
+        chanmsg(clog("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
+                     "This $timechange[$good] them ".
                      duration($time)." $tofrom[$good] level ".
                      ($rps{$player}{level}+1)."."));
         $rps{$player}{next} -= $time * ($_[0] <=> 0);
