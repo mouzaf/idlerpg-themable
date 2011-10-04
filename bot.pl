@@ -2166,6 +2166,9 @@ sub read_events {
         else { debug("Event in $opts{eventsfile} unknown: $line",0); }
     }
     close(Q);
+    debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
+          @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, and ".
+          @quests." quests.",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
