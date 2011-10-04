@@ -101,6 +101,7 @@ $opts{help} and do { help(); exit 0; };
 debug("Config: read $_: ".Dumper($opts{$_})) for keys(%opts);
 
 my @items;
+my @levels;
 my @calamity;
 my @godsend;
 my @uniques;
@@ -1107,7 +1108,35 @@ sub duration { # return human duration of seconds
 }
 
 sub item_level($$) {
-    return "level $_[0]";
+    my $typeid=$_[0];
+    if(!defined($levels[$typeid])) { return "level $_[1]"; }
+    my ($lev,$ind)=(-1,-1);
+    my ($marker,$op,$delta,$marklast);
+    while($lev<$_[1]) {
+        #print STDERR ("$lev<$_[1], ind=$ind".
+        #              ($delta?", stepping=($marker,$op,$delta,$marklast)\n":"\n"));
+        ++$lev;
+        if($op) {
+            $marker = ($op eq '+') ? $marker+$delta 
+                : ($op eq '-') ? $marker-$delta 
+                : $marker*$delta;
+            if(defined($marklast) && 
+               (($op eq '-') ? $marker<=$marklast : $marker>=$marklast)) {
+                undef($op); 
+            }
+        }
+        else {
+            ++$ind;
+            if($levels[$typeid][$ind] =~ /%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/) {
+                ($marker,$op,$delta,$marklast) = ($1,$2,$3,$4);
+            }
+        }
+    }
+    my $template = $levels[$typeid][$ind];
+    if(defined($marker)) {
+        $template =~ s/%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/$marker/;
+    }
+    return $template;
 }
 
 sub ts { # timestamp
@@ -2197,7 +2226,7 @@ sub read_items {
     open(IF,"<$fn") or do {
         debug("Failed to open items file $fn: $!",1);
     };
-    @items=@calamity=@godsend=@uniques=@fragileitems = ();
+    @items=@levels=@calamity=@godsend=@uniques=@fragileitems = ();
     my ($got, $gotu)=(0,0);
     my ($line,$ix,$key,$val);
     while($line=<IF>) {
@@ -2218,6 +2247,10 @@ sub read_items {
             }
             $context="in item $typeid";
             if($corg) { push(@fragileitems, $typeid); }
+        }
+        elsif($line =~ s/^levels(\d):\s*(.*?)\s*$//) {
+            my $typeid=int($1);
+            $levels[$typeid]=[split(/,\s*/,$2)];
         }
         elsif($line =~ s/^unique:\s*//) {
             my %hash=();
