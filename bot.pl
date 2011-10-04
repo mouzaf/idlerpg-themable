@@ -1106,6 +1106,10 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
+sub item_level($$) {
+    return "level $_[0]";
+}
+
 sub ts { # timestamp
     my @ts = localtime(time());
     return sprintf("[%02d/%02d/%02d %02d:%02d:%02d] ",
@@ -1282,10 +1286,11 @@ sub challenge_opp { # pit argument player against random player
             my $typeid = int(rand(@items));
             my $type = $items[$typeid];
             if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
-                chanmsg_l("In the fierce battle, $opp dropped his level ".
-                          int($rps{$opp}{item}[$typeid])." $type! $u picks ".
-                          "it up, tossing his old level ".
-                          int($rps{$u}{item}[$typeid])." $type to $opp.");
+                chanmsg_l("In the fierce battle, $opp dropped his ".
+                          item_level($typeid,int($rps{$opp}{item}[$typeid])).
+                          " $type! $u picks it up, tossing his old ".
+                          item_level($typeid,int($rps{$u}{item}[$typeid])).
+                          " $type to $opp.");
                 my $tempitem = $rps{$u}{item}[$typeid];
                 $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
                 $rps{$opp}{item}[$typeid] = $tempitem;
@@ -1371,14 +1376,17 @@ sub find_item { # find item for argument player
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
     if ($level > int($rps{$u}{item}[$typeid])) {
-        notice("You found a level $level $type! Your current $type is only ".
-               "level ".int($rps{$u}{item}[$typeid]).", so it seems Luck is ".
-               "with you!",$rps{$u}{nick});
+        notice("You found a ".item_level($typeid,$level).
+               " $type! Your current $type is only ".
+               item_level($typeid,int($rps{$u}{item}[$typeid])).
+               ", so it seems Luck is with you!",$rps{$u}{nick});
         $rps{$u}{item}[$typeid] = $level;
     }
     else {
-        notice("You found a level $level $type. Your current $type is level ".
-               int($rps{$u}{item}[$typeid]).", so it seems Luck is against you. ".
+        notice("You found a ".item_level($typeid,$level).
+               " $type. Your current $type is ".
+               item_level($typeid,int($rps{$u}{item}[$typeid])).
+               ", so it seems Luck is against you. ".
                "You toss the $type.",$rps{$u}{nick});
     }
 }
