@@ -237,8 +237,8 @@ if ($opts{checkupdates}) {
     else { print debug("Could not connect to update server.")."\n"; }
 }
 
-print "\n".debug("Becoming a daemon...")."\n";
-daemonize();
+print "\n".debug("NOT Becoming a daemon...")."\n";
+#daemonize();
 
 $SIG{HUP} = "readconfig"; # sighup = reread config file
 
