@@ -112,14 +112,24 @@ my @quests;
 my %events;
 read_events();
 
-# This is a utility variable that lots of parametrised functions can use
+# Utility variables that lots of parametrised functions can use
+# direction of time:
 my @tofrom = ('from', 'toward');
+# gender: male, female, unknown, neutral, politically correct
+my %hesheit = (m => 'he', f => 'she', u => 'they', n => 'it', pc => 'he/she/it');
+my %himherit = (m =>'him',f => 'her', u => 'them', n => 'it', pc => 'him/her/it');
+my %hisherits = (m=>'his',f => 'her', u => 'their',n => 'its',pc => 'his/her/its');
+my %hishersits= (m=>'his',f => 'hers',u =>'theirs',n => 'its',pc => 'his/hers/its');
+
+my %rps; # role-players
+sub they($) { return $hesheit{$rps{$_[0]}{gender}}; }
+sub them($) { return $himherit{$rps{$_[0]}{gender}}; }
+sub their($) { return $hisherits{$rps{$_[0]}{gender}}; }
 
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
 my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
-my %rps; # role-players
 my %quest = (
     questers => [],
     p1 => [], # point 1 for q2
@@ -183,6 +193,7 @@ if (! -e $opts{dbfile}) {
     $rps{$uname}{y} = int(rand($opts{mapy}));
     $rps{$uname}{alignment}="n";
     $rps{$uname}{isadmin} = 1;
+    $rps{$uname}{gender} = "u";
     for my $item (0..$#items) {
         $rps{$uname}{item}[$item] = 0;
     }
@@ -538,6 +549,7 @@ sub parse {
                         $rps{$arg[4]}{x} = int(rand($opts{mapx}));
                         $rps{$arg[4]}{y} = int(rand($opts{mapy}));
                         $rps{$arg[4]}{alignment}="n";
+                        $rps{$arg[4]}{gender}="u";
                         $rps{$arg[4]}{isadmin} = 0;
                         for my $item (0..$#items) {
                             $rps{$arg[4]}{item}[$item] = 0;
@@ -828,6 +840,20 @@ sub parse {
                     chanmsg("$username has changed alignment to: ".lc($arg[4]).
                             ".");
                     privmsg("Your alignment was changed to ".lc($arg[4]).".",
+                            $usernick);
+                }
+            }
+            elsif ($arg[3] eq "gender") {
+                if (!defined($username)) {
+                    privmsg("You are not logged in.", $usernick)
+                }
+                elsif (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
+                    privmsg("Try: GENDER <m|f|n>", $usernick);
+                }
+                else {
+                    $rps{$username}{gender} = lc($arg[4]);
+                    chanmsg("$username has changed gender to: ".lc($arg[4]).".");
+                    privmsg("Your gender was changed to ".lc($arg[4]).".",
                             $usernick);
                 }
             }
@@ -1150,9 +1176,8 @@ sub hog { # summon the hand of god
     my $player = $players[rand(@players)];
     my $win = !!int(rand(5));
     my $time = int(((5 + int(rand(71)))/100) * $rps{$player}{next});
-    my $template = get_event($win?'W':'L');
-    $template =~ s/%player%/$player/g;
-    chanmsg_l("$template ".duration($time)." $tofrom[$win] level ".
+    my $event = get_event($win?'W':'L', $player);
+    chanmsg_l("$event ".duration($time)." $tofrom[$win] level ".
               ($rps{$player}{level}+1).".");
     $rps{$player}{next} += $win ? -$time : $time;
     chanmsg("$player reaches next level in ".duration($rps{$player}{next}).".");
@@ -1315,9 +1340,9 @@ sub challenge_opp { # pit argument player against random player
             my $typeid = int(rand(@items));
             my $type = $items[$typeid];
             if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
-                chanmsg_l("In the fierce battle, $opp dropped his ".
+                chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." ".
                           item_level($typeid,int($rps{$opp}{item}[$typeid])).
-                          " $type! $u picks it up, tossing his old ".
+                          " $type! $u picks it up, tossing ".their($u)." old ".
                           item_level($typeid,int($rps{$u}{item}[$typeid])).
                           " $type to $opp.");
                 my $tempitem = $rps{$u}{item}[$typeid];
@@ -1431,8 +1456,8 @@ sub loaddb { # load the players database
         chomp($l);
         next if $l =~ /^#/; # skip comments
         my @i = split("\t",$l);
-        print Dumper(@i) if @i != 32;
-        if (@i != 32) {
+        print Dumper(@i) if(@i < 32 or @i > 33);
+        if (@i < 32 or @i > 33) {
             sts("QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
                 "wrong fields (".scalar(@i).")");
             debug("Anomaly in loaddb(); line $. of $opts{dbfile} has wrong ".
@@ -1471,7 +1496,8 @@ sub loaddb { # load the players database
         $rps{$i[0]}{item}[7],
         $rps{$i[0]}{item}[8],
         $rps{$i[0]}{item}[9],
-        $rps{$i[0]}{alignment}) = (@i[1..7],($sock?$i[8]:0),@i[9..$#i]);
+        $rps{$i[0]}{alignment},
+        $rps{$i[0]}{gender}) = (@i[1..7],($sock?$i[8]:0),@i[9..31],($i[32]||"u"));
     }
     close(RPS);
     debug("loaddb(): loaded ".scalar(keys(%rps))." accounts, ".
@@ -1712,6 +1738,14 @@ sub daemonize() {
     close(PIDFILE);
 }
 
+sub rewrite_event($$$) {
+    my ($s,$p)=@_;
+    $s =~ s/%player%/$p/g;
+    $s =~ s/%(his|her|their)%/their($p)/eg;
+    $s =~ s/%(him|her|them)%/them($p)/eg;
+    return $s;
+}
+
 sub modify_item($) {
     my @change = ('loses', 'gains');
     my @timechange = ('terrible calamity has slowed',
@@ -1726,6 +1760,7 @@ sub modify_item($) {
             $typeid = $fragileitems[rand(@fragileitems)];
             $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
         }
+        $change = rewrite_event($change, $player);
         my $type = $items[$typeid];
         $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
@@ -1738,9 +1773,9 @@ sub modify_item($) {
     }
     else {
         my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        my $actioned = get_event($good?'G':'C');
+        my $actioned = get_event($good?'G':'C', $player);
         chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
-                  "This $timechange[$good] them ".
+                  "This $timechange[$good] ".them($player)." ".
                   duration($time)." $tofrom[$good] level ".
                   ($rps{$player}{level}+1).".");
         $rps{$player}{next} -= $time * ($_[0] <=> 0);
@@ -1933,9 +1968,9 @@ sub collision_fight {
         my $gain = int($rps{$opp}{level}/4);
         $gain = 7 if $gain < 7;
         $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                  "] and taken them in combat! ".duration($gain)." is ".
-                  "removed from $u\'s clock.");
+        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum] ".
+                  "and taken ".them($opp)." in combat! ".duration($gain).
+                  " is removed from $u\'s clock.");
         $rps{$u}{next} -= $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
         if (rand(35) < 1 && $opp ne $primnick) {
@@ -1950,9 +1985,9 @@ sub collision_fight {
             my $typeid = int(rand(@items));
             my $type = $items[$typeid];
             if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
-                chanmsg_l("In the fierce battle, $opp dropped his level ".
+                chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." level ".
                           int($rps{$opp}{item}[$typeid])." $type! $u picks it up, ".
-                          "tossing his old level ".int($rps{$u}{item}[$typeid]).
+                          "tossing ".their($opp)." old level ".int($rps{$u}{item}[$typeid]).
                           " $type to $opp.");
                 my $tempitem = $rps{$u}{item}[$typeid];
                 $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
@@ -2044,8 +2079,8 @@ sub evilness {
             $rps{$me}{item}[$typeid] = $rps{$target}{item}[$typeid];
             $rps{$target}{item}[$typeid] = $tempitem;
             chanmsg_l("$me stole $target\'s level ".
-                      int($rps{$me}{item}[$typeid])." $type while they were ".
-                      "sleeping! $me leaves his old level ".
+                      int($rps{$me}{item}[$typeid])." $type while ".they($target).
+                      "were sleeping! $me leaves ".their($me)." old level ".
                       int($rps{$target}{item}[$typeid])." $type behind, ".
                       "which $target then takes.");
         }
@@ -2057,9 +2092,9 @@ sub evilness {
     }
     else { # being evil only pays about half of the time...
         my $gain = 1 + int(rand(5));
-        chanmsg_l("$me is forsaken by his evil god. ".
+        chanmsg_l("$me is forsaken by ".their($me)." evil god. ".
                   duration(int($rps{$me}{next} * ($gain/100)))." is added ".
-                  "to his clock.");
+                  "to ".their($me)." clock.");
         $rps{$me}{next} = int($rps{$me}{next} * (1 + ($gain/100)));
         chanmsg("$me reaches next level in ".duration($rps{$me}{next}).".");
     }
@@ -2111,7 +2146,8 @@ sub writedb {
                         "item7",
                         "item8",
                         "item9",
-                        "alignment")."\n";
+                        "alignment",
+                        "gender")."\n";
     my $k;
     keys(%rps); # reset internal pointer
     while ($k=each(%rps)) {
@@ -2147,7 +2183,8 @@ sub writedb {
                                 $rps{$k}{item}[7],
                                 $rps{$k}{item}[8],
                                 $rps{$k}{item}[9],
-                                $rps{$k}{alignment})."\n";
+                                $rps{$k}{alignment},
+                                $rps{$k}{gender}||"u")."\n";
         }
     }
     close(RPS);
@@ -2211,8 +2248,8 @@ sub read_events {
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
 }
 
-sub get_event($) {
-    return $events{$_[0]}[int(rand(@{$events{$_[0]}}))];
+sub get_event($$) {
+    return rewrite_event($events{$_[0]}[int(rand(@{$events{$_[0]}}))], $_[1]);
 }
 sub get_quest($) {
     return $quests[int(rand(scalar(@quests)))];
