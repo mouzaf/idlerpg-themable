@@ -420,10 +420,10 @@ sub parse {
             if ($opts{voiceonlogin}) {
                 my @vnicks = map { $rps{$_}{nick} } keys(%auto_login);
                 while (@vnicks) {
+                    my @removed = splice(@vnicks,0,$opts{modesperline});
                     sts("MODE $opts{botchan} +".
                         ('v' x $opts{modesperline})." ".
-                        join(" ",@vnicks[0..$opts{modesperline}-1]));
-                    splice(@vnicks,0,$opts{modesperline});
+                        join(" ",@removed));
                 }
             }
         }
