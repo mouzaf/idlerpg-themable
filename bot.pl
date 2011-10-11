@@ -369,7 +369,6 @@ while (1) {
     if ((time()-$lasttime) >= $opts{self_clock}) { rpcheck(); }
 }
 
-
 sub parse {
     my($in) = shift;
     $inbytes += length($in); # increase parsed byte count
@@ -790,16 +789,16 @@ sub parse {
                     privmsg("Time to level for $arg[4] ($rps{$arg[4]}{next}s) ".
                             "is lower than $arg[5]; setting TTL to 0.",
                             $usernick, 1);
-                    chanmsg(clog("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
-                                 "seconds toward level ".($rps{$arg[4]}{level}+1)));
+                    chanmsg_l("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
+                              "seconds toward level ".($rps{$arg[4]}{level}+1));
                     $rps{$arg[4]}{next}=0;
                 }
                 else {
                     $rps{$arg[4]}{next} -= $arg[5];
-                     chanmsg(clog("$usernick has pushed $arg[4] $arg[5] seconds ".
-                                  "toward level ".($rps{$arg[4]}{level}+1).". ".
-                                  "$arg[4] reaches next level in ".
-                                  duration($rps{$arg[4]}{next})."."));
+                    chanmsg_l("$usernick has pushed $arg[4] $arg[5] seconds ".
+                              "toward level ".($rps{$arg[4]}{level}+1).". ".
+                              "$arg[4] reaches next level in ".
+                              duration($rps{$arg[4]}{next}).".");
                 }
             }
             elsif ($arg[3] eq "logout") {
@@ -1182,17 +1181,17 @@ sub hog { # summon the hand of god
     my $win = int(rand(5));
     my $time = int(((5 + int(rand(71)))/100) * $rps{$player}{next});
     if ($win) {
-        chanmsg(clog("Verily I say unto thee, the Heavens have burst forth, ".
-                     "and the blessed hand of God carried $player ".
-                     duration($time)." toward level ".($rps{$player}{level}+1).
-                     "."));
+        chanmsg_l("Verily I say unto thee, the Heavens have burst forth, ".
+                  "and the blessed hand of God carried $player ".
+                  duration($time)." toward level ".($rps{$player}{level}+1).
+                  ".");
         $rps{$player}{next} -= $time;
     }
     else {
-        chanmsg(clog("Thereupon He stretched out His little finger among them ".
-                     "and consumed $player with fire, slowing the heathen ".
-                     duration($time)." from level ".($rps{$player}{level}+1).
-                     "."));
+        chanmsg_l("Thereupon He stretched out His little finger among them ".
+                  "and consumed $player with fire, slowing the heathen ".
+                  duration($time)." from level ".($rps{$player}{level}+1).
+                  ".");
         $rps{$player}{next} += $time;
     }
     chanmsg("$player reaches next level in ".duration($rps{$player}{next}).".");
@@ -1235,10 +1234,10 @@ sub rpcheck { # check levels, update database
     if (time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
-            chanmsg(clog(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                         "$quest{questers}->[3] have blessed the realm by ".
-                         "completing their quest! 25% of their burden is ".
-                         "eliminated."));
+            chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", and ".
+                      "$quest{questers}->[3] have blessed the realm by ".
+                      "completing their quest! 25% of their burden is ".
+                      "eliminated.");
             for (@{$quest{questers}}) {
                 $rps{$_}{next} = int($rps{$_}{next} * .75);
             }
@@ -1335,9 +1334,9 @@ sub challenge_opp { # pit argument player against random player
         my $gain = ($opp eq $primnick)?20:int($rps{$opp}{level}/4);
         $gain = 7 if $gain < 7;
         $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                     "$oppsum] in combat and won! ".duration($gain)." is ".
-                     "removed from $u\'s clock."));
+        chanmsg_l("$u [$myroll/$mysum] has challenged $opp [$opproll/".
+                  "$oppsum] in combat and won! ".duration($gain)." is ".
+                  "removed from $u\'s clock.");
         $rps{$u}{next} -= $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
         my $csfactor = $rps{$u}{alignment} eq "g" ? 50 :
@@ -1345,8 +1344,8 @@ sub challenge_opp { # pit argument player against random player
                        35;
         if (rand($csfactor) < 1 && $opp ne $primnick) {
             $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg(clog("$u has dealt $opp a Critical Strike! ".
-                         duration($gain)." is added to $opp\'s clock."));
+            chanmsg_l("$u has dealt $opp a Critical Strike! ".
+                      duration($gain)." is added to $opp\'s clock.");
             $rps{$opp}{next} += $gain;
             chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
                     ".");
@@ -1354,10 +1353,10 @@ sub challenge_opp { # pit argument player against random player
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
             my $type = $items[rand(@items)];
             if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
-                chanmsg(clog("In the fierce battle, $opp dropped his level ".
-                             int($rps{$opp}{item}{$type})." $type! $u picks ".
-                             "it up, tossing his old level ".
-                             int($rps{$u}{item}{$type})." $type to $opp."));
+                chanmsg_l("In the fierce battle, $opp dropped his level ".
+                          int($rps{$opp}{item}{$type})." $type! $u picks ".
+                          "it up, tossing his old level ".
+                          int($rps{$u}{item}{$type})." $type to $opp.");
                 my $tempitem = $rps{$u}{item}{$type};
                 $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
                 $rps{$opp}{item}{$type} = $tempitem;
@@ -1368,9 +1367,9 @@ sub challenge_opp { # pit argument player against random player
         my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
         $gain = 7 if $gain < 7;
         $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                     "$oppsum] in combat and lost! ".duration($gain)." is ".
-                     "added to $u\'s clock."));
+        chanmsg_l("$u [$myroll/$mysum] has challenged $opp [$opproll/".
+                  "$oppsum] in combat and lost! ".duration($gain)." is ".
+                  "added to $u\'s clock.");
         $rps{$u}{next} += $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
     }
@@ -1391,19 +1390,19 @@ sub team_battle { # pit three players against three other players
     my $myroll = int(rand($mysum));
     my $opproll = int(rand($oppsum));
     if ($myroll >= $opproll) {
-        chanmsg(clog("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
-                     "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
-                     "$oppsum] and won! ".duration($gain)." is removed from ".
-                     "their clocks."));
+        chanmsg_l("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
+                  "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
+                  "$oppsum] and won! ".duration($gain)." is removed from ".
+                  "their clocks.");
         $rps{$opp[0]}{next} -= $gain;
         $rps{$opp[1]}{next} -= $gain;
         $rps{$opp[2]}{next} -= $gain;
     }
     else {
-        chanmsg(clog("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
-                     "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
-                     "$oppsum] and lost! ".duration($gain)." is added to ".
-                     "their clocks."));
+        chanmsg_l("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
+                  "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
+                  "$oppsum] and lost! ".duration($gain)." is added to ".
+                  "their clocks.");
         $rps{$opp[0]}{next} += $gain;
         $rps{$opp[1]}{next} += $gain;
         $rps{$opp[2]}{next} += $gain;
@@ -1542,9 +1541,9 @@ sub moveplayers {
                 $allgo=0; # have not all reached p2 yet
             }
             elsif ($quest{stage} == 2 && $allgo) {
-                chanmsg(clog(join(", ",(@{$quest{questers}})[0..2]).", ".
-                             "and $quest{questers}->[3] have completed their ".
-                             "journey! 25% of their burden is eliminated."));
+                chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", ".
+                          "and $quest{questers}->[3] have completed their ".
+                          "journey! 25% of their burden is eliminated.");
                 for (@{$quest{questers}}) {
                     $rps{$_}{next} = int($rps{$_}{next} * .75);
                 }
@@ -1656,6 +1655,12 @@ sub chanmsg { # send a message to the channel
     my $msg = shift or return undef;
     if ($silentmode & 1) { return undef; }
     privmsg($msg, $opts{botchan}, shift);
+}
+
+sub chanmsg_l { # log to mod log, and send to chan
+    my $msg = shift or return undef;
+    clog($msg);
+    chanmsg($msg);
 }
 
 sub privmsg { # send a message to an arbitrary entity
@@ -1783,7 +1788,7 @@ sub modify_item($) {
         my $type = $items[$typeid];
         $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
-        chanmsg(clog($change));
+        chanmsg_l($change);
 
         my $suffix="";
         if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
@@ -1804,10 +1809,10 @@ sub modify_item($) {
             }
         }
         close(Q);
-        chanmsg(clog("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
-                     "This $timechange[$good] them ".
-                     duration($time)." $tofrom[$good] level ".
-                     ($rps{$player}{level}+1)."."));
+        chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
+                  "This $timechange[$good] them ".
+                  duration($time)." $tofrom[$good] level ".
+                  ($rps{$player}{level}+1).".");
         $rps{$player}{next} -= $time * ($_[0] <=> 0);
         chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
                 ".");
@@ -1868,12 +1873,12 @@ sub questpencheck {
     my ($quester,$player);
     for $quester (@{$quest{questers}}) {
         if ($quester eq $k) {
-            chanmsg(clog("$k\'s prudence and self-regard has brought the ".
-                         "wrath of the gods upon the realm. All your great ".
-                         "wickedness makes you as it were heavy with lead, ".
-                         "and to tend downwards with great weight and ".
-                         "pressure towards hell. Therefore have you drawn ".
-                         "yourselves 15 steps closer to that gaping maw."));
+            chanmsg_l("$k\'s prudence and self-regard has brought the ".
+                      "wrath of the gods upon the realm. All your great ".
+                      "wickedness makes you as it were heavy with lead, ".
+                      "and to tend downwards with great weight and ".
+                      "pressure towards hell. Therefore have you drawn ".
+                      "yourselves 15 steps closer to that gaping maw.");
             for $player (grep { $rps{$_}{online} } keys %rps) {
                 my $gain = int(15 * ($opts{rppenstep}**$rps{$player}{level}));
                 $rps{$player}{pen_quest} += $gain;
@@ -2017,15 +2022,15 @@ sub collision_fight {
         my $gain = int($rps{$opp}{level}/4);
         $gain = 7 if $gain < 7;
         $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                     "] and taken them in combat! ".duration($gain)." is ".
-                     "removed from $u\'s clock."));
+        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
+                  "] and taken them in combat! ".duration($gain)." is ".
+                  "removed from $u\'s clock.");
         $rps{$u}{next} -= $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
         if (rand(35) < 1 && $opp ne $primnick) {
             $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg(clog("$u has dealt $opp a Critical Strike! ".
-                         duration($gain)." is added to $opp\'s clock."));
+            chanmsg_l("$u has dealt $opp a Critical Strike! ".
+                      duration($gain)." is added to $opp\'s clock.");
             $rps{$opp}{next} += $gain;
             chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
                     ".");
@@ -2033,10 +2038,10 @@ sub collision_fight {
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
             my $type = $items[rand(@items)];
             if (int($rps{$opp}{item}{$type}) > int($rps{$u}{item}{$type})) {
-                chanmsg(clog("In the fierce battle, $opp dropped his level ".
-                             int($rps{$opp}{item}{$type})." $type! $u picks it up, ".
-                             "tossing his old level ".int($rps{$u}{item}{$type}).
-                             " $type to $opp."));
+                chanmsg_l("In the fierce battle, $opp dropped his level ".
+                          int($rps{$opp}{item}{$type})." $type! $u picks it up, ".
+                          "tossing his old level ".int($rps{$u}{item}{$type}).
+                          " $type to $opp.");
                 my $tempitem = $rps{$u}{item}{$type};
                 $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
                 $rps{$opp}{item}{$type} = $tempitem;
@@ -2047,9 +2052,9 @@ sub collision_fight {
         my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
         $gain = 7 if $gain < 7;
         $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                     "] and been defeated in combat! ".duration($gain)." is ".
-                     "added to $u\'s clock."));
+        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
+                  "] and been defeated in combat! ".duration($gain)." is ".
+                  "added to $u\'s clock.");
         $rps{$u}{next} += $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
     }
@@ -2097,10 +2102,10 @@ sub goodness {
     return unless @players > 1;
     splice(@players,int(rand(@players)),1) while @players > 2;
     my $gain = 5 + int(rand(8));
-    chanmsg(clog("$players[0] and $players[1] have not let the iniquities of ".
-                 "evil men poison them. Together have they prayed to their ".
-                 "god, and it is his light that now shines upon them. $gain\% ".
-                 "of their time is removed from their clocks."));
+    chanmsg_l("$players[0] and $players[1] have not let the iniquities of ".
+              "evil men poison them. Together have they prayed to their ".
+              "god, and it is his light that now shines upon them. $gain\% ".
+              "of their time is removed from their clocks.");
     $rps{$players[0]}{next} = int($rps{$players[0]}{next}*(1 - ($gain/100)));
     $rps{$players[1]}{next} = int($rps{$players[1]}{next}*(1 - ($gain/100)));
     chanmsg("$players[0] reaches next level in ".
@@ -2125,11 +2130,11 @@ sub evilness {
             my $tempitem = $rps{$me}{item}{$type};
             $rps{$me}{item}{$type} = $rps{$target}{item}{$type};
             $rps{$target}{item}{$type} = $tempitem;
-            chanmsg(clog("$me stole $target\'s level ".
-                         int($rps{$me}{item}{$type})." $type while they were ".
-                         "sleeping! $me leaves his old level ".
-                         int($rps{$target}{item}{$type})." $type behind, ".
-                         "which $target then takes."));
+            chanmsg_l("$me stole $target\'s level ".
+                      int($rps{$me}{item}{$type})." $type while they were ".
+                      "sleeping! $me leaves his old level ".
+                      int($rps{$target}{item}{$type})." $type behind, ".
+                      "which $target then takes.");
         }
         else {
             notice("You made to steal $target\'s $type, but realized it was ".
@@ -2139,9 +2144,9 @@ sub evilness {
     }
     else { # being evil only pays about half of the time...
         my $gain = 1 + int(rand(5));
-        chanmsg(clog("$me is forsaken by his evil god. ".
-                     duration(int($rps{$me}{next} * ($gain/100)))." is added ".
-                     "to his clock."));
+        chanmsg_l("$me is forsaken by his evil god. ".
+                  duration(int($rps{$me}{next} * ($gain/100)))." is added ".
+                  "to his clock.");
         $rps{$me}{next} = int($rps{$me}{next} * (1 + ($gain/100)));
         chanmsg("$me reaches next level in ".duration($rps{$me}{next}).".");
     }
