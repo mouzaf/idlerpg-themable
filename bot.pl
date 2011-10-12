@@ -759,6 +759,18 @@ sub parse {
                     privmsg("You are not logged in.", $usernick);
                 }
             }
+            elsif ($arg[3] eq "newquest") {
+                if (!ha($username)) {
+                    privmsg("You don't have access to NEWQUEST.", $usernick);
+                }
+                elsif(@{$quest{questers}}) {
+                    privmsg("There is already a quest.",$usernick);
+                }
+                else {
+                    privmsg("A new quest will start shortly.",$usernick);
+                    $quest{qtime} = time(); # schedule it for now
+                }
+            }
             elsif ($arg[3] eq "quest") {
                 if (!@{$quest{questers}}) {
                     privmsg("There is no active quest.",$usernick);
