@@ -1760,6 +1760,11 @@ sub rewrite_event($$$) {
     $s =~ s/%(he|she|they)%/they($p)/eg;
     $s =~ s/%(his|her|their)%/their($p)/eg;
     $s =~ s/%(him|her|them)%/them($p)/eg;
+    while($s =~ m/%{(.*?)}%/) {
+        my ($start, $end)=($-[0], $+[0]);
+        my @list=split(/\|/, $1);
+        substr($s,$start,$end-$start) = $list[int(rand(@list))];
+    }
     return $s;
 }
 
