@@ -1519,21 +1519,9 @@ sub moveplayers {
         my %positions = ();
         if ($quest{type} == 2 && @{$quest{questers}}) {
             my $allgo = 1; # have all users reached <p1|p2>?
+            my ($x,$y) = @{$quest{"p$quest{stage}"}};
             for (@{$quest{questers}}) {
-                if ($quest{stage}==1) {
-                    if ($rps{$_}{x} != $quest{p1}->[0] ||
-                        $rps{$_}{y} != $quest{p1}->[1]) {
-                        $allgo=0;
-                        last();
-                    }
-                }
-                else {
-                    if ($rps{$_}{x} != $quest{p2}->[0] ||
-                        $rps{$_}{y} != $quest{p2}->[1]) {
-                        $allgo=0;
-                        last();
-                    }
-                }
+                if ($rps{$_}{x} != $x || $rps{$_}{y} != $y) { $allgo=0; last; }
             }
             # all participants have reached point 1, now point 2
             if ($quest{stage}==1 && $allgo) {
@@ -1587,29 +1575,9 @@ sub moveplayers {
                     }
                 }
                 for (@{$quest{questers}}) {
-                    if ($quest{stage} == 1) {
-                        if (rand(100) < 1) {
-                            if ($rps{$_}{x} != $quest{p1}->[0]) {
-                                $rps{$_}{x} += ($rps{$_}{x} < $quest{p1}->[0] ?
-                                                1 : -1);
-                            }
-                            if ($rps{$_}{y} != $quest{p1}->[1]) {
-                                $rps{$_}{y} += ($rps{$_}{y} < $quest{p1}->[1] ?
-                                                1 : -1);
-                            }
-                        }
-                    }
-                    elsif ($quest{stage}==2) {
-                        if (rand(100) < 1) {
-                            if ($rps{$_}{x} != $quest{p2}->[0]) {
-                                $rps{$_}{x} += ($rps{$_}{x} < $quest{p2}->[0] ?
-                                                1 : -1);
-                            }
-                            if ($rps{$_}{y} != $quest{p2}->[1]) {
-                                $rps{$_}{y} += ($rps{$_}{y} < $quest{p2}->[1] ?
-                                                1 : -1);
-                            }
-                        }
+                    if (rand(100) < 1) {
+                        $rps{$_}{x} += ($x <=> $rps{$_}{x});
+                        $rps{$_}{y} += ($y <=> $rps{$_}{y});
                     }
                 }
             }
