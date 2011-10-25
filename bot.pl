@@ -1576,8 +1576,13 @@ sub moveplayers {
                 }
                 for (@{$quest{questers}}) {
                     if (rand(100) < 1) {
-                        $rps{$_}{x} += ($x <=> $rps{$_}{x});
-                        $rps{$_}{y} += ($y <=> $rps{$_}{y});
+                        my ($dx,$dy) = ($x-$rps{$_}{x}, $y-$rps{$_}{y});
+                        if(rand(abs($dy))<abs($dx)) {
+                            $rps{$_}{x} += ($x <=> $rps{$_}{x});
+                        }
+                        if(rand(abs($dx))<abs($dy)) {
+                            $rps{$_}{y} += ($y <=> $rps{$_}{y});
+                        }
                     }
                 }
             }
