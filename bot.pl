@@ -1200,8 +1200,9 @@ sub hog { # summon the hand of god
     my @players = grep { $rps{$_}{online} } keys(%rps);
     my $player = $players[rand(@players)];
     my $win = !!int(rand(5));
-    my $time = int(((5 + int(rand(71)))/100) * $rps{$player}{next});
-    my $event = get_event($win?'W':'L', $player);
+    my $rand = rand();
+    my $time = int(((5 + int($rand*71))/100) * $rps{$player}{next});
+    my $event = get_event($win?'W':'L', $player, $rand);
     chanmsg_l("$event ".duration($time)." $tofrom[$win] level ".
               ($rps{$player}{level}+1).".");
     $rps{$player}{next} += $win ? -$time : $time;
@@ -1767,15 +1768,25 @@ sub daemonize() {
 }
 
 sub rewrite_event($$$) {
-    my ($s,$p)=@_;
+    my ($s,$p,$r)=@_;
     $s =~ s/%player%/$p/g;
     $s =~ s/%(he|she|they)%/they($p)/eg;
     $s =~ s/%(his|her|their)%/their($p)/eg;
     $s =~ s/%(him|her|them)%/them($p)/eg;
     while($s =~ m/%{(.*?)}%/) {
         my ($start, $end)=($-[0], $+[0]);
-        my @list=split(/\|/, $1);
-        substr($s,$start,$end-$start) = $list[int(rand(@list))];
+        my $len=$end-$start;
+        if(index($1,'|')>=0 or index($1,'#')<0) {
+            my @list=split(/\|/, $1);
+            substr($s,$start,$len) = $list[int(rand(@list))];
+        } elsif($1 =~ m/^([\d.]+)\#(?:([-+])([\d.]+))?\#([\d.]+)$/) {
+            my $step = $3 ? $3 * ($2 eq '-'?-1:1) : 1;
+            my $numsteps = int(($4-$1)/$step)+1;
+            substr($s,$start,$len) = $1+int($r*$numsteps)*$step;
+        } else {
+            debug("No choice in macro ". substr($s,$start,$end));
+            substr($s,$start,$len) = substr($s,$start+2,$end-2);
+        }
     }
     return $s;
 }
@@ -1794,7 +1805,7 @@ sub modify_item($) {
             $typeid = $fragileitems[rand(@fragileitems)];
             $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
         }
-        $change = rewrite_event($change, $player);
+        $change = rewrite_event($change, $player, undef); # random number not used currently
         my $type = $items[$typeid];
         $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
@@ -1806,8 +1817,9 @@ sub modify_item($) {
         $rps{$player}{item}[$typeid].=$suffix;
     }
     else {
-        my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        my $actioned = get_event($good?'G':'C', $player);
+        my $rand = rand();
+        my $time = int(int(5 + $rand*8) / 100 * $rps{$player}{next});
+        my $actioned = get_event($good?'G':'C', $player, $rand);
         chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
                   "This $timechange[$good] ".them($player)." ".
                   duration($time)." $tofrom[$good] level ".
@@ -2282,8 +2294,8 @@ sub read_events {
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
 }
 
-sub get_event($$) {
-    return rewrite_event($events{$_[0]}[int(rand(@{$events{$_[0]}}))], $_[1]);
+sub get_event($$$) {
+    return rewrite_event($events{$_[0]}[int(rand(@{$events{$_[0]}}))], $_[1], $_[2]);
 }
 sub get_quest($) {
     return $quests[int(rand(scalar(@quests)))];
