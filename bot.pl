@@ -1419,8 +1419,6 @@ sub unique_notice($$$) {
 
 sub find_item { # find item for argument player
     my $u = shift;
-    my $typeid = int(rand(@items));
-    my $type = $items[$typeid];
     my $level = 1;
     my $ulevel;
     for my $num (1 .. int($rps{$u}{level}*1.5)) {
@@ -1441,6 +1439,9 @@ sub find_item { # find item for argument player
             }
         }
     }
+
+    my $typeid = int(rand(@items));
+    my $type = $items[$typeid];
     if ($level > int($rps{$u}{item}[$typeid])) {
         notice("You found a level $level $type! Your current $type is only ".
                "level ".int($rps{$u}{item}[$typeid]).", so it seems Luck is ".
