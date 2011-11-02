@@ -1049,6 +1049,18 @@ sub parse {
                     }
                 }
             }
+            elsif ($arg[3] eq 'itemlevel') { # debugging aid
+                if($arg[4]<0 or $arg[4]>$#items) {
+                    notice("0 <= item <= $#items", $usernick);
+                }
+                elsif($arg[5] !~ m/^\d\d?\d?/) {
+                    notice("0 <= level <= 999", $usernick); 
+                }
+                else { 
+                    notice("itemlevel($arg[4],$arg[5]) = A ".item_level($arg[4],$arg[5])." $items[$arg[4]]", 
+                           $usernick); 
+                }
+            }
         }
         # penalize returns true if user was online and successfully penalized.
         # if the user is not logged in, then penalize() fails. so, if user is
