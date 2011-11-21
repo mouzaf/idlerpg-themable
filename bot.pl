@@ -142,15 +142,17 @@ my %quest = (
 my $rpreport = 0; # constant for reporting top players
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
-my @bans; # bans auto-set by the bot, saved to be removed after 1 hour
 my $pausemode = 0; # pausemode on/off flag
 my $silentmode = 0; # silent mode 0/1/2/3, see head of file
-my @queue; # outgoing message queue
 my $lastreg = 0; # holds the time of the last reg. cleared every second.
                  # prevents more than one account being registered / second
 my $registrations = 0; # count of registrations this period
-my $sel; # IO::Select object
 my $lasttime = 1; # last time that rpcheck() was run
+
+# each of these is server-specific
+my @bans; # bans auto-set by the bot, saved to be removed after 1 hour
+my @queue; # outgoing message queue
+my $sel; # IO::Select object
 my $buffer; # buffer for socket stuff
 my $conn_tries = 0; # number of connection tries. gives up after trying each
                     # server twice
