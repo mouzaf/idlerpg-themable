@@ -1172,6 +1172,15 @@ sub item_level {
             $marker = ($op eq '+') ? $marker+$delta 
                 : ($op eq '-') ? $marker-$delta 
                 : $marker*$delta;
+            # Ensure accuracy is sensibly represented at every step, 
+            # as we need to check our bounds correctly, and don't
+            # want errors to accumulate.
+            my $point;
+            if(($point = index($delta,'.'))>=0) {
+                my $prec=length($delta)-$point-1;
+                $marker=sprintf("%.${prec}f", $marker);
+                #debug("$marker -> $fix {$delta, $point, $prec)");
+            }
             if(defined($marklast) && 
                (($op eq '-') ? $marker<=$marklast : $marker>=$marklast)) {
                 undef($op); 
