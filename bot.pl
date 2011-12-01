@@ -2201,6 +2201,7 @@ sub evilness {
         # evil only steals from good :^(
         my @good = grep { $rps{$_}{alignment} eq "g" &&
                           $rps{$_}{online} } keys(%rps);
+        return unless @good;
         my $target = $good[rand(@good)];
         my @items = ("ring","amulet","charm","weapon","helm","tunic",
                      "pair of gloves","set of leggings","shield",
