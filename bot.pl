@@ -1420,7 +1420,8 @@ sub find_item { # find item for argument player
             my $utypeid = $uniq->{typeid};
             if ($ulevel >= $level && $ulevel > int($rps{$u}{item}[$utypeid])) {
                 my $notice=unique_notice($uniq->{desc}, $ulevel, $rps{$u}{nick});
-                notice($notice, $rps{$u}{nick});
+                notice($notice,$rps{$u}{nick});
+                clog($notice);
                 $rps{$u}{item}[$utypeid] = "$ulevel$uniq->{suffix}";
                 return;
             }
@@ -1430,10 +1431,12 @@ sub find_item { # find item for argument player
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
     if ($level > int($rps{$u}{item}[$typeid])) {
-        notice("You found a ".item_level($typeid,$level).
-               " $type! Your current $type is only ".
-               item_level($typeid,int($rps{$u}{item}[$typeid])).
-               ", so it seems Luck is with you!",$rps{$u}{nick});
+        my $notice = "You found a ".item_level($typeid,$level).
+                     " $type! Your current $type is only ".
+                     item_level($typeid,int($rps{$u}{item}[$typeid])).
+                     ", so it seems Luck is with you!";
+        notice($notice,$rps{$u}{nick});
+        clog($notice);
         $rps{$u}{item}[$typeid] = $level;
     }
     else {
