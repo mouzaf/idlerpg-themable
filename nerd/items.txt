@@ -30,3 +30,4 @@ item9: n="coffee machine" c=" got demoted to the basement with a crappier coffee
 unique: u=25 b=50 r=25 t=0 s=a d="Peter 'p2' overclocked low-power multi-core NVidia graphics card. Your enemies get headaches just looking at their own poor refresh rate."
 unique: u=30 b=75 r=25 t=8 s=b d="Linus's final bug-free Ready for the Desktop version of linux. Your enemies do the three fingered salute in awe."
 unique: u=35 b=100 r=30 t=6 s=c d="Deathstation 3000 processor. Your rivals simply cannot compile their code for your platform."
+unique: u=40 b=120 r=45 t=4 s=d d="Ray Kurzweil's direct retinal holoprojection unit. Your enemies look on in confusion as you stare into space apparently at nothing."
