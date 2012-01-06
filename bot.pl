@@ -1254,7 +1254,7 @@ sub rpcheck { # check levels, update database
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
     if ($rpreport%120==0 && $opts{writequestfile}) { writequestfile(); }
-    if (time() > $quest{qtime}) {
+    if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
             chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", and ".
