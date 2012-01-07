@@ -1578,6 +1578,17 @@ sub moveplayers {
                 writequestfile();
             }
             else {
+                for (@{$quest{questers}}) {
+                    if (rand(100) < 1) {
+                        my ($dx,$dy) = ($x-$rps{$_}{x}, $y-$rps{$_}{y});
+                        if(rand(abs($dy))<abs($dx)) {
+                            $rps{$_}{x} += ($x <=> $rps{$_}{x});
+                        }
+                        if(rand(abs($dx))<abs($dy)) {
+                            $rps{$_}{y} += ($y <=> $rps{$_}{y});
+                        }
+                    }
+                }
                 my(%temp,$player);
                 # load keys of %temp with online users
                 ++@temp{grep { $rps{$_}{online} } keys(%rps)};
@@ -1609,17 +1620,6 @@ sub moveplayers {
                     else {
                         $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
                         $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
-                    }
-                }
-                for (@{$quest{questers}}) {
-                    if (rand(100) < 1) {
-                        my ($dx,$dy) = ($x-$rps{$_}{x}, $y-$rps{$_}{y});
-                        if(rand(abs($dy))<abs($dx)) {
-                            $rps{$_}{x} += ($x <=> $rps{$_}{x});
-                        }
-                        if(rand(abs($dx))<abs($dy)) {
-                            $rps{$_}{y} += ($y <=> $rps{$_}{y});
-                        }
                     }
                 }
             }
