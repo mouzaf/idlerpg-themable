@@ -1582,6 +1582,10 @@ sub moveplayers {
                         }
                     }
                 }
+            }
+
+            # Always move other players indepenently of what questers are doing
+            if (1) {
                 my(%temp,$player);
                 # load keys of %temp with online users
                 ++@temp{grep { $rps{$_}{online} } keys(%rps)};
