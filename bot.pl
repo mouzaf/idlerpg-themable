@@ -1547,10 +1547,11 @@ sub moveplayers {
     for (my $i=0;$i<$opts{self_clock};++$i) {
         # temporary hash to hold player positions, detect collisions
         my %positions = ();
-        if ($quest{type} == 2 && @{$quest{questers}}) {
+        my @questers = ();
+        if ($quest{type} == 2 && (@questers = @{$quest{questers}})) {
             my $allgo = 1; # have all users reached <p1|p2>?
             my ($x,$y) = @{$quest{"p$quest{stage}"}};
-            for (@{$quest{questers}}) {
+            for (@questers) {
                 if ($rps{$_}{x} != $x || $rps{$_}{y} != $y) { $allgo=0; last; }
             }
             # all participants have reached point 1, now point 2
@@ -1559,10 +1560,10 @@ sub moveplayers {
                 writequestfile();
             }
             elsif ($quest{stage} == 2 && $allgo) {
-                chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", ".
-                          "and $quest{questers}->[3] have completed their ".
+                chanmsg_l(join(", ",(@questers)[0..2]).", ".
+                          "and $questers[3] have completed their ".
                           "journey! 25% of their burden is eliminated.");
-                for (@{$quest{questers}}) {
+                for (@questers) {
                     $rps{$_}{next} = int($rps{$_}{next} * .75);
                 }
                 undef(@{$quest{questers}});
@@ -1571,7 +1572,7 @@ sub moveplayers {
                 writequestfile();
             }
             else {
-                for (@{$quest{questers}}) {
+                for (@questers) {
                     if (rand(100) < 1) {
                         my ($dx,$dy) = ($x-$rps{$_}{x}, $y-$rps{$_}{y});
                         if(rand(abs($dy))<abs($dx)) {
@@ -1590,7 +1591,7 @@ sub moveplayers {
                 # load keys of %temp with online users
                 ++@temp{grep { $rps{$_}{online} } keys(%rps)};
                 # delete questers from list
-                delete(@temp{@{$quest{questers}}});
+                delete(@temp{@questers});
                 while ($player = each(%temp)) {
                     $rps{$player}{x} += int(rand(3))-1;
                     $rps{$player}{y} += int(rand(3))-1;
