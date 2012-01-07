@@ -1575,7 +1575,8 @@ sub movesomeplayers(@) {
 
 sub moveplayers {
     return unless $lasttime > 1;
-    my $onlinecount = grep { $rps{$_}{online} } keys %rps;
+    my @online = grep { $rps{$_}{online} } keys %rps;
+    my $onlinecount = scalar(@online);
     return unless $onlinecount;
     for (my $i=0;$i<$opts{self_clock};++$i) {
         # temporary hash to hold player positions, detect collisions
@@ -1621,7 +1622,7 @@ sub moveplayers {
             if (1) {
                 my %temp;
                 # load keys of %temp with online users
-                ++@temp{grep { $rps{$_}{online} } keys(%rps)};
+                ++@temp{@online};
                 # delete questers from list
                 delete(@temp{@questers});
                 movesomeplayers(keys(%temp));
