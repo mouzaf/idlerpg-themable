@@ -1057,7 +1057,7 @@ sub parse {
                     notice("0 <= level <= 999", $usernick); 
                 }
                 else { 
-                    notice("itemlevel($arg[4],$arg[5]) = A ".item_level($arg[4],$arg[5])." $items[$arg[4]]", 
+                    notice("itemlevel($arg[4],$arg[5]) = ".item_level($arg[4],$arg[5],'A')." $items[$arg[4]]", 
                            $usernick); 
                 }
             }
@@ -1145,9 +1145,9 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
-sub item_level($$) {
-    my $typeid=$_[0];
-    if(!defined($levels[$typeid])) { return "level $_[1]"; }
+sub item_level {
+    my ($typeid,$article) = ($_[0], ($_[2]?"$_[2] ":''));
+    if(!defined($levels[$typeid])) { return "${article}level $_[1]"; }
     my ($lev,$ind)=(-1,-1);
     my ($marker,$op,$delta,$marklast);
     while($lev<$_[1]) {
@@ -1171,6 +1171,7 @@ sub item_level($$) {
         }
     }
     my $template = $levels[$typeid][$ind];
+    if($template !~ s/^!a // and $article) { $template = $article . $template; }
     if(defined($marker)) {
         $template =~ s/%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/$marker/;
     }
@@ -1443,7 +1444,7 @@ sub find_item { # find item for argument player
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
     if ($level > int($rps{$u}{item}[$typeid])) {
-        my $notice = "You found a ".item_level($typeid,$level).
+        my $notice = "You found ".item_level($typeid,$level,'a').
                      " $type! Your current $type is only ".
                      item_level($typeid,int($rps{$u}{item}[$typeid])).
                      ", so it seems Luck is with you!";
@@ -1452,7 +1453,7 @@ sub find_item { # find item for argument player
         $rps{$u}{item}[$typeid] = $level;
     }
     else {
-        notice("You found a ".item_level($typeid,$level).
+        notice("You found ".item_level($typeid,$level,'a').
                " $type. Your current $type is ".
                item_level($typeid,int($rps{$u}{item}[$typeid])).
                ", so it seems Luck is against you. ".
