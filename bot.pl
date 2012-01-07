@@ -1540,13 +1540,45 @@ sub loaddb { # load the players database
           scalar(keys(%prev_online))." previously online.");
 }
 
+sub movesomeplayers(@) {
+    my @temp=@_;
+    my %positions = ();
+    for my $player (@temp) {
+        $rps{$player}{x} += int(rand(3))-1;
+        $rps{$player}{y} += int(rand(3))-1;
+        # if player goes over edge, wrap them back around
+        if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x} = 0; }
+        if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y} = 0; }
+        if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}; }
+        if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}; }
+
+        if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
+            !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
+            if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
+                !$rps{$player}{isadmin} && rand(100) < 1) {
+                chanmsg("$player encounters ".
+                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
+                        " and bows humbly.");
+            }
+            if (rand(@temp) < 1) {
+                $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
+                collision_fight($player,
+                                $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
+            }
+        }
+        else {
+            $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
+            $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
+        }
+    }
+}
+
 sub moveplayers {
     return unless $lasttime > 1;
     my $onlinecount = grep { $rps{$_}{online} } keys %rps;
     return unless $onlinecount;
     for (my $i=0;$i<$opts{self_clock};++$i) {
         # temporary hash to hold player positions, detect collisions
-        my %positions = ();
         my @questers = ();
         if ($quest{type} == 2 && (@questers = @{$quest{questers}})) {
             my $allgo = 1; # have all users reached <p1|p2>?
@@ -1587,70 +1619,16 @@ sub moveplayers {
 
             # Always move other players indepenently of what questers are doing
             if (1) {
-                my(%temp,$player);
+                my %temp;
                 # load keys of %temp with online users
                 ++@temp{grep { $rps{$_}{online} } keys(%rps)};
                 # delete questers from list
                 delete(@temp{@questers});
-                while ($player = each(%temp)) {
-                    $rps{$player}{x} += int(rand(3))-1;
-                    $rps{$player}{y} += int(rand(3))-1;
-                    # if player goes over edge, wrap them back around
-                    if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x}=0; }
-                    if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y}=0; }
-                    if ($rps{$player}{x} < 0) { $rps{$player}{x}=$opts{mapx}; }
-                    if ($rps{$player}{y} < 0) { $rps{$player}{y}=$opts{mapy}; }
-
-                    if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
-                        !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
-                        if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
-                            !$rps{$player}{isadmin} && rand(100) < 1) {
-                            chanmsg("$player encounters ".
-                               $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
-                                    " and bows humbly.");
-                        }
-                        if (rand($onlinecount) < 1) {
-                            $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
-                            collision_fight($player,
-                                $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
-                        }
-                    }
-                    else {
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
-                    }
-                }
+                movesomeplayers(keys(%temp));
             }
         }
         else {
-            for my $player (keys(%rps)) {
-                next unless $rps{$player}{online};
-                $rps{$player}{x} += int(rand(3))-1;
-                $rps{$player}{y} += int(rand(3))-1;
-                # if player goes over edge, wrap them back around
-                if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x} = 0; }
-                if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y} = 0; }
-                if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}; }
-                if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}; }
-                if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
-                    !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
-                    if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
-                        !$rps{$player}{isadmin} && rand(100) < 1) {
-                        chanmsg("$player encounters ".
-                           $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
-                                " and bows humbly.");
-                    }
-                    if (rand($onlinecount) < 1) {
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
-                        collision_fight($player,
-                            $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
-                    }
-                }
-                else {
-                    $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
-                    $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
-                }
-            }
+            movesomeplayers(grep { $rps{$_}{online} } keys(%rps));
         }
     }
 }
