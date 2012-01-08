@@ -130,14 +130,7 @@ my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
 my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
-my %quest = (
-    questers => [],
-    p1 => [], # point 1 for q2
-    p2 => [], # point 2 for q2
-    qtime => time() + int(rand(21600)), # first quest starts in <=6 hours
-    text => "",
-    type => 1,
-    stage => 1); # quest info
+my %quest = restorequest();
 
 my @junk = (); # [ time of junking, type, value+suffix, alignment ]
 
@@ -1563,7 +1556,7 @@ sub moveplayers {
             # all participants have reached point 1, now point 2
             if ($quest{stage}==1 && $allgo) {
                 $quest{stage}=2;
-                $allgo=0; # have not all reached p2 yet
+                writequestfile();
             }
             elsif ($quest{stage} == 2 && $allgo) {
                 chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", ".
@@ -2069,6 +2062,30 @@ sub collision_fight {
         $rps{$u}{next} += $gain;
         chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
     }
+}
+
+sub restorequest {
+    my %questdef = (
+                    questers => [],
+                    p1 => [], # point 1 for q2
+                    p2 => [], # point 2 for q2
+                    qtime => time() + int(rand(21600)), # first quest starts in <=6 hours
+                    text => "",
+                    type => 1,
+                    stage => 1); # quest info
+    return %questdef unless ($opts{writequestfile} and open(QF, "<$opts{writequestfile}"));
+    my $type;
+    while(<QF>) {
+        if(m/^T (.*?)\s*$/) { $questdef{text} = $1; }
+        elsif(m/^Y ([12])\s*$/) { $type = $questdef{type} = int($1); }
+        elsif(m/^S (\d+)\s*$/) { $questdef{$type==1?'qtime':'stage'} = int($1); }
+        elsif($type==2 and m/^P (\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/) 
+        { $questdef{p1}=[$1,$2]; $questdef{p2}=[$3,$4]; }
+        elsif(m/^P(\d) (\S+)/) { $questdef{questers}->[$1] = $2; }
+        else { debug("Unknown line in questfile $opts{writequestfile}: $_"); }
+    }
+    close(QF);
+    return %questdef;
 }
 
 sub writequestfile {
