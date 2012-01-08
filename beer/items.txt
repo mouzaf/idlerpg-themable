@@ -1,0 +1,40 @@
+# The grammer of some of these is fucked, and requires changes to the bot
+
+item0: n="ice-distilled beer"
+levels0: %{12.0#+.1}%% ABV
+
+item1: n="gueuze"
+levels1: fresh, %{1#+1}% year old vintage
+
+item2: n="IIPA"
+levels2: %{40#+1}% IBU
+
+item3: n="brewing vessel"
+levels3: %{2#+1#8}%-litre, %{10#+5#50}%-litre, %{60#+20#200}%-litre, %{250#+50#1000}%-litre, %{12#+2}%-hectolitre
+
+item4: n="cellar"
+levels4: empty, %{20#+10#200}%-bottle, %{220#+20#600}%-bottle, %{650#+50}%-bottle
+
+item5: n="tasting glass"
+levels5: 1 litre, %{950#-50#600}%ml, 1 pint, half litre, %{480#-20#360}%ml, 355ml, %{330#-10#270}%ml, half pint, %{250#-10#190}%ml, third pint, %{185#-5#70}%ml, %{68#-2#20}%ml, %{19#-1#2}%ml, %{1#-0}%ml
+
+item6: n="ratings notebook"
+levels6: %{5#+1}%-page
+
+# These are totally fucked
+#item7: n="place reviews"
+#levels7: !a %{0#+1}%
+#
+#item8: n="country ticks"
+#levels8: !a %{0#+1}%
+#
+#item9: n="Westvleteren 12"
+#levels9: !a %{0#+1}% bottles of
+
+# unique items - order is important, as they're tested for in turn
+unique: u=15 b=30 r=60 t=6 s=a d="Oh6gdx's book of corny poops"
+unique: u=20 b=40 r=80 t=2 s=b d="Mikkeller's raw hop extract"
+unique: u=20 b=50 r=100 t=4 s=f d="BeerSommelier's underground cellar"
+unique: u=25 b=70 r=150 t=1 s=c d="shipwrecked bottle of beer from Aland"
+unique: u=40 b=100 r=200 t=5 s=e d="Kim Johansen's tasting thimble"
+unique: u=40 b=150 r=250 t=0 s=d d="Brewdog/Struise/Schorgruber collaboration Imperial Eis-rocket-fuel"
