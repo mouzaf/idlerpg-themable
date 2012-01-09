@@ -1485,21 +1485,58 @@ sub loaddb { # load the players database
     backup();
     my $l;
     %rps = ();
+    my $style; # 0=old, 1=new with "[ items ]"
+    my $fieldcount=10;
     if (!open(RPS,$opts{dbfile}) && -e $opts{dbfile}) {
         sts("QUIT :loaddb() failed: $!");
     }
     while ($l=<RPS>) {
         chomp($l);
-        next if $l =~ /^#/; # skip comments
-        my @i = split("\t",$l);
-        if (@i == 32) { push(@i, "u"); } # default gender for old save files
-        if (@i != 33) {
-            print Dumper(@i);
-            sts("QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
-                "wrong fields (".scalar(@i).")");
-            debug("Anomaly in loaddb(); line $. of $opts{dbfile} has wrong ".
-                "fields (".scalar(@i).")",1);
+        # work out if it's old style or new style
+        if(!$style) { 
+            if($l =~ s/\[\s+([\da-z\t]*?)\s+\]\s+//) {
+                my @dbitems=split(/\t/, $1);
+                $fieldcount=@dbitems;
+                debug("INFO: new style with $fieldcount items 0..$#dbitems");
+                if($fieldcount != @items) {
+                    debug("ERROR: db's items 0..$#dbitems differs from our 0..$#items");
+                }
+                $style=1;
+            }
         }
+        next if $l =~ /^#/; # skip comments
+
+        my @dbitems;
+        my @i;
+        my $err;
+        if($style == 1) {
+            if($l !~ s/\[\s+([\da-z\t]*?)\s+\]\s+//) {
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has missing [] section";
+                goto bail_loaddb;
+            }
+            @dbitems = split("\t", $1);
+            if(@dbitems != $fieldcount) {
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} wrong [$fieldcount] section = '$1'";
+                goto bail_loaddb;
+            }
+            @i = split("\t", $l);
+            if(@i != 23) { # was 33 when we had 10 items
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} wrong default section";
+                goto bail_loaddb;
+            }
+        } else {
+            my @i = split("\t",$l);
+            if(@i == 32) { push(@i, "u"); }
+            elsif (@i != 33) { 
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
+                    "wrong fields (".scalar(@i).")";
+                goto bail_loaddb;
+            }
+            @dbitems = splice(@i,21,10);
+        }
+
+        # Now we have the item fields and the other fields separated from
+        # each other, we can stick them in our internal hash.
         if (!$sock) { # if not RELOADDB
             if ($i[8]) { $prev_online{$i[7]}=$i[0]; $i[8]=0; } # log back in
         }
@@ -1523,18 +1560,19 @@ sub loaddb { # load the players database
         $rps{$i[0]}{pen_logout},
         $rps{$i[0]}{created},
         $rps{$i[0]}{lastlogin},
-        $rps{$i[0]}{item}[0],
-        $rps{$i[0]}{item}[1],
-        $rps{$i[0]}{item}[2],
-        $rps{$i[0]}{item}[3],
-        $rps{$i[0]}{item}[4],
-        $rps{$i[0]}{item}[5],
-        $rps{$i[0]}{item}[6],
-        $rps{$i[0]}{item}[7],
-        $rps{$i[0]}{item}[8],
-        $rps{$i[0]}{item}[9],
         $rps{$i[0]}{alignment},
-        $rps{$i[0]}{gender}) = @i[1..32];
+        $rps{$i[0]}{gender}) = @i[1..22];
+
+        # @dbitems may be too long or too short. if too long, they're 
+        # remembered until the next save, and then not written out.
+        # if too short (new items have appeared), then undef stands in
+        # for 0, and hopefully the warnings aren't too noisy.
+        $rps{$i[0]}{item} = [splice(@dbitems,0,@items)];
+        next;
+
+bail_loaddb:
+        sts($err);
+        debug($err,1);
     }
     close(RPS);
     debug("loaddb(): loaded ".scalar(keys(%rps))." accounts, ".
@@ -2202,16 +2240,9 @@ sub writedb {
                         "pen_logout",
                         "created",
                         "last login",
-                        "item0",
-                        "item1",
-                        "item2",
-                        "item3",
-                        "item4",
-                        "item5",
-                        "item6",
-                        "item7",
-                        "item8",
-                        "item9",
+                   "[",
+                   (map { "item$_"; } (0..$#items)),
+                   "]",
                         "alignment",
                         "gender")."\n";
     my $k;
@@ -2239,16 +2270,9 @@ sub writedb {
                                 $rps{$k}{pen_logout},
                                 $rps{$k}{created},
                                 $rps{$k}{lastlogin},
-                                $rps{$k}{item}[0],
-                                $rps{$k}{item}[1],
-                                $rps{$k}{item}[2],
-                                $rps{$k}{item}[3],
-                                $rps{$k}{item}[4],
-                                $rps{$k}{item}[5],
-                                $rps{$k}{item}[6],
-                                $rps{$k}{item}[7],
-                                $rps{$k}{item}[8],
-                                $rps{$k}{item}[9],
+                           "[",
+                           @{$rps{$k}{item}},
+                           "]",
                                 $rps{$k}{alignment},
                                 $rps{$k}{gender})."\n";
         }
@@ -2330,7 +2354,7 @@ sub read_items {
         debug("Failed to open items file $fn: $!",1);
     };
     @items=@levels=@calamity=@godsend=@uniques=@fragileitems = ();
-    my ($got, $gotu)=(0,0);
+    my ($got, $ngot, $gotu)=(0,0,0);
     my ($line,$ix,$key,$val);
     while($line=<IF>) {
         next if $line =~ /^#/; # skip comments
@@ -2339,16 +2363,16 @@ sub read_items {
         if($line =~ s/^item(\d):\s*//) {
             my $typeid=int($1);
             if($got>>$typeid & 1 and $line =~ m/n=/) {
-                debug("Already have item$typeid = $items[$typeid]",0);
+                debug("Already have item$typeid = $items[$typeid]",1);
             }
             my $corg=0;
             while($line =~ s/([ncg])="([^\"]*)"\s+// or
                   $line =~ s/([ncg])=(\w+)\s+//) {
-                if($1 eq 'n') { $items[$typeid] = $2; $got|=1<<$typeid; }
+                if($1 eq 'n') { $items[$typeid] = $2; $got|=1<<$typeid; ++$ngot; }
                 elsif($1 eq 'c') { $calamity[$typeid] = $2; $corg=1; }
                 elsif($1 eq 'g') { $godsend[$typeid] = $2; $corg=1; }
             }
-            $context="in item $typeid";
+            $context=" in item $typeid";
             if($corg) { push(@fragileitems, $typeid); }
         }
         elsif($line =~ s/^levels(\d):\s*(.*?)\s*$//) {
@@ -2368,15 +2392,17 @@ sub read_items {
             }
             $context="";
             if(!length($line)) { push(@uniques, \%hash); ++$gotu; }
+            else { debug("Error: trailing fields defining unique: '$line'",1); }
         }
         if(defined($context) and length($line)) {
             chomp($line);
             debug("Error: What's '$line'$context in $fn",0);
         }
     }
-    if($got != 0x3ff) {
-        debug("Error: Didn't find 10 items in $fn",1);
+    while($got) {
+        if(!($got&1)) { debug("Error: item#s not consecutive in $fn",1); }
+        $got>>=1; 
     }
-    debug("Got all 10 normal items and $gotu unique items.",0);
+    debug("Got $ngot normal items and $gotu unique items.",0);
     close(IF);
 }
