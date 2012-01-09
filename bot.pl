@@ -1492,15 +1492,16 @@ sub loaddb { # load the players database
         chomp($l);
         next if $l =~ /^#/; # skip comments
         my @i = split("\t",$l);
-        print Dumper(@i) if(@i < 32 or @i > 33);
-        if (@i < 32 or @i > 33) {
+        if (@i == 32) { push(@i, "u"); } # default gender for old save files
+        if (@i != 33) {
+            print Dumper(@i);
             sts("QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
                 "wrong fields (".scalar(@i).")");
             debug("Anomaly in loaddb(); line $. of $opts{dbfile} has wrong ".
                 "fields (".scalar(@i).")",1);
         }
         if (!$sock) { # if not RELOADDB
-            if ($i[8]) { $prev_online{$i[7]}=$i[0]; } # log back in
+            if ($i[8]) { $prev_online{$i[7]}=$i[0]; $i[8]=0; } # log back in
         }
         ($rps{$i[0]}{pass},
         $rps{$i[0]}{isadmin},
@@ -1533,7 +1534,7 @@ sub loaddb { # load the players database
         $rps{$i[0]}{item}[8],
         $rps{$i[0]}{item}[9],
         $rps{$i[0]}{alignment},
-        $rps{$i[0]}{gender}) = (@i[1..7],($sock?$i[8]:0),@i[9..31],($i[32]||"u"));
+        $rps{$i[0]}{gender}) = @i[1..32];
     }
     close(RPS);
     debug("loaddb(): loaded ".scalar(keys(%rps))." accounts, ".
@@ -2249,7 +2250,7 @@ sub writedb {
                                 $rps{$k}{item}[8],
                                 $rps{$k}{item}[9],
                                 $rps{$k}{alignment},
-                                $rps{$k}{gender}||"u")."\n";
+                                $rps{$k}{gender})."\n";
         }
     }
     close(RPS);
