@@ -1658,17 +1658,15 @@ sub moveplayers {
             }
 
             # Always move other players indepenently of what questers are doing
-            if (1) {
-                my %temp;
-                # load keys of %temp with online users
-                ++@temp{@online};
-                # delete questers from list
-                delete(@temp{@questers});
-                movesomeplayers(keys(%temp));
-            }
+            my %temp;
+            # load keys of %temp with online users
+            ++@temp{@online};
+            # delete questers from list
+            delete(@temp{@questers});
+            movesomeplayers(keys(%temp));
         }
         else {
-            movesomeplayers(grep { $rps{$_}{online} } keys(%rps));
+            movesomeplayers(@online);
         }
     }
 }
