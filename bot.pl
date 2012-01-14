@@ -1757,6 +1757,7 @@ sub daemonize() {
 sub rewrite_event($$$) {
     my ($s,$p)=@_;
     $s =~ s/%player%/$p/g;
+    $s =~ s/%(he|she|they)%/they($p)/eg;
     $s =~ s/%(his|her|their)%/their($p)/eg;
     $s =~ s/%(him|her|them)%/them($p)/eg;
     return $s;
