@@ -1839,12 +1839,12 @@ sub modify_item($) {
         }
         $change = rewrite_event($change, $player, undef); # random number not used currently
         my $type = $items[$typeid];
+        my $suffix="";
+        if ($rps{$player}{item}[$typeid] =~ /(\D)$/) { $suffix=$1; $type=$uniques[$typeid]->{desc}; }
         $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg_l($change);
 
-        my $suffix="";
-        if ($rps{$player}{item}[$typeid] =~ /(\D)$/) { $suffix=$1; }
         $rps{$player}{item}[$typeid] = int(int($rps{$player}{item}[$typeid]) * (1+$_[0]*.1));
         $rps{$player}{item}[$typeid].=$suffix;
     }
