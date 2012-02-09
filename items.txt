@@ -3,7 +3,7 @@
 
 item0: n="ring"
 item1: n="amulet" c=" fell, chipping the stone in his amulet!" g="'s amulet was blessed by a passing cleric!"
-item2: n="charm"  c=" slipped and dropped his charm in a dirty bog" g="'s charm ate a bolt of lightning!"
+item2: n="charm"  c=" slipped and dropped his charm in a dirty bog!" g="'s charm ate a bolt of lightning!"
 item3: n="weapon" c=" left his weapon out in the rain to rust!" g=" sharpened the edge of his weapon!"
 item4: n="helm"
 item5: n="tunic" c=" spilled a level 7 shrinking potion on his tunic!" g="'s tunic was blessed by a magician casting a spell of Rigidity!"
