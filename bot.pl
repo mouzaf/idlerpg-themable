@@ -1842,7 +1842,7 @@ sub modify_item($) {
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
-    if (rand(10) < 1) {
+    if (@fragileitems and rand(10) < 1) {
         my($typeid,$change);
         while(!$change) {
             $typeid = $fragileitems[rand(@fragileitems)];
