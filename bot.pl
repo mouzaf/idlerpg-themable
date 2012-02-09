@@ -2378,8 +2378,8 @@ sub read_items {
             while($line =~ s/([ncg])="([^\"]*)"\s+// or
                   $line =~ s/([ncg])=(\w+)\s+//) {
                 if($1 eq 'n') { $items[$typeid] = $2; $got|=1<<$typeid; ++$ngot; }
-                elsif($1 eq 'c') { $calamity[$typeid] = $2; $corg=1; }
-                elsif($1 eq 'g') { $godsend[$typeid] = $2; $corg=1; }
+                elsif($1 eq 'c') { $calamity[$typeid] = $2; $corg|=1; }
+                elsif($1 eq 'g') { $godsend[$typeid] = $2; $corg|=2; }
             }
             $context=" in item $typeid";
             if($corg) { push(@fragileitems, $typeid); }
