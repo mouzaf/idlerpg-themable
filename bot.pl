@@ -657,6 +657,17 @@ sub parse {
                     hog();
                 }
             }
+            elsif ($arg[3] eq "event") {
+                if (!ha($username)) {
+                    privmsg("You don't have access to EVENT.", $usernick);
+                }
+                else {
+                    my $updown = defined($arg[4]) ? ($arg[4] eq 'good') - ($arg[4] eq 'bad') : 0;
+                    my %desc=(-1 => 'bad', 1 => 'good', 0 => 'random');
+                    chanmsg("$usernick has brought about a $desc{$updown} event.");
+                    modify_item($updown || (rand()>0.5)*2-1);
+                }
+            }
             elsif ($arg[3] eq "rehash") {
                 if (!ha($username)) {
                     privmsg("You don't have access to REHASH.", $usernick);
