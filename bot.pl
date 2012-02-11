@@ -1443,9 +1443,9 @@ sub team_battle { # pit three players against three other players
 
 sub unique_notice($$$) {
     my $string=$_[0];
-    $string =~ s/%ulevel%/$_[1]/g;
+    my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
     $string =~ s/%nick%/$_[2]/g;
-    return "The light of the gods shines down upon you! You have found the level $_[1] $string";
+    return "The light of the gods shines down upon you! You have found the " . ($haslevel ? '' : "level $_[1] ") . $string;
 }
 
 sub find_item { # find item for argument player
