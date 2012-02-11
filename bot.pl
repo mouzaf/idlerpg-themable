@@ -105,6 +105,7 @@ my @levels;
 my @calamity;
 my @godsend;
 my @uniques;
+my %uniques; # letter to index mapping
 my @fragileitems;
 read_items();
 
@@ -2363,6 +2364,7 @@ sub read_items {
         debug("Failed to open items file $fn: $!",1);
     };
     @items=@levels=@calamity=@godsend=@uniques=@fragileitems = ();
+    %uniques=();
     my ($got, $ngot, $gotu)=(0,0,0);
     my ($line,$ix,$key,$val);
     while($line=<IF>) {
@@ -2400,7 +2402,7 @@ sub read_items {
                 elsif($1 eq 'd') { $hash{'desc'} = $2; }
             }
             $context="";
-            if(!length($line)) { push(@uniques, \%hash); ++$gotu; }
+            if(!length($line)) { push(@uniques, \%hash); ++$gotu; $uniques{$hash{'suffix'}} = $#uniques; }
             else { debug("Error: trailing fields defining unique: '$line'",1); }
         }
         if(defined($context) and length($line)) {
