@@ -1166,6 +1166,12 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
+sub unique_level($$$) { # desc, level, article
+    my ($string, $article)=($_[0], ($_[2]?"$_[2] ":''));
+    my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
+    # $string =~ s/%nick%/$_[2]/g;
+    return $article . ($haslevel ? '' : "level $_[1] ") . $string;
+}
 sub item_level {
     my ($typeid,$article) = ($_[0], ($_[2]?"$_[2] ":''));
     if(!defined($levels[$typeid])) { return "${article}level $_[1]"; }
@@ -1442,11 +1448,9 @@ sub team_battle { # pit three players against three other players
     }
 }
 
-sub unique_notice($$$) {
-    my $string=$_[0];
-    my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
-    $string =~ s/%nick%/$_[2]/g;
-    return "The light of the gods shines down upon you! You have found the " . ($haslevel ? '' : "level $_[1] ") . $string;
+sub unique_notice($$) {
+    return "The light of the gods shines down upon you! You have found " .
+        unique_level($_[0],$_[1],'the');
 }
 
 sub find_item { # find item for argument player
@@ -1464,7 +1468,7 @@ sub find_item { # find item for argument player
             $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
             my $utypeid = $uniq->{typeid};
             if ($ulevel >= $level && $ulevel > int($rps{$u}{item}[$utypeid])) {
-                my $notice=unique_notice($uniq->{desc}, $ulevel, $rps{$u}{nick});
+                my $notice=unique_notice($uniq->{desc}, $ulevel);
                 notice($notice,$rps{$u}{nick});
                 clog($notice);
                 $rps{$u}{item}[$utypeid] = "$ulevel$uniq->{suffix}";
