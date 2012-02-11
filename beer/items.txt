@@ -33,7 +33,7 @@ levels6: %{5#+1}%-page
 
 # unique items - order is important, as they're tested for in turn
 unique: u=15 b=30 r=60 t=6 s=a d="Oh6gdx's book of corny poops"
-unique: u=20 b=40 r=80 t=2 s=b d="Mikkeller's raw hop extract"
+unique: u=20 b=40 r=80 t=2 s=b d="Mikkeller's %ulevel%0 IBU raw hop extract"
 unique: u=20 b=50 r=100 t=4 s=f d="BeerSommelier's underground cellar"
 unique: u=25 b=70 r=150 t=1 s=c d="shipwrecked bottle of beer from Aland"
 unique: u=40 b=100 r=200 t=5 s=e d="Kim Johansen's tasting thimble"
