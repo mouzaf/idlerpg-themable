@@ -1221,7 +1221,7 @@ sub item_level {
 sub user_item($$) {
     return $rps{$_[0]}{item}[$_[1]];
 }
-sub user_item_level($$) {
+sub user_item_val($$) {
     my $item=user_item($_[0], $_[1]);
     $item=~s/[a-z]$//;
     return $item;
@@ -1794,7 +1794,7 @@ sub itemsum {
         return $sum+1;
     }
     if (!exists($rps{$user})) { return -1; }
-    $sum += user_item_level($user,$_) for (0..$#items);
+    $sum += user_item_val($user,$_) for (0..$#items);
     if ($battle) {
         return $rps{$user}{alignment} eq 'e' ? int($sum*.9) :
                $rps{$user}{alignment} eq 'g' ? int($sum*1.1) :
