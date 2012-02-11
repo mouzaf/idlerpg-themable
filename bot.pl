@@ -1403,14 +1403,16 @@ sub challenge_opp { # pit argument player against random player
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
             my $typeid = int(rand(@items));
             my $type = $items[$typeid];
-            if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
+            my $mylevel = user_item_val($u,$typeid);
+            my $opplevel = user_item_val($opp,$typeid);
+            if ($opplevel > $mylevel) {
                 chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." ".
-                          item_level($typeid,int($rps{$opp}{item}[$typeid])).
+                          item_level($typeid,$rps{$opp}{item}[$typeid]).
                           " $type! $u picks it up, tossing ".their($u)." old ".
-                          item_level($typeid,int($rps{$u}{item}[$typeid])).
+                          item_level($typeid,$rps{$u}{item}[$typeid]).
                           " $type to $opp.");
-                my $tempitem = $rps{$u}{item}[$typeid];
-                $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
+                my $tempitem = user_item($u,$typeid);
+                $rps{$u}{item}[$typeid] = user_item($opp,$typeid);
                 $rps{$opp}{item}[$typeid] = $tempitem;
             }
         }
@@ -1480,7 +1482,7 @@ sub find_item { # find item for argument player
         if ($rps{$u}{level} >= $uniq->{userlevel} && rand(40) < 1) {
             $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
             my $utypeid = $uniq->{typeid};
-            if ($ulevel >= $level && $ulevel > int($rps{$u}{item}[$utypeid])) {
+            if ($ulevel >= $level && $ulevel > user_item_val($u,$utypeid)) {
                 my $notice=unique_notice($uniq->{desc}, $ulevel);
                 notice($notice,$rps{$u}{nick});
                 clog($notice);
@@ -1492,10 +1494,11 @@ sub find_item { # find item for argument player
 
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
-    if ($level > int($rps{$u}{item}[$typeid])) {
+    my $clevel = user_item_val($u,$typeid);
+    if ($level > $clevel) {
         my $notice = "You found ".item_level($typeid,$level,'a').
                      " $type! Your current $type is only ".
-                     item_level($typeid,int($rps{$u}{item}[$typeid])).
+                     item_level($typeid,$clevel).                     
                      ", so it seems Luck is with you!";
         notice($notice,$rps{$u}{nick});
         clog($notice);
@@ -1504,7 +1507,7 @@ sub find_item { # find item for argument player
     else {
         notice("You found ".item_level($typeid,$level,'a').
                " $type. Your current $type is ".
-               item_level($typeid,int($rps{$u}{item}[$typeid])).
+               item_level($typeid,$clevel).
                ", so it seems Luck is against you. ".
                "You toss the $type.",$rps{$u}{nick});
     }
@@ -1874,7 +1877,7 @@ sub modify_item($) {
             " $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg_l($change);
 
-        $rps{$player}{item}[$typeid] = int(int($rps{$player}{item}[$typeid]) * (1+$_[0]*.1));
+        $rps{$player}{item}[$typeid] = int(user_item_val($player,$typeid) * (1+$_[0]*.1));
         $rps{$player}{item}[$typeid].=$suffix;
     }
     else {
@@ -2091,7 +2094,10 @@ sub collision_fight {
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
             my $typeid = int(rand(@items));
             my $type = $items[$typeid];
-            if (int($rps{$opp}{item}[$typeid]) > int($rps{$u}{item}[$typeid])) {
+            my $mylevel = user_item_val($u,$typeid);
+            my $opplevel = user_item_val($opp,$typeid);
+            if ($opplevel > $mylevel) {
+                # HACK - deliberately not fixed. First clean this up, then fix
                 chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." level ".
                           int($rps{$opp}{item}[$typeid])." $type! $u picks it up, ".
                           "tossing ".their($opp)." old level ".int($rps{$u}{item}[$typeid]).
@@ -2205,10 +2211,13 @@ sub evilness {
         my $target = $good[rand(@good)];
         my $typeid = int(rand(@items));
         my $type = $items[$typeid];
-        if (int($rps{$target}{item}[$typeid]) > int($rps{$me}{item}[$typeid])) {
-            my $tempitem = $rps{$me}{item}[$typeid];
-            $rps{$me}{item}[$typeid] = $rps{$target}{item}[$typeid];
+        my $mylevel = user_item_val($me,$typeid);
+        my $targlevel = user_item_val($target,$typeid);
+        if ($targlevel > $mylevel) {
+            my $tempitem = user_item($me,$typeid);
+            $rps{$me}{item}[$typeid] = user_item($target,$typeid);
             $rps{$target}{item}[$typeid] = $tempitem;
+            # deliberately not fixed, clean this ip first, then fix
             chanmsg_l("$me stole $target\'s level ".
                       int($rps{$me}{item}[$typeid])." $type while ".they($target).
                       "were sleeping! $me leaves ".their($me)." old level ".
