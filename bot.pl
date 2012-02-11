@@ -1172,7 +1172,7 @@ sub unique_level($$$) { # desc, level, article
     # $string =~ s/%nick%/$_[2]/g;
     return $article . ($haslevel ? '' : "level $_[1] ") . $string;
 }
-sub item_level {
+sub plain_level($$$) {
     my ($typeid,$article) = ($_[0], ($_[2]?"$_[2] ":''));
     if(!defined($levels[$typeid])) { return "${article}level $_[1]"; }
     my ($lev,$ind)=(-1,-1);
@@ -1212,6 +1212,11 @@ sub item_level {
         $template =~ s/%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/$marker/;
     }
     return $template;
+}
+sub item_level {
+    return ($_[1] =~ m/^(\d+)([a-z])/)
+        ? unique_level($uniques[$uniques{$2}]->{desc}, int($1), $_[2]) # no need for type
+        : plain_level($_[0], int($_[1]), $_[2]);
 }
 
 sub ts { # timestamp
