@@ -1218,6 +1218,14 @@ sub item_level {
         ? unique_level($uniques[$uniques{$2}]->{desc}, int($1), $_[2]) # no need for type
         : plain_level($_[0], int($_[1]), $_[2]);
 }
+sub user_item($$) {
+    return $rps{$_[0]}{item}[$_[1]];
+}
+sub user_item_level($$) {
+    my $item=user_item($_[0], $_[1]);
+    $item=~s/[a-z]$//;
+    return $item;
+}
 
 sub ts { # timestamp
     my @ts = localtime(time());
@@ -1786,7 +1794,7 @@ sub itemsum {
         return $sum+1;
     }
     if (!exists($rps{$user})) { return -1; }
-    $sum += int($rps{$user}{item}[$_]) for (0..$#items);
+    $sum += user_item_level($user,$_) for (0..$#items);
     if ($battle) {
         return $rps{$user}{alignment} eq 'e' ? int($sum*.9) :
                $rps{$user}{alignment} eq 'g' ? int($sum*1.1) :
