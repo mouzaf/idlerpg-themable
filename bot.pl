@@ -1078,7 +1078,7 @@ sub parse {
                     notice("0 <= level <= 999", $usernick); 
                 }
                 else { 
-                    notice("itemlevel($arg[4],$arg[5]) = ".item_level($arg[4],$arg[5],'A')." $items[$arg[4]]", 
+                    notice("itemlevel($arg[4],$arg[5]) = ".item_describe($arg[4],$arg[5],'A')." $items[$arg[4]]", 
                            $usernick); 
                 }
             }
@@ -1213,7 +1213,7 @@ sub plain_level($$$) {
     }
     return $template;
 }
-sub item_level {
+sub item_describe {
     return ($_[1] =~ m/^(\d+)([a-z])/)
         ? unique_level($uniques[$uniques{$2}]->{desc}, int($1), $_[2]) # no need for type
         : plain_level($_[0], int($_[1]), $_[2]);
@@ -1407,9 +1407,9 @@ sub challenge_opp { # pit argument player against random player
             my $opplevel = user_item_val($opp,$typeid);
             if ($opplevel > $mylevel) {
                 chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." ".
-                          item_level($typeid,$rps{$opp}{item}[$typeid]).
+                          item_describe($typeid,$rps{$opp}{item}[$typeid]).
                           " $type! $u picks it up, tossing ".their($u)." old ".
-                          item_level($typeid,$rps{$u}{item}[$typeid]).
+                          item_describe($typeid,$rps{$u}{item}[$typeid]).
                           " $type to $opp.");
                 my $tempitem = user_item($u,$typeid);
                 $rps{$u}{item}[$typeid] = user_item($opp,$typeid);
@@ -1496,18 +1496,18 @@ sub find_item { # find item for argument player
     my $type = $items[$typeid];
     my $clevel = user_item_val($u,$typeid);
     if ($level > $clevel) {
-        my $notice = "You found ".item_level($typeid,$level,'a').
+        my $notice = "You found ".item_describe($typeid,$level,'a').
                      " $type! Your current $type is only ".
-                     item_level($typeid,$clevel).                     
+                     item_describe($typeid,$clevel).                     
                      ", so it seems Luck is with you!";
         notice($notice,$rps{$u}{nick});
         clog($notice);
         $rps{$u}{item}[$typeid] = $level;
     }
     else {
-        notice("You found ".item_level($typeid,$level,'a').
+        notice("You found ".item_describe($typeid,$level,'a').
                " $type. Your current $type is ".
-               item_level($typeid,$clevel).
+               item_describe($typeid,$clevel).
                ", so it seems Luck is against you. ".
                "You toss the $type.",$rps{$u}{nick});
     }
