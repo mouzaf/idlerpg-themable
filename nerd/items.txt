@@ -22,7 +22,7 @@ levels6: %{4#+2#12}% MHz, %{15#+5#30}% MHz, 33 MHz, %{40#+10#60}% MHz, 66 MHz, 7
 item7: n="RAM" c=" got hit with static, badly affecting %his% RAM!" g=" reseated %his% RAM chips!"
 
 item8: n="OS"
-levels8: linux 0.01, linux 0.12, linux 0.95, linux 0.99, linux 1.0, linux 1.1, linux 1.2.0, linux 2.%{0#+1#5}%, linux 2.6.%{0#+1}%
+levels8: linux 0.01, linux 0.12, linux 0.95, linux 0.99, linux 1.0, linux 1.1, linux 1.2.0, linux 2.%{0#+1#5}%, linux 2.6.%{0#+1#39}% linux 3.%{0#+1}%
 
 item9: n="coffee machine" c=" got demoted to the basement with a crappier coffee machine!" g=" got promoted, and a new office with a better coffee machine!"
 
