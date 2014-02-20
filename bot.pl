@@ -405,16 +405,12 @@ sub parse {
         # print < 1k of text
         if (keys(%auto_login)) {
             # not a true measure of size, but easy
-            if (length("%auto_login") < 1024 && $opts{senduserlist}) {
-                chanmsg(scalar(keys(%auto_login))." users matching ".
-                        scalar(keys(%prev_online))." hosts automatically ".
-                        "logged in; accounts: ".join(", ",keys(%auto_login)));
-            }
-            else {
-                chanmsg(scalar(keys(%auto_login))." users matching ".
-                        scalar(keys(%prev_online))." hosts automatically ".
-                        "logged in.");
-            }
+	    chanmsg(scalar(keys(%auto_login))." users matching ".
+		    scalar(keys(%prev_online))." hosts automatically ".
+		    "logged in" .
+		    ((length("%auto_login") < 1024 && $opts{senduserlist})
+		     ? "; accounts: ".join(", ",keys(%auto_login))
+		     : "."));
             if ($opts{voiceonlogin}) {
                 my @vnicks = map { $rps{$_}{nick} } keys(%auto_login);
                 while (@vnicks) {
