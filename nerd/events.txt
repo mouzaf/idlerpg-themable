@@ -34,7 +34,7 @@ C got locked out of %{Google+|LinkedIn|GMail}%
 C got -%{1##50}% karma on SoylentNews
 C got forceably migrated to Slashdot Beta
 G got a comment moderated to +5 %{troll|flamebait}% on SoylentNews
-G addedd slashdot.org to %his% HOSTS file
+G added slashdot.org to %his% HOSTS file
 G reverse engineered how overclocking works in %his% BIOS
 G cracked %{Bill Gates'|Richard Stallman's|Hans Peter Anvin's|Linus Torvald's|Miguel de Icaza's}% password
 G installed a rootkit on %{100##2000}% US government machines, forming a botnet
