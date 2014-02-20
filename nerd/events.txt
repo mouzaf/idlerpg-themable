@@ -58,6 +58,7 @@ Q2 225 415 280 460 retrieve the original paper tapes to the mighty Colossus and 
 Q2 480 415 325 270 locate the original Unics master tapes and leave them in the care of Ken Thompson
 Q1 quell the riot that has sprung up between Mac-weenies and PC-weenies
 Q1 quell the riot that has sprung up between Linux-weenies and BSD-weenies
+Q1 quell the riot that has sprung up between Debian-weenies and RedHat-weenies
 Q1 quell the riot that has sprung up between Gnome-weenies and KDE-weenies
 Q1 quell the riot that has sprung up between Android-weenies and iPhone-weenies
 Q1 quell the riot that has sprung up between Perl-weenies and Python-weenies
