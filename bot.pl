@@ -1517,7 +1517,7 @@ sub loaddb { # load the players database
     backup();
     my $l;
     %rps = ();
-    my $style; # 0=old, 1=new with "[ items ]"
+    my $style=0; # 0=old, 1=new with "[ items ]"
     my $fieldcount=10;
     if (!open(RPS,$opts{dbfile}) && -e $opts{dbfile}) {
         sts("QUIT :loaddb() failed: $!");
@@ -1557,7 +1557,7 @@ sub loaddb { # load the players database
                 goto bail_loaddb;
             }
         } else {
-            my @i = split("\t",$l);
+            @i = split("\t",$l);
             if(@i == 32) { push(@i, "u"); }
             elsif (@i != 33) { 
                 $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
