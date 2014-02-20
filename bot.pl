@@ -94,6 +94,7 @@ GetOptions(\%opts,
     "rpbase=i",
     "rppenstep=f",
     "dbfile|irpgdb|db|d=s",
+    "daemonize",
 ) or debug("Error: Could not parse command line. Try $0 --help\n",1);
 
 $opts{help} and do { help(); exit 0; };
@@ -238,8 +239,8 @@ if ($opts{checkupdates}) {
     else { print debug("Could not connect to update server.")."\n"; }
 }
 
-print "\n".debug("NOT Becoming a daemon...")."\n";
-#daemonize();
+print "\n".debug(($opts{daemonize}?"B":"NOT b")."ecoming a daemon...")."\n";
+daemonize() if($opts{daemonize});
 
 $SIG{HUP} = "readconfig"; # sighup = reread config file
 
