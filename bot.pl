@@ -206,35 +206,25 @@ if (! -e $opts{dbfile}) {
 }
 
 # this is almost silly...
-if ($opts{checkupdates}) {
-    print "Checking for updates...\n\n";
-    my $tempsock = IO::Socket::INET->new(PeerAddr=>"jotun.ultrazone.org:80",
+my $scriptdir=$0;
+$scriptdir =~ s/\/[^\/]+$//;
+if ($opts{checkupdates} and -r "$scriptdir/.git/refs/heads/master") {
+    my $current=`cat "$scriptdir/.git/refs/heads/master"`; chomp($current);
+    print "Checking for updates (at $current)\n";
+    my $tempsock = IO::Socket::INET->new(PeerAddr=>"fatphil.org:80",
                                          Timeout => 15);
     if ($tempsock) {
-        print $tempsock "GET /g7/version.php?version=$version HTTP/1.1\r\n".
-                        "Host: jotun.ultrazone.org:80\r\n\r\n";
+        print $tempsock "GET /git/idlerpg.git/refs/heads/master HTTP/1.1\r\n".
+                        "Host: fatphil.org\r\n\r\n";
         my($line,$newversion);
         while ($line=<$tempsock>) {
             chomp($line);
-            next() unless $line;
-            if ($line =~ /^Current version : (\S+)/) {
-                if ($version ne $1) {
-                    print "There is an update available! Changes include:\n";
-                    $newversion=1;
-                }
-                else {
-                    print "You are running the latest version (v$1).\n";
-                    close($tempsock);
-                    last();
-                }
-            }
-            elsif ($newversion && $line =~ /^(  -? .+)/) { print "$1\n"; }
-            elsif ($newversion && $line =~ /^URL: (.+)/) {
-                print "\nGet the newest version from $1!\n";
-                close($tempsock);
-                last();
+            if ($line =~ /^([0-9a-f]+)$/) {
+		print "You are ".($1 eq $current ?"up to date\n":"NOT running the latest version (commit id $1).\n");
+		last();
             }
         }
+        close($tempsock);
     }
     else { print debug("Could not connect to update server.")."\n"; }
 }
