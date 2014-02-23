@@ -2359,12 +2359,7 @@ sub read_events {
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
-    if(!@{$events{H}}) {
-	push(@{$events{H}}, "%player0% and %player1% have not let the iniquities of ".
-	     "evil men poison them. Together have they prayed to their ".
-	     "god, and it is his light that now shines upon them. %gain%\% ".
-	     "of their time is removed from their clocks.");
-    }
+    if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
 }
 
 sub get_event($$$) {
