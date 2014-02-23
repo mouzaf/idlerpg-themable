@@ -1392,14 +1392,13 @@ sub challenge_opp { # pit argument player against random player
             my $mylevel = user_item_val($u,$typeid);
             my $opplevel = user_item_val($opp,$typeid);
             if ($opplevel > $mylevel) {
-                chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." ".
-                          item_describe($typeid,$rps{$opp}{item}[$typeid]).
-                          " $type! $u picks it up, tossing ".their($u)." old ".
-                          item_describe($typeid,$rps{$u}{item}[$typeid]).
-                          " $type to $opp.");
-                my $tempitem = user_item($u,$typeid);
-                $rps{$u}{item}[$typeid] = user_item($opp,$typeid);
-                $rps{$opp}{item}[$typeid] = $tempitem;
+		my $myitem = user_item($u,$typeid);
+		my $oppitem = user_item($opp,$typeid);
+                chanmsg_l("In the fierce battle, ".
+			  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
+			  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
+                $rps{$u}{item}[$typeid] = $oppitem;
+                $rps{$opp}{item}[$typeid] = $myitem;
             }
         }
     }
@@ -2083,14 +2082,13 @@ sub collision_fight {
             my $mylevel = user_item_val($u,$typeid);
             my $opplevel = user_item_val($opp,$typeid);
             if ($opplevel > $mylevel) {
-                # HACK - deliberately not fixed. First clean this up, then fix
-                chanmsg_l("In the fierce battle, $opp dropped ".their($opp)." level ".
-                          int($rps{$opp}{item}[$typeid])." $type! $u picks it up, ".
-                          "tossing ".their($opp)." old level ".int($rps{$u}{item}[$typeid]).
-                          " $type to $opp.");
-                my $tempitem = $rps{$u}{item}[$typeid];
-                $rps{$u}{item}[$typeid]=$rps{$opp}{item}[$typeid];
-                $rps{$opp}{item}[$typeid] = $tempitem;
+		my $myitem = user_item($u,$typeid);
+		my $oppitem = user_item($opp,$typeid);
+                chanmsg_l("In the fierce battle, ".
+			  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
+			  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
+                $rps{$u}{item}[$typeid] = $oppitem;
+                $rps{$opp}{item}[$typeid] = $myitem;
             }
         }
     }
@@ -2200,15 +2198,15 @@ sub evilness {
         my $mylevel = user_item_val($me,$typeid);
         my $targlevel = user_item_val($target,$typeid);
         if ($targlevel > $mylevel) {
-            my $tempitem = user_item($me,$typeid);
-            $rps{$me}{item}[$typeid] = user_item($target,$typeid);
-            $rps{$target}{item}[$typeid] = $tempitem;
+            my $myitem = user_item($me,$typeid);
+	    my $targetitem = user_item($target,$typeid);
             # deliberately not fixed, clean this ip first, then fix
-            chanmsg_l("$me stole $target\'s level ".
-                      int($rps{$me}{item}[$typeid])." $type while ".they($target).
-                      "were sleeping! $me leaves ".their($me)." old level ".
-                      int($rps{$target}{item}[$typeid])." $type behind, ".
+            chanmsg_l("$me stole $target\'s ".item_describe($typeid,$targetitem)." $type ".
+		      "while ".they($target)." were sleeping! ".
+		      "$me leaves ".their($me)." old ".item_describe($typeid,$myitem)." $type behind, ".
                       "which $target then takes.");
+            $rps{$me}{item}[$typeid] = $targetitem;
+            $rps{$target}{item}[$typeid] = $myitem;
         }
         else {
             notice("You made to steal $target\'s $type, but realized it was ".
