@@ -6,6 +6,7 @@ L Patrik Wilfors gets %player% kicked out of the HBF, which retards %him%
 L Martyn Cornell chastises %player% for slavishly following BJCP categorisations, and naming all %his% beers inappropriately, slowing %him%
 L Ron Pattinson refutes %player%'s sources, slighting %him% as being ignorant of brewing history, which slows %him%
 L Frank Boon claims that the only reason %player% always brews sour beers is because %his% hygiene is so bad, the embarassment sets %him% back
+H %player0% and %player1% have a little tasting sesh, splitting all the costs. This advances them %gain%\% towards their next level.
 G is %{Star4aDay|Daily Devotee}% on Ratebeer
 G finally gets bought a beer by %{Kumppulainen|Tranquillity}%
 G receives a package from %{BierKompass|Cracked Kettle|BierZweig|Alvinne}% that contains a freebie unrated beer %he% didn't order
