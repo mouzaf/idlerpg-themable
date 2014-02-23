@@ -127,6 +127,7 @@ my %rps; # role-players
 sub they($) { return $hesheit{$rps{$_[0]}{gender}}; }
 sub them($) { return $himherit{$rps{$_[0]}{gender}}; }
 sub their($) { return $hisherits{$rps{$_[0]}{gender}}; }
+sub were($) { return $rps{$_[0]}{gender} eq 'u' ? 'were' : 'was'; }
 
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
@@ -2202,7 +2203,7 @@ sub evilness {
 	    my $targetitem = user_item($target,$typeid);
             # deliberately not fixed, clean this ip first, then fix
             chanmsg_l("$me stole $target\'s ".item_describe($typeid,$targetitem)." $type ".
-		      "while ".they($target)." were sleeping! ".
+		      "while ".they($target)." ".were($target)." sleeping! ".
 		      "$me leaves ".their($me)." old ".item_describe($typeid,$myitem)." $type behind, ".
                       "which $target then takes.");
             $rps{$me}{item}[$typeid] = $targetitem;
