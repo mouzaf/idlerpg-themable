@@ -1259,7 +1259,7 @@ sub rpcheck { # check levels, update database
         godsend() if rand(2000) < 1;
     }
     if (rand((8*86400)/$opts{self_clock}) < $onlineevil) { evilness(); }
-    if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { goodness(); }
+    if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
 
     moveplayers();
     managejunk();
@@ -2166,7 +2166,7 @@ sub writequestfile {
     close(QF);
 }
 
-sub goodness {
+sub holiness {
     my @players = grep { $rps{$_}{alignment} eq "g" &&
                          $rps{$_}{online} } keys(%rps);
     return unless @players > 1;
