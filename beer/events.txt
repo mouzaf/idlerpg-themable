@@ -16,11 +16,12 @@ G asked Gazza for a guided tour of the best beer pubs in London, and got dragged
 C asked Gazza for a guided tour of the best beer pubs in London, and got dragged to Sheffield
 C finds out the beer brewed specially for %him% by %{Struise|Mikkeller}% was just a dodgy rebadge
 C gets hit by falling plaster at a chris_o tasting
-C gets passed a glass that %{mjs|TBone|Rosenberg|lusikka}% just dribbled into
+C gets passed a glass that %{mjs|TBone|Rosenberg|lusikka|laiti|mto}% just dribbled into
 C keeps being pestered by the local stoned schizophrenic while %he%'s trying to rate
 C drank all the yeast from the bottom of all the bottles, and now can't stop farting
 C left %his% notes at the %{St. Albans|Peterborough|Cambridge|Bishops Stortford|Norwich|Great British}% beer festival
 C managed to bring four winners back to the table, but can't remember which was which
+C drank the festival special
 Q1 work out the identity of the beer that they all ticked, but is now missing its label
 Q1 hunt out and kill the %{brewer|marketting director}% behind the concept of %{beershakes|bud chelada}%
 Q2 123 234 267 140 attend both the GBBF and the RBESG in the same week
