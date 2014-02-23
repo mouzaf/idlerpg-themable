@@ -1449,9 +1449,9 @@ sub team_battle { # pit three players against three other players
     }
 }
 
-sub unique_notice($$) {
+sub unique_notice($$$) {
     return "The light of the gods shines down upon you! You have found " .
-        unique_level($_[0],$_[1],'the');
+        unique_level($_[1],$_[2],'the');
 }
 
 sub find_item { # find item for argument player
@@ -1469,7 +1469,7 @@ sub find_item { # find item for argument player
             $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
             my $utypeid = $uniq->{typeid};
             if ($ulevel >= $level && $ulevel > user_item_val($u,$utypeid)) {
-                my $notice=unique_notice($uniq->{desc}, $ulevel);
+                my $notice=unique_notice($u, $uniq->{desc}, $ulevel);
                 notice($notice,$rps{$u}{nick});
                 clog($notice);
                 $rps{$u}{item}[$utypeid] = "$ulevel$uniq->{suffix}";
