@@ -2172,10 +2172,10 @@ sub holiness {
     return unless @players > 1;
     splice(@players,int(rand(@players)),1) while @players > 2;
     my $gain = 5 + int(rand(8));
-    chanmsg_l("$players[0] and $players[1] have not let the iniquities of ".
-              "evil men poison them. Together have they prayed to their ".
-              "god, and it is his light that now shines upon them. $gain\% ".
-              "of their time is removed from their clocks.");
+    my $lholiness=$events{H}->[int(rand(@{$events{H}}))];
+    $lholiness =~ s/%player([01])%/$players[$1]/g;
+    $lholiness =~ s/%gain%/$gain/g;
+    chanmsg_l($lholiness);
     $rps{$players[0]}{next} = int($rps{$players[0]}{next}*(1 - ($gain/100)));
     $rps{$players[1]}{next} = int($rps{$players[1]}{next}*(1 - ($gain/100)));
     chanmsg("$players[0] reaches next level in ".
@@ -2339,9 +2339,9 @@ sub read_events {
         return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
     }
     @quests = ();
-    %events = (G => [], C => [], W => [], L => []);
+    %events = (G => [], C => [], W => [], L => [], H => []);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWL])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLH])\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2353,11 +2353,18 @@ sub read_events {
     }
     close(Q);
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
-          @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, and ".
+          @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
+	  @{$events{H}}." holinesses, and ".
           @quests." quests.",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
+    if(!@{$events{H}}) {
+	push(@{$events{H}}, "%player0% and %player1% have not let the iniquities of ".
+	     "evil men poison them. Together have they prayed to their ".
+	     "god, and it is his light that now shines upon them. %gain%\% ".
+	     "of their time is removed from their clocks.");
+    }
 }
 
 sub get_event($$$) {
