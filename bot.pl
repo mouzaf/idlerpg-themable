@@ -2327,13 +2327,13 @@ sub readconfig {
         open(CONF,"<$conffile") or do {
             debug("Failed to open config file $conffile: $!",1);
         };
-        my($line,$key,$val);
+        my($line);
         while ($line=<CONF>) {
             next() if $line =~ /^#/; # skip comments
             $line =~ s/[\r\n]//g;
             $line =~ s/^\s+//g;
             next() if !length($line); # skip blank lines
-            ($key,$val) = split(/\s+/,$line,2);
+            my ($key,$val) = split(/\s+/,$line,2);
             $key = lc($key);
             if (lc($val) eq "on" || lc($val) eq "yes") { $val = 1; }
             elsif (lc($val) eq "off" || lc($val) eq "no") { $val = 0; }
