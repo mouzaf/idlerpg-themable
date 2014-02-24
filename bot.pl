@@ -1831,17 +1831,17 @@ sub daemonize() {
 
 sub rewrite_for_items($$$) {
     my ($s,$t,$ts)=@_;
-    $s =~ s/%item([01]?)%/$ts->[$1]/g;
+    $s =~ s/%item([01]?)%/$ts->[int("0$1")]/g;
     $s =~ s/%type%/$t/g;
     return $s;
 }
 sub rewrite_for_players($$) {
     my ($s,$p)=@_;
-    $s =~ s/%player([01]?)%/$p->[$1]/g;
-    $s =~ s/%(he|she|they)([01]?)%/they($p->[$2])/eg;
-    $s =~ s/%(his|her|their)([01]?)%/their($p->[$2])/eg;
-    $s =~ s/%(him|her|them)([01]?)%/them($p->[$2])/eg; # her is impossible here
-    $s =~ s/%(was|were)([01]?)%/were($p->[$2])/eg;
+    $s =~ s/%player([01]?)%/$p->[int("0$1")]/g;
+    $s =~ s/%(he|she|they)([01]?)%/they($p->[int("0$2")])/eg;
+    $s =~ s/%(his|her|their)([01]?)%/their($p->[int("0$2")])/eg;
+    $s =~ s/%(him|her|them)([01]?)%/them($p->[int("0$2")])/eg; # her is impossible here
+    $s =~ s/%(was|were)([01]?)%/were($p->[int("0$2")])/eg;
     return $s;
 }
 sub rewrite_event($$$) {
