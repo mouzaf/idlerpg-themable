@@ -1358,9 +1358,9 @@ sub rpcheck { # check levels, update database
     }
 }
 
-sub swap_items($$)
+sub swap_items($$$)
 {
-    my ($u,$opp)=@_;
+    my ($u,$opp,$message)=@_;
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
     my $mylevel = user_item_val($u,$typeid);
@@ -1368,12 +1368,16 @@ sub swap_items($$)
     if ($opplevel > $mylevel) {
 	my $myitem = user_item($u,$typeid);
 	my $oppitem = user_item($opp,$typeid);
-	chanmsg_l("In the fierce battle, ".
-		  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
-		  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
+	$message = rewrite_for_players($message, [$u, $opp]);
+	$message = rewrite_for_items($message, $type, 
+				     [item_describe($typeid,$myitem), 
+				      item_describe($typeid,$oppitem)]);
+	chanmsg_l($message);
 	$rps{$u}{item}[$typeid] = $oppitem;
 	$rps{$opp}{item}[$typeid] = $myitem;
+	return undef;
     }
+    return $type;
 }
 
 sub challenge_opp { # pit argument player against random player
@@ -1408,7 +1412,9 @@ sub challenge_opp { # pit argument player against random player
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-	    swap_items($u, $opp);
+	    swap_items($u, $opp,
+		       "In the fierce battle, %player1% dropped %their1% %item1% %type%! ".
+		       "%player0% picks it up, tossing %their0% old %item0% %type% to %player1%");
         }
     }
     else {
@@ -2102,7 +2108,9 @@ sub collision_fight {
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-	    swap_items($u,$opp);
+	    swap_items($u, $opp,
+		       "In the fierce battle, %player1% dropped %their1% %item1% %type%! ".
+		       "%player0% picks it up, tossing %their0% old %item0% %type% to %player1%");
         }
     }
     else {
@@ -2206,23 +2214,15 @@ sub evilness {
                           $rps{$_}{online} } keys(%rps);
         return unless @good;
         my $target = $good[rand(@good)];
-        my $typeid = int(rand(@items));
-        my $type = $items[$typeid];
-        my $mylevel = user_item_val($me,$typeid);
-        my $targlevel = user_item_val($target,$typeid);
-        if ($targlevel > $mylevel) {
-            my $myitem = user_item($me,$typeid);
-	    my $targetitem = user_item($target,$typeid);
-            # deliberately not fixed, clean this ip first, then fix
-            chanmsg_l("$me stole $target\'s ".item_describe($typeid,$targetitem)." $type ".
-		      "while ".they($target)." ".were($target)." sleeping! ".
-		      "$me leaves ".their($me)." old ".item_describe($typeid,$myitem)." $type behind, ".
-                      "which $target then takes.");
-            $rps{$me}{item}[$typeid] = $targetitem;
-            $rps{$target}{item}[$typeid] = $myitem;
-        }
-        else {
-            notice("You made to steal $target\'s $type, but realized it was ".
+	my $didntswap =
+	    swap_items($me, $target,
+		       "%player0% stole %player1%\'s %item1% %type% ".
+		       "while %they1% %were1% sleeping! ".
+		       "%player0% leaves %their0% old %item0% %type% behind, ".
+		       "which %player1% then takes.",
+		       );
+	if($didntswap) {
+            notice("You made to steal $target\'s $didntswap, but realized it was ".
                    "lower level than your own. You creep back into the ".
                    "shadows.",$rps{$me}{nick});
         }
