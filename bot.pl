@@ -1876,14 +1876,12 @@ sub rewrite_event($$$) {
 }
 
 sub modify_item($) {
-    my @change = ('loses', 'gains');
-    my @timechange = ('terrible calamity has slowed',
-                      'wondrous godsend has accelerated');
     my $good = ($_[0] > 0);
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
     if (@fragileitems and rand(10) < 1) {
+	my @change = ('loses', 'gains');
         my($typeid,$change);
         while(!$change) {
             $typeid = $fragileitems[rand(@fragileitems)];
@@ -1901,6 +1899,8 @@ sub modify_item($) {
         $rps{$player}{item}[$typeid].=$suffix;
     }
     else {
+	my @timechange = ('terrible calamity has slowed',
+			  'wondrous godsend has accelerated');
         my $rand = rand();
         my $time = int(int(5 + $rand*8) / 100 * $rps{$player}{next});
         my $actioned = get_event($good?'G':'C', $player, $rand);
