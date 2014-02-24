@@ -2071,7 +2071,7 @@ sub finduser {
 sub ha { # return 0/1 if username has access
     my $user = shift;
     if (!defined($user) || !exists($rps{$user})) {
-        debug("Error: Attempted ha() for invalid username \"$user\"");
+        debug('Error: Attempted ha() for invalid username "'.($user//'(undef)').'"');
         return 0;
     }
     return $rps{$user}{isadmin};
