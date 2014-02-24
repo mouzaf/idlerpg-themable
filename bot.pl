@@ -1196,9 +1196,13 @@ sub plain_level($$$) {
         }
     }
     my $template = $levels[$typeid][$ind];
-    if($template !~ s/^!a // and $article) { $template = $article . $template; }
     if(defined($marker)) {
         $template =~ s/%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/$marker/;
+    }
+    if($template !~ s/^!a // and $article) {
+	if(lc($article) eq 'a ' and $template =~ /^[aeiouy18]/ and
+	   $template !~ /^(?:1(?:[^18][^0-9]|[0-9][0-9])|e[uw]|onc?e|uni[^nmd]|u[bcfhjkqrst][aeiou])/) { substr($article,1,0) = 'n'; }
+	$template = $article . $template; 
     }
     return $template;
 }
