@@ -40,6 +40,8 @@ C fell to a phishing scheme
 C got locked out of %{Google+|LinkedIn|GMail}%
 C got -%{1##50}% karma on SoylentNews
 C got forceably migrated to Slashdot Beta
+C watched meatspin for %{20##200}% spins
+C got fooled into following a goatse link
 C got tasked with fixing healthcare.gov
 G got paid to consult on fixing healthcare.gov
 G got a comment moderated to +5 %{troll|flamebait}% on SoylentNews
