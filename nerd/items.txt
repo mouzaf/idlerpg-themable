@@ -27,7 +27,10 @@ levels8: linux 0.01, linux 0.12, linux 0.95, linux 0.99, linux 1.0, linux 1.1, l
 item9: n="coffee machine" c=" got demoted to the basement with a crappier coffee machine!" g=" got promoted, and a new office with a better coffee machine!"
 
 # Unique items - there may be any number at all. Order is important
-unique: u=25 b=50 r=25 t=0 s=a d="Peter 'p2' overclocked low-power multi-core NVidia graphics card. Your enemies get headaches just looking at their own poor refresh rate."
-unique: u=30 b=75 r=25 t=8 s=b d="Linus's final bug-free Ready for the Desktop version of linux. Your enemies do the three fingered salute in awe."
-unique: u=35 b=100 r=30 t=6 s=c d="Deathstation 3%ulevel% processor. Your rivals simply cannot compile their code for your platform."
-unique: u=40 b=120 r=45 t=4 s=d d="Ray Kurzweil's direct retinal holoprojection unit. Your enemies look on in confusion as you stare into space apparently at nothing."
+unique: u=25 b=50 r=25 t=0 s=a d="A psychic graphics card which predicts what you want to see next. Your enemies get headaches just looking at their own poor refresh rate."
+unique: u=30 b=70 r=35 t=8 s=b d="Linus's final bug-free Ready for the Desktop version of linux. Your enemies do the three fingered salute in awe."
+unique: u=35 b=100 r=50 t=6 s=c d="Deathstation 3%ulevel% processor. Your rivals simply cannot compile their code for your platform."
+unique: u=40 b=100 r=75 t=4 s=d d="Ray Kurzweil's direct retinal holoprojection unit. Your enemies look on in confusion as you stare into space apparently at nothing."
+unique: u=45 b=125 r=50 t=6 s=e d="The world's first actual quantum processor. Your rivals are both jealous and not jealous of you."
+unique: u=48 b=150 r=80 t=2 s=f d="A megabyte modem. Your nemeses are prepared to travel back in time to stop you obtaining this, and consider you the ultimate foe."
+unique: u=52 b=180 r=100 t=9 s=g d="A genetically modified asian palm civet which shits perfect fresh coffee on demand. Your foes twitch at the the very thought of this."
