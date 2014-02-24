@@ -112,7 +112,7 @@ read_items();
 
 my @quests;
 my %events;
-my %uniquemsg;
+my %uniquemsg; # indexed by lower case alignment 'g', 'n', 'e'.
 read_events();
 
 # Utility variables that lots of parametrised functions can use
@@ -2361,8 +2361,8 @@ sub read_events {
                  { type=>2, text=>$5, stage=>1, p1=>[$1,$2], p2=>[$3,$4] });
         }
 	elsif ($line =~ /^U([GNE]?) (.*)/) {
-	    if($1) { $uniquemsg{$1} = $2; }
-	    else { $uniquemsg{G} = $uniquemsg{N} = $uniquemsg{E} = $2; }
+	    if($1) { $uniquemsg{lc($1)} = $2; }
+	    else { $uniquemsg{g} = $uniquemsg{n} = $uniquemsg{e} = $2; }
 	}
         else { debug("Event in $opts{eventsfile} unknown: $line",0); }
     }
