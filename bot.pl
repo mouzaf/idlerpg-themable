@@ -1358,6 +1358,24 @@ sub rpcheck { # check levels, update database
     }
 }
 
+sub swap_items($$)
+{
+    my ($u,$opp)=@_;
+    my $typeid = int(rand(@items));
+    my $type = $items[$typeid];
+    my $mylevel = user_item_val($u,$typeid);
+    my $opplevel = user_item_val($opp,$typeid);
+    if ($opplevel > $mylevel) {
+	my $myitem = user_item($u,$typeid);
+	my $oppitem = user_item($opp,$typeid);
+	chanmsg_l("In the fierce battle, ".
+		  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
+		  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
+	$rps{$u}{item}[$typeid] = $oppitem;
+	$rps{$opp}{item}[$typeid] = $myitem;
+    }
+}
+
 sub challenge_opp { # pit argument player against random player
     my $u = shift;
     if ($rps{$u}{level} < 25) { return unless rand(4) < 1; }
@@ -1390,19 +1408,7 @@ sub challenge_opp { # pit argument player against random player
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my $typeid = int(rand(@items));
-            my $type = $items[$typeid];
-            my $mylevel = user_item_val($u,$typeid);
-            my $opplevel = user_item_val($opp,$typeid);
-            if ($opplevel > $mylevel) {
-		my $myitem = user_item($u,$typeid);
-		my $oppitem = user_item($opp,$typeid);
-                chanmsg_l("In the fierce battle, ".
-			  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
-			  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
-                $rps{$u}{item}[$typeid] = $oppitem;
-                $rps{$opp}{item}[$typeid] = $myitem;
-            }
+	    swap_items($u, $opp);
         }
     }
     else {
@@ -2084,19 +2090,7 @@ sub collision_fight {
                     ".");
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my $typeid = int(rand(@items));
-            my $type = $items[$typeid];
-            my $mylevel = user_item_val($u,$typeid);
-            my $opplevel = user_item_val($opp,$typeid);
-            if ($opplevel > $mylevel) {
-		my $myitem = user_item($u,$typeid);
-		my $oppitem = user_item($opp,$typeid);
-                chanmsg_l("In the fierce battle, ".
-			  "$opp dropped ".their($opp)." ".item_describe($typeid,$oppitem)." $type! ".
-			  "$u picks it up, tossing ".their($u)." old ".item_describe($typeid,$myitem)." $type to $opp.");
-                $rps{$u}{item}[$typeid] = $oppitem;
-                $rps{$opp}{item}[$typeid] = $myitem;
-            }
+	    swap_items($u,$opp);
         }
     }
     else {
