@@ -2229,9 +2229,11 @@ sub evilness {
     }
     else { # being evil only pays about half of the time...
         my $gain = 1 + int(rand(5));
-        chanmsg_l("$me is forsaken by ".their($me)." evil god. ".
-                  duration(int($rps{$me}{next} * ($gain/100)))." is added ".
-                  "to ".their($me)." clock.");
+	my $duration = duration(int($rps{$me}{next} * ($gain/100)));
+	my $evilness=$events{E}->[int(rand(@{$events{E}}))];
+	$evilness = rewrite_for_players($evilness, [$me]);
+	$evilness =~ s/%duration%/$duration/g;
+	chanmsg_l($evilness);
         $rps{$me}{next} = int($rps{$me}{next} * (1 + ($gain/100)));
         chanmsg("$me reaches next level in ".duration($rps{$me}{next}).".");
     }
@@ -2350,9 +2352,9 @@ sub read_events {
         return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
     }
     @quests = ();
-    %events = (G => [], C => [], W => [], L => [], H => []);
+    %events = (G => [], C => [], W => [], L => [], H => [], E => []);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWLH])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLHE])\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2369,12 +2371,13 @@ sub read_events {
     close(Q);
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
-	  @{$events{H}}." holinesses, and ".
+	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, and ".
           @quests." quests.",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
     if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
+    if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
 }
 
 sub get_event($$$) {

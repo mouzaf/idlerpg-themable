@@ -1,4 +1,5 @@
 H %player0% and %player1% have not let the iniquities of evil men poison them. Together have they prayed to their god, and it is his light that now shines upon them. %gain%\% of their time is removed from their clocks.
+E %player% is forsaken by %their% evil god. %duration% is added to %their% clock.
 W Verily I say unto thee, the Heavens have burst forth and the blessed hand of God carried %player%
 L Thereupon He stretched out His little finger among them and consumed %player% with fire, slowing the heathen
 U The light of the gods shines down upon you!
