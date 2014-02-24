@@ -2335,6 +2335,7 @@ sub readconfig {
             next() if !length($line); # skip blank lines
             my ($key,$val) = split(/\s+/,$line,2);
             $key = lc($key);
+	    $val//='';
             if (lc($val) eq "on" || lc($val) eq "yes") { $val = 1; }
             elsif (lc($val) eq "off" || lc($val) eq "no") { $val = 0; }
             if ($key eq "die") {
