@@ -2191,10 +2191,10 @@ sub holiness {
     return unless @players > 1;
     splice(@players,int(rand(@players)),1) while @players > 2;
     my $gain = 5 + int(rand(8));
-    my $lholiness=$events{H}->[int(rand(@{$events{H}}))];
-    $lholiness =~ s/%player([01])%/$players[$1]/g;
-    $lholiness =~ s/%gain%/$gain/g;
-    chanmsg_l($lholiness);
+    my $holiness=$events{H}->[int(rand(@{$events{H}}))];
+    $holiness = rewrite_for_players($holiness, \@players);
+    $holiness =~ s/%gain%/$gain/g;
+    chanmsg_l($holiness);
     $rps{$players[0]}{next} = int($rps{$players[0]}{next}*(1 - ($gain/100)));
     $rps{$players[1]}{next} = int($rps{$players[1]}{next}*(1 - ($gain/100)));
     chanmsg("$players[0] reaches next level in ".
