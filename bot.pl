@@ -1479,7 +1479,6 @@ sub unique_notice($$$) {
 sub find_item { # find item for argument player
     my $u = shift;
     my $level = 1;
-    my $ulevel;
     for my $num (1 .. int($rps{$u}{level}*1.5)) {
         if (rand(1.4**($num/4)) < 1) {
             $level = $num;
@@ -1488,7 +1487,7 @@ sub find_item { # find item for argument player
     for my $m (0 .. $#uniques) {
         my $uniq = $uniques[$m];
         if ($rps{$u}{level} >= $uniq->{userlevel} && rand(40) < 1) {
-            $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
+            my $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
             my $utypeid = $uniq->{typeid};
             if ($ulevel >= $level && $ulevel > user_item_val($u,$utypeid)) {
                 my $notice=unique_notice($u, $uniq->{desc}, $ulevel);
