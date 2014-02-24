@@ -112,6 +112,7 @@ read_items();
 
 my @quests;
 my %events;
+my %uniquemsg;
 read_events();
 
 # Utility variables that lots of parametrised functions can use
@@ -1450,8 +1451,12 @@ sub team_battle { # pit three players against three other players
 }
 
 sub unique_notice($$$) {
-    return "The light of the gods shines down upon you! You have found " .
-        unique_level($_[1],$_[2],'the');
+    my $user=$_[0];
+    my $fortune=''; # "The light of the gods shines down upon you! "
+    if($uniquemsg{$rps{$user}{alignment}}) {
+	$fortune = $uniquemsg{$rps{$user}{alignment}}.' ';
+    }
+    return "${fortune}You have found ".unique_level($_[1],$_[2],'the');
 }
 
 sub find_item { # find item for argument player
@@ -2348,6 +2353,10 @@ sub read_events {
             push(@quests,
                  { type=>2, text=>$5, stage=>1, p1=>[$1,$2], p2=>[$3,$4] });
         }
+	elsif ($line =~ /^U([GNE]?) (.*)/) {
+	    if($1) { $uniquemsg{$1} = $2; }
+	    else { $uniquemsg{G} = $uniquemsg{N} = $uniquemsg{E} = $2; }
+	}
         else { debug("Event in $opts{eventsfile} unknown: $line",0); }
     }
     close(Q);
