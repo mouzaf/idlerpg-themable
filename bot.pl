@@ -1829,12 +1829,24 @@ sub daemonize() {
     close(PIDFILE);
 }
 
+sub rewrite_for_items($$$) {
+    my ($s,$t,$ts)=@_;
+    $s =~ s/%item([01]?)%/$ts->[$1]/g;
+    $s =~ s/%type%/$t/g;
+    return $s;
+}
+sub rewrite_for_players($$) {
+    my ($s,$p)=@_;
+    $s =~ s/%player([01]?)%/$p->[$1]/g;
+    $s =~ s/%(he|she|they)([01]?)%/they($p->[$2])/eg;
+    $s =~ s/%(his|her|their)([01]?)%/their($p->[$2])/eg;
+    $s =~ s/%(him|her|them)([01]?)%/them($p->[$2])/eg; # her is impossible here
+    $s =~ s/%(was|were)([01]?)%/were($p->[$2])/eg;
+    return $s;
+}
 sub rewrite_event($$$) {
     my ($s,$p,$r)=@_;
-    $s =~ s/%player%/$p/g;
-    $s =~ s/%(he|she|they)%/they($p)/eg;
-    $s =~ s/%(his|her|their)%/their($p)/eg;
-    $s =~ s/%(him|her|them)%/them($p)/eg;
+    $s=rewrite_for_players($s,[$p]);
     while($s =~ m/%{(.*?)}%/) {
         my ($start, $end)=($-[0], $+[0]);
         my $len=$end-$start;
