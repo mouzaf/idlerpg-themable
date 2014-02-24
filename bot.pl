@@ -2011,8 +2011,7 @@ sub penalize {
         $pen = int(30 * ($opts{rppenstep}**$rps{$username}{level}));
         $pentype = 'pen_nick';
         $rps{$username}{nick} = substr($newnick,1);
-        substr($rps{$username}{userhost},0,length($rps{$username}{nick})) =
-            substr($newnick,1);
+	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
         $pen = int(shift(@_) * ($opts{rppenstep}**$rps{$username}{level}));
