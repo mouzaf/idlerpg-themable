@@ -7,6 +7,9 @@ L Dan Bernstein rants and raves bout how %player% is in %{60#-4#36}%-bit la-la l
 H %player0% and %player1%'s frequent contributions to an Open Source project impress the Flying Spaghetti Monster, and he touches them with his noodly appendage.
 H %player0% and %player1%'s persistent refuting of Microsoft FUD impresses the Flying Spaghetti Monster, and he touches them with his noodly appendage.
 H %player0% and %player1%'s unrelenting gainsaying of RIAA and MPAA FUD impresses the Flying Spaghetti Monster, and he touches them with his noodly appendage.
+UG The Flying Spaghetti Monster touches you with his noodly appendage.
+UN There is a freak conjunction of highly improbable coincidences.
+UE Cthulhu decides you can be useful in furthering his divisive ends.
 C used the US format for dates in %his% logs
 C was %{rooted|hacked}% by %{lulzsec|Iranians|Kevin Mitnick|the NSA|aliens|Russian mafia}%
 C has a very brown power supply
