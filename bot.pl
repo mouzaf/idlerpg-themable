@@ -1278,6 +1278,7 @@ sub rpcheck { # check levels, update database
     if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
 
     moveplayers();
+    process_items() if($opts{rpitembase});
 
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
