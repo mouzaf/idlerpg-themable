@@ -1579,7 +1579,7 @@ sub find_item { # find item for argument player
     }
 }
 
-sub loaddb { # load the players database
+sub loaddb { # load the players and items database
     backup();
     my $l;
     %rps = ();
@@ -1675,6 +1675,30 @@ bail_loaddb:
     close(RPS);
     debug("loaddb(): loaded ".scalar(keys(%rps))." accounts, ".
           scalar(keys(%prev_online))." previously online.");
+
+    return if (!$opts{itemdbfile});
+    if (!open(ITEMS,$opts{itemdbfile})) {
+	if (-e $opts{itemdbfile}) { sts("QUIT :loaddb() failed: $!"); }
+	return;
+    }
+    %mapitems = ();
+    my $cnt = 0;
+    my $curtime = time();
+    while ($l=<ITEMS>) {
+	chomp($l);
+	next if $l =~ /^#/; # skip comments
+	my @i = split("\t",$l);
+	if (@i != 4) {
+	    my $debug="Anomaly in loaddb(); line $. of $opts{itemdbfile} has wrong ".
+		"fields (".scalar(@i).")";
+	    sts("QUIT: $debug");
+	    debug($debug,1);
+	}
+	push(@{$mapitems{$i[0]}}, { typeid=>$i[1], level=>$i[2], lasttime=>$curtime-$i[3] });
+	$cnt++;
+    }
+    close(ITEMS);
+    debug("loaddb(): loaded $cnt items.");
 }
 
 sub movesomeplayers(@) {
@@ -2037,9 +2061,13 @@ sub backup() {
     if (! -d ".dbbackup/") { mkdir(".dbbackup",0700); }
     if ($^O ne "MSWin32") {
         system("cp $opts{dbfile} .dbbackup/$opts{dbfile}".time());
+	system("cp $opts{itemdbfile} .dbbackup/$opts{itemdbfile}".time())
+	    if(exists($opts{itemdbfile}) and -e $opts{itemdbfile});
     }
     else {
         system("copy $opts{dbfile} .dbbackup\\$opts{dbfile}".time());
+	system("copy $opts{itemdbfile} .dbbackup\\$opts{itemdbfile}".time())
+	    if(exists($opts{itemdbfile}) and -e $opts{itemdbfile});
     }
 }
 
@@ -2372,6 +2400,26 @@ sub writedb {
         }
     }
     close(RPS);
+
+    return if(!$opts{itemdbfile});
+    open(ITEMS,">$opts{itemdbfile}") or do {
+	chanmsg("ERROR: Cannot write $opts{itemdbfile}: $!");
+	return;
+    };
+    print ITEMS join("\t", "# x:y",
+		     "type",
+		     "level",
+		     "age")."\n";
+    my $curtime = time();
+    while(my ($xy, $aref) = each(%mapitems)) {
+	foreach my $i (@$aref) {
+	    print ITEMS join("\t", $xy,
+			     $i->{typeid},
+			     $i->{level},
+			     $curtime-$i->{lasttime})."\n";
+	}
+    }
+    close(ITEMS);
 }
 
 sub readconfig {
