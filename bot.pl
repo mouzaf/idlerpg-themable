@@ -136,6 +136,8 @@ my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
 my %quest = restorequest();
 
+my %mapitems = (); # indexed by "$x:$y", each being a list of items
+
 my $rpreport = 0; # constant for reporting top players
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
@@ -1475,6 +1477,64 @@ sub unique_notice($$$) {
     return "${fortune}You have found ".unique_level($_[1],$_[2],'the',1);
 }
 
+sub downgrade_item { # returns the decreased item level
+    my $level = $_[0];
+    my ($ulevel,$tag) = ($level =~ /^(\d+)([a-z]?)/);
+    if($tag) {
+	my $uid = $uniques{$tag};
+	$tag = '' if ($ulevel <= $uniques[$uid]{baselevel});
+    }
+    $ulevel-- if ($ulevel > 0);
+    return "$ulevel$tag";
+}
+
+sub process_items() { # decrease items lying around
+    my $curtime = time();
+    while (my ($xy,$aref) = each(%mapitems)) {
+	# print STDERR ("Processing ".scalar(@$aref)." items at $xy\n");
+	for (my $i=0; $i<scalar(@$aref); ++$i) { # length may  change on the fly...
+	    my $level = $aref->[$i]{level};
+	    my $ttl = int($opts{rpitembase} * ttl(item_val($level)) / 600);
+	    if ($aref->[$i]{lasttime} + $ttl <= $curtime ) {
+		$aref->[$i]{lasttime} += $ttl;
+		$aref->[$i]{level} = downgrade_item($level);
+		if ($aref->[$i]{level} == 0) { splice(@$aref,$i,1); $i--; } # ... here
+		delete($mapitems{$xy}) if (!scalar(@$aref));
+	    }
+	}
+    }
+}
+
+sub drop_item($$$) { # drop item on the map
+    my ($xy,$typeid,$level) = @_;
+    my $ulevel = item_val($level);
+    if (!$opts{rpitembase} or $ulevel <= 0) { return; }
+    # if(!defined($mapitems{$xy})) { $mapitems{$xy} = []; }
+    push(@{$mapitems{$xy}}, { typeid=>$typeid, level=>$level, lasttime=>time() });
+}
+sub drop_user_item($$) {
+    drop_item("$rps{$_[0]}{x}:$rps{$_[0]}{y}", $_[1], $rps{$_[0]}{item}[$_[1]]);
+}
+
+sub exchange_object($$$$) {
+    my ($u,$typeid,$level,$suffix)=@_;
+    my $notice;
+    if($suffix) {
+	my $uid = $uniques{$suffix};
+	$notice=unique_notice($u, $uniques[$uid]->{desc}, $level);
+    }
+    else {
+	my $type = $items[$typeid];
+	$notice = "You found ".item_describe($typeid,$level,'a')." $type! ".
+	    "Your current $type is only ".item_describe($typeid,$rps{$u}{item}[$typeid]).
+	    ", so it seems Luck is with you!";
+    }
+    notice($notice,$rps{$u}{nick});
+    clog($notice);
+    drop_user_item($u, $typeid);
+    $rps{$u}{item}[$typeid] = "$level$suffix";
+}
+
 sub find_item { # find item for argument player
     my $u = shift;
     my $level = 1;
@@ -2344,6 +2404,10 @@ sub readconfig {
             else { $opts{$key} = $val; }
         }
         close(CONF);
+	if(!$opts{itemdbfile} and $opts{rpitembase}) {
+	    debug("Without an itemdbfile, no objects will be dropped, blanking rpitembase");
+	    delete($opts{rpitembase});
+	}
     }
 }
 
