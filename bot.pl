@@ -1220,10 +1220,13 @@ sub item_describe {
 sub user_item($$) {
     return $rps{$_[0]}{item}[$_[1]];
 }
+sub item_val($) {
+    $_[0] =~ /^(\d+)/;
+    return $1;
+}
+
 sub user_item_val($$) {
-    my $item=user_item($_[0], $_[1]);
-    $item=~s/[a-z]$//;
-    return $item;
+    return item_val(user_item($_[0], $_[1]));
 }
 
 sub ts { # timestamp
