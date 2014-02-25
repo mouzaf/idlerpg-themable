@@ -1550,33 +1550,26 @@ sub find_item { # find item for argument player
             my $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
             my $utypeid = $uniq->{typeid};
             if ($ulevel >= $level && $ulevel > user_item_val($u,$utypeid)) {
-                my $notice=unique_notice($u, $uniq->{desc}, $ulevel);
-                notice($notice,$rps{$u}{nick});
-                clog($notice);
-                $rps{$u}{item}[$utypeid] = "$ulevel$uniq->{suffix}";
+		exchange_object($u, $utypeid, $ulevel, $uniq->{suffix});
                 return;
             }
         }
     }
 
     my $typeid = int(rand(@items));
-    my $type = $items[$typeid];
     my $clevel = user_item_val($u,$typeid);
     if ($level > $clevel) {
-        my $notice = "You found ".item_describe($typeid,$level,'a').
-                     " $type! Your current $type is only ".
-                     item_describe($typeid,$clevel).                     
-                     ", so it seems Luck is with you!";
-        notice($notice,$rps{$u}{nick});
-        clog($notice);
-        $rps{$u}{item}[$typeid] = $level;
+	exchange_object($u, $typeid, $level, '');
     }
     else {
-        notice("You found ".item_describe($typeid,$level,'a').
-               " $type. Your current $type is ".
-               item_describe($typeid,$clevel).
-               ", so it seems Luck is against you. ".
-               "You toss the $type.",$rps{$u}{nick});
+	my $type = $items[$typeid];
+	notice("You found ".item_describe($typeid,$level,'a')." $type. ".
+	       "Your current $type is ".item_describe($typeid,$clevel).
+	       ", so it seems Luck is against you. You toss the $type.",
+	       $rps{$u}{nick});
+	# should we drop this on the map - will that clutter the map?
+	# definitely not if there's no decay.
+	drop_item("$rps{$u}{x}:$rps{$u}{y}", $typeid, $level) if($opts{rpitembase});
     }
 }
 
