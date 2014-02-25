@@ -2000,36 +2000,37 @@ sub penalize {
     my $pentype;
     questpencheck($username);
     if ($type eq "quit") {
-        $pen = int(20 * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = 20;
         $pentype = 'pen_quit';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "nick") {
         my $newnick = shift;
-        $pen = int(30 * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = 30;
         $pentype = 'pen_nick';
         $rps{$username}{nick} = substr($newnick,1);
 	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
-        $pen = int(shift(@_) * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = shift(@_);
         $pentype = 'pen_mesg';
     }
     elsif ($type eq "part") {
-        $pen = int(200 * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = 200;
         $pentype = 'pen_part';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "kick") {
-        $pen = int(250 * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = 250;
         $pentype = 'pen_kick';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "logout") {
-        $pen = int(20 * ($opts{rppenstep}**$rps{$username}{level}));
+        $pen = 20;
         $pentype = 'pen_logout';
         $rps{$username}{online}=0;
     }
+    $pen = int($pen * ($opts{rppenstep}**$rps{$username}{level}));
     if ($opts{limitpen} && $pen > $opts{limitpen}) {
         $pen = $opts{limitpen};
     }
