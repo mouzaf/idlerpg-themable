@@ -1801,7 +1801,8 @@ sub itemsum {
     my $sum = 0;
     if ($user eq $primnick) {
         for my $u (keys(%rps)) {
-            $sum = itemsum($u) if $sum < itemsum($u);
+	    my $usum = itemsum($u);
+	    $sum = $usum if ($sum < $usum);
         }
         return $sum+1;
     }
