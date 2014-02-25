@@ -1790,6 +1790,24 @@ sub moveplayers {
         else {
             movesomeplayers(@online);
         }
+	# pick up items lying around, priority amongst players is semi-random
+	# it depends on the order of hash traversal, which can change when the
+	# hash changes.
+	for my $u (keys(%rps)) {
+	    next unless $rps{$u}{online};
+	    my $x = $rps{$u}{x};
+	    my $y = $rps{$u}{y};
+	    next unless exists($mapitems{"$x:$y"});
+	    for (my $i=0; $i<=$#{$mapitems{"$x:$y"}}; ++$i) {
+		my $item = $mapitems{"$x:$y"}[$i];
+		my ($val,$tag) = ($item->{level} =~ /^(\d+)([a-z]?)$/);
+		if ($val > user_item_val($u, $item->{typeid})) {
+		    exchange_item($u, $item->{typeid}, $val, $tag);
+		    splice(@{$mapitems{"$x:$y"}},$i,1);
+		    --$i; # everything's shifted up by one
+		}
+	    }
+	}
     }
 }
 
