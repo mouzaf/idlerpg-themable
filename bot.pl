@@ -136,8 +136,6 @@ my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
 my %quest = restorequest();
 
-my @junk = (); # [ time of junking, type, value+suffix, alignment ]
-
 my $rpreport = 0; # constant for reporting top players
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
@@ -1278,7 +1276,6 @@ sub rpcheck { # check levels, update database
     if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
 
     moveplayers();
-    managejunk();
 
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
@@ -1710,10 +1707,6 @@ sub moveplayers {
             movesomeplayers(@online);
         }
     }
-}
-
-sub managejunk {
-    if(@junk > 10) { shift(@junk); }
 }
 
 sub mksalt { # generate a random salt for passwds
