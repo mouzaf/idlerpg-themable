@@ -1147,6 +1147,12 @@ sub fq { # deliver message(s) from queue
     }
 }
 
+sub ttl( $ ) {
+    my $lvl = $_[0];
+    return ($opts{rpbase} * ($opts{rpstep}**$lvl)) if $lvl <= 60;
+    return (($opts{rpbase} * ($opts{rpstep}**60)) + (86400*($lvl - 60)));
+}
+
 sub duration { # return human duration of seconds
     my $s = shift;
     return "NA ($s)" if $s !~ /^\d+$/;
@@ -1337,15 +1343,8 @@ sub rpcheck { # check levels, update database
                 $rps{$k}{idled} += ($curtime - $lasttime);
                 if ($rps{$k}{next} < 1) {
                     $rps{$k}{level}++;
-                    if ($rps{$k}{level} > 60) {
-                        $rps{$k}{next} = int(($opts{rpbase} *
-                                             ($opts{rpstep}**60)) +
-                                             (86400*($rps{$k}{level} - 60)));
-                    }
-                    else {
-                        $rps{$k}{next} = int($opts{rpbase} *
-                                             ($opts{rpstep}**$rps{$k}{level}));
-                    }
+		    my $ttl = int(ttl($rps{$k}{level}));
+		    $rps{$k}{next} += $ttl;
                     chanmsg("$k, the $rps{$k}{class}, has attained level ".
                             "$rps{$k}{level}! Next level in ".
                             duration($rps{$k}{next}).".");
