@@ -1062,16 +1062,16 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq 'itemlevel') { # debugging aid
-                if($arg[4]<0 or $arg[4]>$#items) {
-                    notice("0 <= item <= $#items", $usernick);
-                }
-                elsif($arg[5] !~ m/^\d\d?\d?/) {
-                    notice("0 <= level <= 999", $usernick); 
-                }
-                else { 
-                    notice("itemlevel($arg[4],$arg[5]) = ".item_describe($arg[4],$arg[5],'A')." $items[$arg[4]]", 
+		my ($ok, $typeid, $level, $nlevel) = ($arg[4] =~ /^(\d+)([a-z])$/)
+		    ? (defined($uniques[$uniques{$2}]), $uniques[$uniques{$2}]->{typeid}, $arg[4], $1)
+		    : (1, $arg[4], $arg[5], $arg[5]);
+		if(!$ok or $typeid<0 or $typeid>$#items or $nlevel<0 or $nlevel>999) {
+		    notice("0 <= item <= $#items, 0 <= level <= 999", $usernick);
+		}
+		else {
+		    notice("itemlevel($typeid,$level) = ".item_describe($typeid,$level)." $items[$typeid]",
                            $usernick); 
-                }
+		}
             }
         }
         # penalize returns true if user was online and successfully penalized.
