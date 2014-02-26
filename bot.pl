@@ -987,7 +987,8 @@ sub parse {
             elsif ($arg[3] eq "info") {
                 my $info;
                 if (!ha($username) && $opts{allowuserinfo}) {
-                    $info = "IRPG bot v$version by jotun, ".
+		    my $hash=$versionhash?(" (".substr($versionhash,0,12).")"):'';
+		    $info = "IRPG bot v$version$hash by jotun et al., ".
                             "http://idlerpg.net/. On via server: ".
                             $opts{servers}->[0].". Admins online: ".
                             join(", ", map { $rps{$_}{nick} }
