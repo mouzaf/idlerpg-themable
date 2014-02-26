@@ -139,6 +139,9 @@ my %quest = restorequest();
 my %mapitems = (); # indexed by "$x:$y", each being a list of items
 
 my $rpreport = 0; # constant for reporting top players
+my $oldrpreport = 0; # prior $rpreport so threshold-crossing can be detected
+sub report_threshold($) { return int($rpreport/$_[0]) > int($oldrpreport/$_[0]); }
+
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
 my $pausemode = 0; # pausemode on/off flag
@@ -1282,7 +1285,7 @@ sub rpcheck { # check levels, update database
 
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
-    if ($rpreport%120==0 && $opts{writequestfile}) { writequestfile(); }
+    if (report_threshold(120) && $opts{writequestfile}) { writequestfile(); }
     if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
@@ -1298,7 +1301,7 @@ sub rpcheck { # check levels, update database
         }
         # quest type 2 awards are handled in moveplayers()
     }
-    if ($rpreport && $rpreport%36000==0) { # 10 hours
+    if ($rpreport && report_threshold(36000)) { # 10 hours
         my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
                        $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
         chanmsg("Idle RPG Top Players:") if @u;
@@ -1310,7 +1313,7 @@ sub rpcheck { # check levels, update database
         }
         backup();
     }
-    if ($rpreport%3600==0 && $rpreport) { # 1 hour
+    if (report_threshold(3600) && $rpreport) { # 1 hour
         my @players = grep { $rps{$_}{online} &&
                              $rps{$_}{level} > 44 } keys(%rps);
         # 20% of all players must be level 45+
@@ -1322,14 +1325,14 @@ sub rpcheck { # check levels, update database
             splice(@bans,0,4);
         }
     }
-    if ($rpreport%1800==0) { # 30 mins
+    if (report_threshold(1800)) { # 30 mins
         if ($opts{botnick} ne $primnick) {
             (my $ghostcmd = $opts{botghostcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($ghostcmd) if $ghostcmd;
             sts("NICK $primnick");
         }
     }
-    if ($rpreport%600==0 && $pausemode) { # warn every 10m
+    if (report_threshold(600) && $pausemode) { # warn every 10m
         chanmsg("WARNING: Cannot write database in PAUSE mode!");
     }
     # do not write in pause mode, and do not write if not yet connected. (would
@@ -1358,8 +1361,9 @@ sub rpcheck { # check levels, update database
             # attempt to make sure this is an actual user, and not just an
             # artifact of a bad PEVAL
         }
-        if (!$pausemode && $rpreport%60==0) { writedb(); }
-        $rpreport += $opts{self_clock};
+	if (!$pausemode && report_threshold(60)) { writedb(); }
+	$oldrpreport = $rpreport;
+	$rpreport += $curtime - $lasttime;
         $lasttime = $curtime;
     }
 }
