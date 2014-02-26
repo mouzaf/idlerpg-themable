@@ -1301,7 +1301,7 @@ sub rpcheck { # check levels, update database
         }
         # quest type 2 awards are handled in moveplayers()
     }
-    if ($rpreport && report_threshold(36000)) { # 10 hours
+    if ($rpreport && report_threshold($opts{top_period}//36000)) { # default 10 hours
         my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
                        $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
         chanmsg("Idle RPG Top Players:") if @u;
