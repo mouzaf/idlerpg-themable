@@ -213,9 +213,10 @@ if (! -e $opts{dbfile}) {
 # this is almost silly...
 my $scriptdir=$0;
 $scriptdir =~ s/\/[^\/]+$//;
+my $versionhash;
 if ($opts{checkupdates} and -r "$scriptdir/.git/refs/heads/master") {
-    my $current=`cat "$scriptdir/.git/refs/heads/master"`; chomp($current);
-    print "Checking for updates (at $current)\n";
+    $versionhash=`cat "$scriptdir/.git/refs/heads/master"`; chomp($versionhash);
+    print "Checking for updates (at $versionhash)\n";
     my $tempsock = IO::Socket::INET->new(PeerAddr=>"fatphil.org:80",
                                          Timeout => 15);
     if ($tempsock) {
@@ -225,7 +226,7 @@ if ($opts{checkupdates} and -r "$scriptdir/.git/refs/heads/master") {
         while ($line=<$tempsock>) {
             chomp($line);
             if ($line =~ /^([0-9a-f]+)$/) {
-		print "You are ".($1 eq $current ?"up to date\n":"NOT running the latest version (commit id $1).\n");
+		print "You are ".($1 eq $versionhash ?"up to date\n":"NOT running the latest version (commit id $1).\n");
 		last();
             }
         }
