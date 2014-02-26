@@ -1568,7 +1568,7 @@ sub find_item { # find item for argument player
     else {
 	my $type = $items[$typeid];
 	notice("You found ".item_describe($typeid,$level,'a')." $type. ".
-	       "Your current $type is ".item_describe($typeid,$clevel).
+	       "Your current $type is ".item_describe($typeid,user_item($u,$typeid)).
 	       ", so it seems Luck is against you. You toss the $type.",
 	       $rps{$u}{nick});
 	# should we drop this on the map - will that clutter the map?
