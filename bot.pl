@@ -1795,7 +1795,7 @@ sub moveplayers {
 		my $item = $mapitems{"$x:$y"}[$i];
 		my ($val,$tag) = ($item->{level} =~ /^(\d+)([a-z]?)$/);
 		if ($val > user_item_val($u, $item->{typeid})) {
-		    exchange_item($u, $item->{typeid}, $val, $tag);
+		    exchange_object($u, $item->{typeid}, $val, $tag);
 		    splice(@{$mapitems{"$x:$y"}},$i,1);
 		    --$i; # everything's shifted up by one
 		}
