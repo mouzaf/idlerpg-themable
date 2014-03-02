@@ -800,21 +800,14 @@ sub parse {
                 elsif ($arg[4] && !exists($rps{$arg[4]})) {
                     privmsg("No such user.",$usernick);
                 }
-                elsif ($arg[4]) { # optional 'user' argument
-                    privmsg("$arg[4]: Level $rps{$arg[4]}{level} ".
-                            "$rps{$arg[4]}{class}; Status: O".
-                            ($rps{$arg[4]}{online}?"n":"ff")."line; ".
-                            "TTL: ".duration($rps{$arg[4]}{next})."; ".
-                            "Idled: ".duration($rps{$arg[4]}{idled}).
-                            "; Item sum: ".itemsum($arg[4]),$usernick);
-                }
-                else { # no argument, look up this user
-                    privmsg("$username: Level $rps{$username}{level} ".
-                            "$rps{$username}{class}; Status: O".
-                            ($rps{$username}{online}?"n":"ff")."line; ".
-                            "TTL: ".duration($rps{$username}{next})."; ".
-                            "Idled: ".duration($rps{$username}{idled})."; ".
-                            "Item sum: ".itemsum($username),$usernick);
+                else {
+		    my $u=$arg[4]//$username;
+                    privmsg("$u: Level $rps{$u}{level} ".
+                            "$rps{$u}{class}; Status: O".
+                            ($rps{$u}{online}?"n":"ff")."line; ".
+                            "TTL: ".duration($rps{$u}{next})."; ".
+                            "Idled: ".duration($rps{$u}{idled}).
+                            "; Item sum: ".itemsum($u),$usernick);
                 }
             }
             elsif ($arg[3] eq "whoami") {
