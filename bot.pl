@@ -861,7 +861,7 @@ sub parse {
                     privmsg("You are not logged in.", $usernick)
                 }
                 elsif (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
-                    privmsg("Try: GENDER <m|f|n>", $usernick);
+                    privmsg("Try: GENDER <m|f|n|u|pc>", $usernick);
                 }
                 else {
                     $rps{$username}{gender} = lc($arg[4]);
