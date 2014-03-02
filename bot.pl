@@ -821,6 +821,18 @@ sub parse {
                             $usernick);
                 }
             }
+            elsif ($arg[3] eq "inventory") {
+                if (!defined($username)) {
+                    privmsg("You are not logged in.", $usernick);
+                }
+                else {
+		    my @list = map {
+			item_describe($_,$rps{$username}{item}[$_], 'a').
+			    " $items[$_]"; }(0..$#items);
+		    $list[-1]="and $list[-1].";
+                    privmsg("You are carrying ".join(", ", @list), $usernick);
+                }
+            }
             elsif ($arg[3] eq "newpass") {
                 if (!defined($username)) {
                     privmsg("You are not logged in.", $usernick)
