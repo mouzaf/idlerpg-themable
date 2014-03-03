@@ -1510,7 +1510,7 @@ sub process_items() { # decrease items lying around
 	    if ($aref->[$i]{lasttime} + $ttl <= $curtime ) {
 		$aref->[$i]{lasttime} += $ttl;
 		$aref->[$i]{level} = downgrade_item($level);
-		if ($aref->[$i]{level} == 0) { splice(@$aref,$i,1); $i--; } # ... here
+		if ($aref->[$i]{level} eq '0') { splice(@$aref,$i,1); $i--; } # ... here
 		delete($mapitems{$xy}) if (!scalar(@$aref));
 	    }
 	}
