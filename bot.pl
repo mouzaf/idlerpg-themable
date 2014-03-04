@@ -412,7 +412,7 @@ sub parse {
                 while (@vnicks) {
                     my @removed = splice(@vnicks,0,$opts{modesperline});
                     sts("MODE $opts{botchan} +".
-                        ('v' x $opts{modesperline})." ".
+                        ('v' x scalar(@removed))." ".
                         join(" ",@removed));
                 }
             }
