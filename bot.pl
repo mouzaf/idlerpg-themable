@@ -835,7 +835,7 @@ sub parse {
             }
             elsif ($arg[3] eq "newpass") {
                 if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+                    privmsg("You are not logged in.", $usernick);
                 }
                 elsif (!defined($arg[4])) {
                     privmsg("Try: NEWPASS <new password>", $usernick);
@@ -847,7 +847,7 @@ sub parse {
             }
             elsif ($arg[3] eq "align") {
                 if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+                    privmsg("You are not logged in.", $usernick);
                 }
                 elsif (!defined($arg[4]) || (lc($arg[4]) ne "good" &&
                        lc($arg[4]) ne "neutral" && lc($arg[4]) ne "evil")) {
@@ -863,7 +863,7 @@ sub parse {
             }
             elsif ($arg[3] eq "gender") {
                 if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+                    privmsg("You are not logged in.", $usernick);
                 }
                 elsif (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
                     privmsg("Try: GENDER <m|f|n|u|pc>", $usernick);
@@ -877,7 +877,7 @@ sub parse {
             }
             elsif ($arg[3] eq "removeme") {
                 if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+                    privmsg("You are not logged in.", $usernick);
                 }
                 else {
                     privmsg("Account $username removed.",$usernick);
