@@ -235,25 +235,25 @@ if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") {
     else { print debug("Could not connect to update server.")."\n"; }
 }
 
-my %admin_cmd_exceptions=(
-    (map {$_=>''} qw/delold del hog event rehash chpass chuser chclass push newquest die/,
+my %cmd_permissions=(
+    (map {$_=>'admin'} qw/delold del hog event rehash chpass chuser chclass push newquest die/,
      qw/reloaddb backup pause silent jump restart clearq/),
-    peval=>'ownerpevalonly', mkadmin=>'owneraddonly', deladmin=>'ownerdelonly',
-    info=>'allowuserinfo',
+    peval=>'admin+ownerpevalonly', mkadmin=>'admin+owneraddonly', deladmin=>'admin+ownerdelonly',
+    info=>'admin|allowuserinfo',
     );
 sub cmd_admin_check($$) {
     my ($cmd,$username)=@_;
     # Always OK if we're the owner
     if($username eq $opts{owner}) { return 1; }
     # OK if admin not needed
-    if(!exists($admin_cmd_exceptions{$cmd})) { return 1; }
-    my $ex=$admin_cmd_exceptions{$cmd};
+    if(!exists($cmd_permissions{$cmd})) { return 1; }
+    my $ex=$cmd_permissions{$cmd};
     # OK if opts enable this for anyone
-    if($ex =~ m/^allowuser.*/) { return $opts{$ex} ? 1 : ha($username); }
-    # Hereafter, it's not OK if we're not an admin.
-    if(!ha($username)) { return 0; }
+    if($ex =~ m/^admin\|(allowuser\w+)$/) { return $opts{$1} ? 1 : ha($username); }
+    # If permissions require admin with no modification, then we can bail
+    if($ex =~ m/^admin$/) { return ha($username); }
     # So we're admin but not owner - is that a problem?
-    if($ex =~ m/owner.*only/) { return $opts{$ex} ? 0 : 1; }
+    if($ex =~ m/^admin\+(owner\w+only)/) { return $opts{$1} ? 0 : ha($username); }
     # Fail if we don't understand the exception?
     return length($ex) ? 0 : 1;
 }
