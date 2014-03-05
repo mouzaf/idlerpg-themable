@@ -470,22 +470,16 @@ sub parse {
                        "http://idlerpg.net/\1",$usernick);
             }
             elsif ($arg[3] eq "peval") {
-                if (!ha($username) || ($opts{ownerpevalonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to PEVAL.", $usernick);
-                }
-                else {
-                    my @peval = eval "@arg[4..$#arg]";
-                    if (@peval >= 4 || length("@peval") > 1024) {
-                        privmsg("Command produced too much output to send ".
-                                "outright; queueing ".length("@peval").
-                                " bytes in ".scalar(@peval)." items. Use ".
-                                "CLEARQ to clear queue if needed.",$usernick,1);
-                        privmsg("$_",$usernick) for @peval;
-                    }
-                    else { privmsg("$_",$usernick, 1) for @peval; }
-                    privmsg("EVAL ERROR: $@", $usernick, 1) if $@;
-                }
+		my @peval = eval "@arg[4..$#arg]";
+		if (@peval >= 4 || length("@peval") > 1024) {
+		    privmsg("Command produced too much output to send ".
+			    "outright; queueing ".length("@peval").
+			    " bytes in ".scalar(@peval)." items. Use ".
+			    "CLEARQ to clear queue if needed.",$usernick,1);
+		    privmsg("$_",$usernick) for @peval;
+		}
+		else { privmsg("$_",$usernick, 1) for @peval; }
+		privmsg("EVAL ERROR: $@", $usernick, 1) if $@;
             }
             elsif ($arg[3] eq "register") {
                 if (defined $username) {
@@ -600,11 +594,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "delold") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to DELOLD.", $usernick);
-                }
                 # insure it is a number
-                elsif ($arg[4] !~ /^[\d\.]+$/) {
+		if ($arg[4] !~ /^[\d\.]+$/) {
                     privmsg("Try: DELOLD <# of days>", $usernick, 1);
                 }
                 else {
@@ -617,10 +608,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "del") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to DEL.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                    privmsg("Try: DEL <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -632,11 +620,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "mkadmin") {
-                if (!ha($username) || ($opts{owneraddonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to MKADMIN.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: MKADMIN <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -648,11 +632,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "deladmin") {
-                if (!ha($username) || ($opts{ownerdelonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to DELADMIN.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: DELADMIN <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -668,42 +648,24 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "hog") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to HOG.", $usernick);
-                }
-                else {
-                    chanmsg("$usernick has summoned the Hand of God.");
-                    hog();
-                }
+		chanmsg("$usernick has summoned the Hand of God.");
+		hog();
             }
             elsif ($arg[3] eq "event") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to EVENT.", $usernick);
-                }
-                else {
-                    my $updown = defined($arg[4]) ? ($arg[4] eq 'good') - ($arg[4] eq 'bad') : 0;
-                    my %desc=(-1 => 'bad', 1 => 'good', 0 => 'random');
-                    chanmsg("$usernick has brought about a $desc{$updown} event.");
-                    modify_item($updown || (rand()>0.5)*2-1);
-                }
+		my $updown = defined($arg[4]) ? ($arg[4] eq 'good') - ($arg[4] eq 'bad') : 0;
+		my %desc=(-1 => 'bad', 1 => 'good', 0 => 'random');
+		chanmsg("$usernick has brought about a $desc{$updown} event.");
+		modify_item($updown || (rand()>0.5)*2-1);
             }
             elsif ($arg[3] eq "rehash") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to REHASH.", $usernick);
-                }
-                else {
-                    readconfig();
-                    read_items();
-                    read_events();
-                    privmsg("Reread config file, items, and events.",$usernick,1);
-                    $opts{botchan} =~ s/ .*//; # strip channel key if present
-                }
+		readconfig();
+		read_items();
+		read_events();
+		privmsg("Reread config file, items, and events.",$usernick,1);
+		$opts{botchan} =~ s/ .*//; # strip channel key if present
             }
             elsif ($arg[3] eq "chpass") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHPASS.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHPASS <char name> <new pass>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -715,10 +677,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "chuser") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHUSER.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHUSER <char name> <new char name>",
                             $usernick, 1);
                 }
@@ -735,10 +694,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "chclass") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHCLASS.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHCLASS <char name> <new char class>",
                             $usernick, 1);
                 }
@@ -752,11 +708,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "push") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to PUSH.", $usernick);
-                }
                 # insure it's a positive or negative, integral number of seconds
-                elsif ($arg[5] !~ /^\-?\d+$/) {
+		if ($arg[5] !~ /^\-?\d+$/) {
                     privmsg("Try: PUSH <char name> <seconds>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -787,10 +740,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "newquest") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to NEWQUEST.", $usernick);
-                }
-                elsif(@{$quest{questers}}) {
+		if(@{$quest{questers}}) {
                     privmsg("There is already a quest.",$usernick);
                 }
                 else {
@@ -924,20 +874,12 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "die") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to DIE.", $usernick);
-                }
-                else {
-                    $opts{reconnect} = 0;
-                    writedb();
-                    sts("QUIT :DIE ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
-                }
+		$opts{reconnect} = 0;
+		writedb();
+		sts("QUIT :DIE ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
             }
             elsif ($arg[3] eq "reloaddb") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to RELOADDB.", $usernick);
-                }
-                elsif (!$pausemode) {
+		if (!$pausemode) {
                     privmsg("ERROR: Can only use LOADDB while in PAUSE mode.",
                             $usernick, 1);
                 }
@@ -948,29 +890,16 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "backup") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to BACKUP.", $usernick);
-                }
-                else {
-                    backup();
-                    privmsg("$opts{dbfile} copied to ".
-                            ".dbbackup/$opts{dbfile}".time(),$usernick,1);
-                }
+		backup();
+		privmsg("$opts{dbfile} copied to ".
+			".dbbackup/$opts{dbfile}".time(),$usernick,1);
             }
             elsif ($arg[3] eq "pause") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to PAUSE.", $usernick);
-                }
-                else {
-                    $pausemode = $pausemode ? 0 : 1;
-                    privmsg("PAUSE_MODE set to $pausemode.",$usernick,1);
-                }
+		$pausemode = $pausemode ? 0 : 1;
+		privmsg("PAUSE_MODE set to $pausemode.",$usernick,1);
             }
             elsif ($arg[3] eq "silent") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to SILENT.", $usernick);
-                }
-                elsif (!defined($arg[4]) || $arg[4] < 0 || $arg[4] > 3) {
+		if (!defined($arg[4]) || $arg[4] < 0 || $arg[4] > 3) {
                     privmsg("Try: SILENT <mode>", $usernick,1);
                 }
                 else {
@@ -979,10 +908,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "jump") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to JUMP.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: JUMP <server[:port]>", $usernick, 1);
                 }
                 else {
@@ -995,25 +921,15 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "restart") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to RESTART.", $usernick);
-                }
-                else {
-                    writedb();
-                    sts("QUIT :RESTART ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
-                    close($sock);
-                    exec("perl $0");
-                }
+		writedb();
+		sts("QUIT :RESTART ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
+		close($sock);
+		exec("perl $0");
             }
             elsif ($arg[3] eq "clearq") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to CLEARQ.", $usernick);
-                }
-                else {
-                    undef(@queue);
-                    chanmsg("Outgoing message queue cleared by $arg[0].");
-                    privmsg("Outgoing message queue cleared.",$usernick,1);
-                }
+		undef(@queue);
+		chanmsg("Outgoing message queue cleared by $arg[0].");
+		privmsg("Outgoing message queue cleared.",$usernick,1);
             }
             elsif ($arg[3] eq "info") {
                 my $info;
