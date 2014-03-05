@@ -235,6 +235,29 @@ if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") {
     else { print debug("Could not connect to update server.")."\n"; }
 }
 
+my %admin_cmd_exceptions=(
+    (map {$_=>''} qw/delold del hog event rehash chpass chuser chclass push newquest die/,
+     qw/reloaddb backup pause silent jump restart clearq/),
+    peval=>'ownerpevalonly', mkadmin=>'owneraddonly', deladmin=>'ownerdelonly',
+    info=>'allowuserinfo',
+    );
+sub cmd_admin_check($$) {
+    my ($cmd,$username)=@_;
+    # Always OK if we're the owner
+    if($username eq $opts{owner}) { return 1; }
+    # OK if admin not needed
+    if(!exists($admin_cmd_exceptions{$cmd})) { return 1; }
+    my $ex=$admin_cmd_exceptions{$cmd};
+    # OK if opts enable this for anyone
+    if($ex =~ m/^allowuser.*/) { return $opts{$ex} ? 1 : ha($username); }
+    # Hereafter, it's not OK if we're not an admin.
+    if(!ha($username)) { return 0; }
+    # So we're admin but not owner - is that a problem?
+    if($ex =~ m/owner.*only/) { return $opts{$ex} ? 0 : 1; }
+    # Fail if we don't understand the exception?
+    return length($ex) ? 0 : 1;
+}
+
 print "\n".debug(($opts{daemonize}?"B":"NOT b")."ecoming a daemon...")."\n";
 daemonize() if($opts{daemonize});
 
@@ -439,7 +462,10 @@ sub parse {
         $arg[0] = substr($arg[0],1); # strip leading : from privmsgs
         if (lc($arg[2]) eq lc($opts{botnick})) { # to us, not channel
             $arg[3] = lc(substr($arg[3],1)); # lowercase, strip leading :
-            if ($arg[3] eq "\1version\1") {
+	    if(!cmd_admin_check($arg[3],$username)) {
+		privmsg("You don't have access to ".uc($arg[3]).".", $usernick);
+	    }
+	    elsif ($arg[3] eq "\1version\1") {
                 notice("\1VERSION IRPG bot v$version by jotun; ".
                        "http://idlerpg.net/\1",$usernick);
             }
