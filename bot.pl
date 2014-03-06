@@ -244,7 +244,7 @@ my %cmd_permissions=(
 sub cmd_admin_check($$) {
     my ($cmd,$username)=@_;
     # Always OK if we're the owner
-    if($username eq $opts{owner}) { return 1; }
+    if(defined($username) and ($username eq $opts{owner})) { return 1; }
     # OK if admin not needed
     if(!exists($cmd_permissions{$cmd})) { return 1; }
     my $ex=$cmd_permissions{$cmd};
