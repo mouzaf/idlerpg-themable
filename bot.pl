@@ -737,12 +737,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "logout") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                else {
-                    penalize($username,"logout");
-                }
+		penalize($username,"logout");
             }
             elsif ($arg[3] eq "newquest") {
 		if(@{$quest{questers}}) {
@@ -774,11 +769,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "status" && $opts{statuscmd}) {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
                 # argument is optional
-                elsif ($arg[4] && !exists($rps{$arg[4]})) {
+		if ($arg[4] && !exists($rps{$arg[4]})) {
                     privmsg("No such user.",$usernick);
                 }
                 else {
@@ -792,33 +784,20 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "whoami") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                else {
-                    privmsg("You are $username, the level ".
-                            $rps{$username}{level}." $rps{$username}{class}. ".
-                            "Next level in ".duration($rps{$username}{next}),
-                            $usernick);
-                }
+		privmsg("You are $username, the level ".
+			$rps{$username}{level}." $rps{$username}{class}. ".
+			"Next level in ".duration($rps{$username}{next}),
+			$usernick);
             }
             elsif ($arg[3] eq "inventory") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                else {
-		    my @list = map {
-			item_describe($_,$rps{$username}{item}[$_], 'a').
-			    " $items[$_]"; }(0..$#items);
-		    $list[-1]="and $list[-1].";
-                    privmsg("You are carrying ".join(", ", @list), $usernick);
-                }
+		my @list = map {
+		    item_describe($_,$rps{$username}{item}[$_], 'a').
+			" $items[$_]"; }(0..$#items);
+		$list[-1]="and $list[-1].";
+		privmsg("You are carrying ".join(", ", @list), $usernick);
             }
             elsif ($arg[3] eq "newpass") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: NEWPASS <new password>", $usernick);
                 }
                 else {
@@ -827,11 +806,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "align") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                elsif (!defined($arg[4]) || (lc($arg[4]) ne "good" &&
-                       lc($arg[4]) ne "neutral" && lc($arg[4]) ne "evil")) {
+                if (!defined($arg[4]) ||
+		    (lc($arg[4]) ne "good" && lc($arg[4]) ne "neutral" && lc($arg[4]) ne "evil")) {
                     privmsg("Try: ALIGN <good|neutral|evil>", $usernick);
                 }
                 else {
@@ -843,10 +819,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "gender") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                elsif (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
+		if (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
                     privmsg("Try: GENDER <m|f|n|u|pc>", $usernick);
                 }
                 else {
@@ -857,15 +830,10 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "removeme") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                else {
-                    privmsg("Account $username removed.",$usernick);
-                    chanmsg("$arg[0] removed his account, $username, the ".
-                            $rps{$username}{class}.".");
-                    delete($rps{$username});
-                }
+		privmsg("Account $username removed.",$usernick);
+		chanmsg("$arg[0] removed his account, $username, the ".
+			$rps{$username}{class}.".");
+		delete($rps{$username});
             }
             elsif ($arg[3] eq "help") {
                 if (!ha($username)) {
