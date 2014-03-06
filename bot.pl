@@ -257,7 +257,7 @@ sub cmd_admin_check($$) {
     # Fail if we don't understand the exception?
     return length($ex) ? 0 : 1;
 }
-my %cmd_login_req=(map{$_=>1} qw/logout status whoami inventory newpass align gender removeme/);
+my %cmd_login_req=(map{$_=>1} qw/logout status whoami inventory newpass newclass align gender removeme/);
 sub cmd_login_check($$) { return exists($cmd_login_req{$_[0]}) && !defined($_[1]); }
 
 print "\n".debug(($opts{daemonize}?"B":"NOT b")."ecoming a daemon...")."\n";
@@ -803,6 +803,16 @@ sub parse {
                 else {
                     $rps{$username}{pass} = crypt($arg[4],mksalt());
                     privmsg("Your password was changed.",$usernick);
+                }
+            }
+            elsif ($arg[3] eq "newclass") {
+                if (!defined($arg[4])) {
+                    privmsg("Try: NEWCLASS <new class>", $usernick);
+                }
+                else {
+                    $rps{$username}{class} = "@arg[4..$#arg]";
+                    privmsg("Class for $username changed to @arg[4..$#arg].",
+                            $usernick, 1);
                 }
             }
             elsif ($arg[3] eq "align") {
