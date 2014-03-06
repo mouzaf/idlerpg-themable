@@ -257,6 +257,8 @@ sub cmd_admin_check($$) {
     # Fail if we don't understand the exception?
     return length($ex) ? 0 : 1;
 }
+my %cmd_login_req=(map{$_=>1} qw/logout status whoami inventory newpass align gender removeme/);
+sub cmd_login_check($$) { return exists($cmd_login_req{$_[0]}) && !defined($_[1]); }
 
 print "\n".debug(($opts{daemonize}?"B":"NOT b")."ecoming a daemon...")."\n";
 daemonize() if($opts{daemonize});
@@ -464,6 +466,9 @@ sub parse {
             $arg[3] = lc(substr($arg[3],1)); # lowercase, strip leading :
 	    if(!cmd_admin_check($arg[3],$username)) {
 		privmsg("You don't have access to ".uc($arg[3]).".", $usernick);
+	    }
+	    elsif (cmd_login_check($arg[3],$username)) {
+		privmsg("You are not logged in.", $usernick);
 	    }
 	    elsif ($arg[3] eq "\1version\1") {
                 notice("\1VERSION IRPG bot v$version by jotun; ".
