@@ -753,11 +753,11 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "logout") {
-                if (defined($username)) {
-                    penalize($username,"logout");
+                if (!defined($username)) {
+                    privmsg("You are not logged in.", $usernick);
                 }
                 else {
-                    privmsg("You are not logged in.", $usernick);
+                    penalize($username,"logout");
                 }
             }
             elsif ($arg[3] eq "newquest") {
