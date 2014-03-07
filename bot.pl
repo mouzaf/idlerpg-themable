@@ -125,10 +125,10 @@ my %hisherits = (m=>'his',f => 'her', u => 'their',n => 'its',pc => 'his/her/its
 my %hishersits= (m=>'his',f => 'hers',u =>'theirs',n => 'its',pc => 'his/hers/its');
 
 my %rps; # role-players
-sub they($) { return $hesheit{$rps{$_[0]}{gender}}; }
-sub them($) { return $himherit{$rps{$_[0]}{gender}}; }
-sub their($) { return $hisherits{$rps{$_[0]}{gender}}; }
-sub were($) { return $rps{$_[0]}{gender} eq 'u' ? 'were' : 'was'; }
+sub they( $ ) { return $hesheit{$rps{$_[0]}{gender}}; }
+sub them( $ ) { return $himherit{$rps{$_[0]}{gender}}; }
+sub their( $ ) { return $hisherits{$rps{$_[0]}{gender}}; }
+sub were( $ ) { return $rps{$_[0]}{gender} eq 'u' ? 'were' : 'was'; }
 
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
@@ -140,7 +140,7 @@ my %mapitems = (); # indexed by "$x:$y", each being a list of items
 
 my $rpreport = 0; # constant for reporting top players
 my $oldrpreport = 0; # prior $rpreport so threshold-crossing can be detected
-sub report_threshold($) { return int($rpreport/$_[0]) > int($oldrpreport/$_[0]); }
+sub report_threshold( $ ) { return int($rpreport/$_[0]) > int($oldrpreport/$_[0]); }
 
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
