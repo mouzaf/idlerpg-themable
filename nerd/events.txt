@@ -4,6 +4,7 @@ W Seymore Cray thinks that with %player%'s clever ideas he can push his cores to
 L Dijkstra frowned upon %player% and %his% haphazard use of goto to create spaghetti code, so slowed %him%
 L John McCarthy, perturbed by %player%'s jumble of brackets that was not worthy to be called either code or data, delayed %him%
 L Dan Bernstein rants and raves bout how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%
+L Linus Torvalds publicly lambasted %player% on LKML such that %he% can no longer look %his% coworkers in the eye. This delayed %him%
 H %player0% and %player1%'s frequent contributions to an Open Source project impress the Flying Spaghetti Monster, and he touches them with his noodly appendage.
 H %player0% and %player1%'s persistent refuting of Microsoft FUD impresses the Flying Spaghetti Monster, and he touches them with his noodly appendage.
 H %player0% and %player1%'s unrelenting gainsaying of RIAA and MPAA FUD impresses the Flying Spaghetti Monster, and he touches them with his noodly appendage.
@@ -16,7 +17,7 @@ C has a very brown power supply
 C forgot %{1##6}% characters in %his% password
 C suffered from very brown electricity
 C had damaging electrical spikes of up to %{300#+100#20000}% volts
-C 's webserver got hit by a %{CSS flaw|SQL injection|DDoS}%
+C 's webserver got hit by a %{XSS flaw|SQL injection|DDoS}%
 C 's ISP had downtime
 C had upstream routing problems
 C ran out of storage space
@@ -28,7 +29,7 @@ C rebooted into %{Net|Open|Free}%BSD for %{5##60}% minutes
 C couldn't use %{1##30}% sticky keys on %his% keyboard
 C lost the ball from %his% mouse
 C did 'emerge -u world' in %his% gentoo system
-C filled in too many TPS reports, about %{30##80}% in total
+C filled in %{30##80}% TPS reports, and may have to work on Saturday
 C dropped %his% laptop
 C can't boot any more
 C lost %his% VPN key
@@ -42,17 +43,20 @@ C got -%{1##50}% karma on SoylentNews
 C got forceably migrated to Slashdot Beta
 C watched meatspin for %{20##200}% spins
 C got fooled into following a goatse link
-C 's patch got publicly lambasted by Linus Torvalds on LKML, %he% can no longer look %his% coworkers in the eye
 C ran out of coffee
+C relied on "the cloud" for backup storage
+C got all retro and played %{Pong|Zaxxon|Donkey Kong|Breakout|Jet Set Willy|Elite|Doom}% all day
+C got locked out of %{Google+|LinkedIn|GMail|Yahoo!}%
 C got tasked with fixing healthcare.gov
 G got paid to consult on fixing healthcare.gov
+G cancelled his %{Google+|LinkedIn|Yahoo!}% account with extreme prejudice
 G got a comment moderated to +5 %{troll|flamebait}% on SoylentNews
 G added slashdot.org to %his% HOSTS file
 G reverse engineered how overclocking works in %his% BIOS
 G cracked %{Bill Gates'|Richard Stallman's|Hans Peter Anvin's|Linus Torvald's|Miguel de Icaza's}% password
 G installed a rootkit on %{100##2000}% %{US|Chinese}% government machines, forming a botnet
 G discovered new optimisation flags for %his% compiler
-G cracked %his% neighbours wifi
+G cracked %his% neighbours' wifi
 G pulled an all-nighter, thanks to %{5##20}% cups of coffee
 G got root access to the local university's supercluster
 G upgraded %his% compiler
@@ -77,6 +81,8 @@ Q1 quell the riot that has sprung up between Gnome-weenies and KDE-weenies
 Q1 quell the riot that has sprung up between Android-weenies and iPhone-weenies
 Q1 quell the riot that has sprung up between Perl-weenies and Python-weenies
 Q1 quell the riot that has sprung up between Slashdot-weenies and SoylentNews-weenies
+Q1 quell the riot that has sprung up between Pipedot-weenies and Technocrat-weenies
+Q1 quell the riot that has sprung up between JSP-weenies and ASP-weenies
 Q2 400 475 480 380 teach the One True Brace Style to the non-believers at Cl'guba
 Q1 Locate and slay the beastly dragon foretold by the sages Aho and Ullman
 Q2 290 65 325 270 Gather the finest craftsmen in the land, so that Charles Babbage may complete his Analytical Engine
