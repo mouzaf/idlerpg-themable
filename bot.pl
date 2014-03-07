@@ -790,9 +790,7 @@ sub parse {
 			$usernick);
             }
             elsif ($arg[3] eq "inventory") {
-		my @list = map {
-		    item_describe($_,$rps{$username}{item}[$_], 'a').
-			" $items[$_]"; }(0..$#items);
+		my @list = map { item_describe($_,$rps{$username}{item}[$_], 'a', 1); }(0..$#items);
 		$list[-1]="and $list[-1].";
 		privmsg("You are carrying ".join(", ", @list), $usernick);
             }
@@ -1001,8 +999,8 @@ sub parse {
 		    notice("0 <= item <= $#items, 0 <= level <= 999", $usernick);
 		}
 		else {
-		    notice("itemlevel($typeid,$level) = ".item_describe($typeid,$level)." $items[$typeid]",
-                           $usernick); 
+		    notice("itemlevel($typeid,$level) = ".item_describe($typeid,$level,'',1),
+			   $usernick); 
 		}
             }
         }
@@ -1095,17 +1093,18 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
-sub unique_describe($$$$) { # uref, level, article, full
-    my ($uref, $level, $article, $full)=($_[0], ($_[2]?"$_[2] ":''), $_[3]);
+sub unique_describe($$$$$) { # uref, level, article, saytype, full
+    my ($uref, $level, $article, $saytype, $full)=($_[0], $_[1], ($_[2]?"$_[2] ":''), $_[3], $_[4]);
+    $saytype = $saytype ? " $items[$uref->{typeid}]" : '';
     my $string=$uref->{desc};
     $string =~ s/\. [A-Z].*// if(!$full);
     my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
     # $string =~ s/%nick%/$_[2]/g;
-    return $article . ($haslevel ? '' : "level $_[1] ") . $string;
+    return $article . ($haslevel ? '' : "level $_[1] ") . $string . $saytype;
 }
-sub plain_describe($$$) { # typeid, level, article
-    my ($typeid,$level,$article) = ($_[0], $_[1], ($_[2]?"$_[2] ":''));
-    if(!defined($levels[$typeid])) { return "${article}level $level"; }
+sub plain_describe($$$$) { # typeid, level, article, $saytype
+    my ($typeid,$level,$article,$saytype) = ($_[0], $_[1], ($_[2]?"$_[2] ":''),($_[3]?" $items[$_[0]]":''));
+    if(!defined($levels[$typeid])) { return "${article}level $level$saytype"; }
     my ($lev,$ind)=(-1,-1);
     my ($marker,$op,$delta,$marklast);
     while($lev<$level) {
@@ -1146,12 +1145,12 @@ sub plain_describe($$$) { # typeid, level, article
 	   $template !~ /^(?:1(?:[^18][^0-9]|[0-9][0-9])|e[uw]|onc?e|uni[^nmd]|u[bcfhjkqrst][aeiou])/) { substr($article,1,0) = 'n'; }
 	$template = $article . $template; 
     }
-    return $template;
+    return "$template$saytype";
 }
-sub item_describe($$$) { # typeid, level, article
+sub item_describe($$$$) { # typeid, level, article, saytype
     return ($_[1] =~ m/^(\d+)([a-z])/)
-	? unique_describe($uniques[$uniques{$2}], int($1), $_[2], 0)
-	: plain_describe($_[0], int($_[1]), $_[2]);
+	? unique_describe($uniques[$uniques{$2}], int($1), $_[2], $_[3], 0)
+	: plain_describe($_[0], int($_[1]), $_[2], $_[3]);
 }
 sub user_item($$) {
     return $rps{$_[0]}{item}[$_[1]];
@@ -1301,8 +1300,7 @@ sub rpcheck { # check levels, update database
     }
 }
 
-sub swap_items($$$)
-{
+sub swap_items($$$) { # items will have their types automatically appended
     my ($u,$opp,$message)=@_;
     my $typeid = int(rand(@items));
     my $type = $items[$typeid];
@@ -1313,8 +1311,8 @@ sub swap_items($$$)
 	my $oppitem = user_item($opp,$typeid);
 	$message = rewrite_for_players($message, [$u, $opp]);
 	$message = rewrite_for_items($message, $type, 
-				     [item_describe($typeid,$myitem), 
-				      item_describe($typeid,$oppitem)]);
+				     [item_describe($typeid,$myitem,'',1), 
+				      item_describe($typeid,$oppitem,'',1)]);
 	chanmsg_l($message);
 	$rps{$u}{item}[$typeid] = $oppitem;
 	$rps{$opp}{item}[$typeid] = $myitem;
@@ -1356,8 +1354,8 @@ sub challenge_opp { # pit argument player against random player
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
 	    swap_items($u, $opp,
-		       "In the fierce battle, %player1% dropped %their1% %item1% %type%! ".
-		       "%player0% picks it up, tossing %their0% old %item0% %type% to %player1%");
+		       "In the fierce battle, %player1% dropped %their1% %item1%! ".
+		       "%player0% picks it up, tossing %their0% old %item0% to %player1%");
         }
     }
     else {
@@ -1412,7 +1410,7 @@ sub unique_notice($$$) { # user, uref, level
     if($uniquemsg{$rps{$user}{alignment}}) {
 	$fortune = $uniquemsg{$rps{$user}{alignment}}.' ';
     }
-    return "${fortune}You have found ".unique_describe($_[1],$_[2],'the',1);
+    return "${fortune}You have found ".unique_describe($_[1],$_[2],'the',0,1);
 }
 
 sub downgrade_item { # returns the decreased item level
@@ -1463,8 +1461,8 @@ sub exchange_object($$$$) {
     }
     else {
 	my $type = $items[$typeid];
-	$notice = "You found ".item_describe($typeid,$level,'a')." $type! ".
-	    "Your current $type is only ".item_describe($typeid,$rps{$u}{item}[$typeid]).
+	$notice = "You found ".item_describe($typeid,$level,'a',1).
+	    "! Your current $type is only ".item_describe($typeid,$rps{$u}{item}[$typeid],'',0).
 	    ", so it seems Luck is with you!";
     }
     notice($notice,$rps{$u}{nick});
@@ -1500,8 +1498,8 @@ sub find_item { # find item for argument player
     }
     else {
 	my $type = $items[$typeid];
-	notice("You found ".item_describe($typeid,$level,'a')." $type. ".
-	       "Your current $type is ".item_describe($typeid,user_item($u,$typeid)).
+	notice("You found ".item_describe($typeid,$level,'a',1).
+	       ". Your current $type is ".item_describe($typeid,user_item($u,$typeid),'',0).
 	       ", so it seems Luck is against you. You toss the $type.",
 	       $rps{$u}{nick});
 	# should we drop this on the map - will that clutter the map?
@@ -1918,7 +1916,7 @@ sub modify_item($) {
         $change = rewrite_event($change, $player, undef); # random number not used currently
         my $type = $items[$typeid];
         my $suffix="";
-        if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2"); }
+        if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2",'',1); }
         $change = "${player}$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg_l($change);
@@ -2145,8 +2143,8 @@ sub collision_fight {
         }
         elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
 	    swap_items($u, $opp,
-		       "In the fierce battle, %player1% dropped %their1% %item1% %type%! ".
-		       "%player0% picks it up, tossing %their0% old %item0% %type% to %player1%");
+		       "In the fierce battle, %player1% dropped %their1% %item1%! ".
+		       "%player0% picks it up, tossing %their0% old %item0% to %player1%");
         }
     }
     else {
@@ -2252,9 +2250,9 @@ sub evilness {
         my $target = $good[rand(@good)];
 	my $didntswap =
 	    swap_items($me, $target,
-		       "%player0% stole %player1%\'s %item1% %type% ".
+		       "%player0% stole %player1%\'s %item1% ".
 		       "while %they1% %were1% sleeping! ".
-		       "%player0% leaves %their0% old %item0% %type% behind, ".
+		       "%player0% leaves %their0% old %item0% behind, ".
 		       "which %player1% then takes.",
 		       );
 	if($didntswap) {
