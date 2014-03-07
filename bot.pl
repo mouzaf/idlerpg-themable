@@ -455,9 +455,9 @@ sub parse {
                                 "outright; queueing ".length("@peval").
                                 " bytes in ".scalar(@peval)." items. Use ".
                                 "CLEARQ to clear queue if needed.",$usernick,1);
-                        privmsg($_,$usernick) for @peval;
+                        privmsg("$_",$usernick) for @peval;
                     }
-                    else { privmsg($_,$usernick, 1) for @peval; }
+                    else { privmsg("$_",$usernick, 1) for @peval; }
                     privmsg("EVAL ERROR: $@", $usernick, 1) if $@;
                 }
             }
