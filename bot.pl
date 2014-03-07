@@ -904,7 +904,7 @@ sub parse {
                 else {
                     $opts{reconnect} = 0;
                     writedb();
-                    sts("QUIT :DIE from $arg[0]",1);
+                    sts("QUIT :DIE ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
                 }
             }
             elsif ($arg[3] eq "reloaddb") {
@@ -974,7 +974,7 @@ sub parse {
                 }
                 else {
                     writedb();
-                    sts("QUIT :RESTART from $arg[0]",1);
+                    sts("QUIT :RESTART ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
                     close($sock);
                     exec("perl $0");
                 }
