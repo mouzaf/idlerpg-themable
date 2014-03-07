@@ -211,11 +211,11 @@ if (! -e $opts{dbfile}) {
 }
 
 # this is almost silly...
-my $scriptdir=$0;
-$scriptdir =~ s/\/[^\/]+$//;
 my $versionhash;
-if ($opts{checkupdates} and -r "$scriptdir/.git/refs/heads/master") {
-    $versionhash=`cat "$scriptdir/.git/refs/heads/master"`; chomp($versionhash);
+my $gitdir=$0; $gitdir =~ s/[^\/]+$/.git/;
+if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") { 
+    my $branch=`cat "$gitdir/HEAD"`; $branch=~s/ref: refs\/heads\/(\S+).*$/$1/s;
+    $versionhash=`cat "$gitdir/refs/heads/$branch"`; chomp($versionhash);
     print "Checking for updates (at $versionhash)\n";
     my $tempsock = IO::Socket::INET->new(PeerAddr=>"fatphil.org:80",
                                          Timeout => 15);
