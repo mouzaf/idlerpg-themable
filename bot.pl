@@ -1095,14 +1095,14 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
-sub unique_level($$$$) { # desc, level, article
+sub unique_describe($$$$) { # desc, level, article
     my ($string, $article, $full)=($_[0], ($_[2]?"$_[2] ":''), $_[3]);
     $string =~ s/\. [A-Z].*// if(!$full);
     my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
     # $string =~ s/%nick%/$_[2]/g;
     return $article . ($haslevel ? '' : "level $_[1] ") . $string;
 }
-sub plain_level($$$) {
+sub plain_describe($$$) {
     my ($typeid,$article) = ($_[0], ($_[2]?"$_[2] ":''));
     if(!defined($levels[$typeid])) { return "${article}level $_[1]"; }
     my ($lev,$ind)=(-1,-1);
@@ -1147,10 +1147,10 @@ sub plain_level($$$) {
     }
     return $template;
 }
-sub item_describe {
+sub item_describe($$$) { # typeid, level, article
     return ($_[1] =~ m/^(\d+)([a-z])/)
-        ? unique_level($uniques[$uniques{$2}]->{desc}, int($1), $_[2], 0)
-        : plain_level($_[0], int($_[1]), $_[2]);
+	? unique_describe($uniques[$uniques{$2}]->{desc}, int($1), $_[2], 0)
+	: plain_describe($_[0], int($_[1]), $_[2]);
 }
 sub user_item($$) {
     return $rps{$_[0]}{item}[$_[1]];
