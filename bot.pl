@@ -1095,8 +1095,9 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
-sub unique_describe($$$$) { # desc, level, article
-    my ($string, $article, $full)=($_[0], ($_[2]?"$_[2] ":''), $_[3]);
+sub unique_describe($$$$) { # uref, level, article, full
+    my ($uref, $level, $article, $full)=($_[0], ($_[2]?"$_[2] ":''), $_[3]);
+    my $string=$uref->{desc};
     $string =~ s/\. [A-Z].*// if(!$full);
     my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
     # $string =~ s/%nick%/$_[2]/g;
@@ -1149,7 +1150,7 @@ sub plain_describe($$$) { # typeid, level, article
 }
 sub item_describe($$$) { # typeid, level, article
     return ($_[1] =~ m/^(\d+)([a-z])/)
-	? unique_describe($uniques[$uniques{$2}]->{desc}, int($1), $_[2], 0)
+	? unique_describe($uniques[$uniques{$2}], int($1), $_[2], 0)
 	: plain_describe($_[0], int($_[1]), $_[2]);
 }
 sub user_item($$) {
@@ -1458,7 +1459,7 @@ sub exchange_object($$$$) {
     my $notice;
     if($suffix) {
 	my $uid = $uniques{$suffix};
-	$notice=unique_notice($u, $uniques[$uid]->{desc}, $level);
+	$notice=unique_notice($u, $uniques[$uid], $level);
     }
     else {
 	my $type = $items[$typeid];
