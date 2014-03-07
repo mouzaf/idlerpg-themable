@@ -1095,10 +1095,14 @@ sub duration { # return human duration of seconds
 
 sub unique_describe($$$$$) { # uref, level, article, saytype, full
     my ($uref, $level, $article, $saytype, $full)=($_[0], $_[1], ($_[2]?"$_[2] ":''), $_[3], $_[4]);
-    $saytype = $saytype ? " $items[$uref->{typeid}]" : '';
+    my $typeid = $uref->{typeid};
+    my $type = $items[$typeid];
+    $saytype = $saytype ? " $type" : '';
     my $string=$uref->{desc};
     $string =~ s/\. [A-Z].*// if(!$full);
     my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
+    my $hastype = ($string =~ s/%type%/$type/g);
+    if ($hastype) { $saytype = ''; }
     # $string =~ s/%nick%/$_[2]/g;
     return $article . ($haslevel ? '' : "level $_[1] ") . $string . $saytype;
 }
