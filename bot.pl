@@ -1102,14 +1102,14 @@ sub unique_describe($$$$) { # desc, level, article
     # $string =~ s/%nick%/$_[2]/g;
     return $article . ($haslevel ? '' : "level $_[1] ") . $string;
 }
-sub plain_describe($$$) {
-    my ($typeid,$article) = ($_[0], ($_[2]?"$_[2] ":''));
-    if(!defined($levels[$typeid])) { return "${article}level $_[1]"; }
+sub plain_describe($$$) { # typeid, level, article
+    my ($typeid,$level,$article) = ($_[0], $_[1], ($_[2]?"$_[2] ":''));
+    if(!defined($levels[$typeid])) { return "${article}level $level"; }
     my ($lev,$ind)=(-1,-1);
     my ($marker,$op,$delta,$marklast);
-    while($lev<$_[1]) {
-        #print STDERR ("$lev<$_[1], ind=$ind".
-        #              ($delta?", stepping=($marker,$op,$delta,$marklast)\n":"\n"));
+    while($lev<$level) {
+	#print STDERR ("$lev<$level, ind=$ind".
+	#              ($delta?", stepping=($marker,$op,$delta,$marklast)\n":"\n"));
         ++$lev;
         if($op) {
             $marker = ($op eq '+') ? $marker+$delta 
