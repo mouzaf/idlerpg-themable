@@ -1093,12 +1093,10 @@ sub duration { # return human duration of seconds
                    ($s%86400)/3600,($s%3600)/60,($s%60));
 }
 
-sub unique_describe($$$) { # uref, level, full
-    my ($uref, $level, $full)=@_;
+sub unique_describe($$) { # uref, level
+    my ($uref, $level)=@_;
     my $string=$uref->{desc};
-    $string =~ s/\. [A-Z].*// if(!$full);
     my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
-    # $string =~ s/%nick%/$_[2]/g;
     return ($haslevel ? '' : "level $_[1] ") . $string;
 }
 sub plain_describe($$) { # typeid, level
@@ -1145,8 +1143,9 @@ sub item_describe($$$$) { # typeid, level, article, saytype
     my ($typeid,$level,$article,$saytype)=@_;
     my $desc;
     if($_[1] =~ m/^(\d+)([a-z])/) {
-	$desc = unique_describe($uniques[$uniques{$2}], int($1), 0);
+	$desc = unique_describe($uniques[$uniques{$2}], int($1));
 	$article = $article?"the ":'';
+	$saytype=0; # presume uniques always include some kind of type
     } else {
 	$desc = plain_describe($_[0], int($_[1]));
 	$article = $article?"a ":'';
@@ -1456,12 +1455,13 @@ sub exchange_object($$$$) {
     my ($u,$typeid,$level,$suffix)=@_;
     my $notice;
     if($suffix) {
-	my $uid = $uniques{$suffix};
+	my $uref = $uniques[$uniques{$suffix}];
 	my $fortune=''; # "The light of the gods shines down upon you! "
 	if($uniquemsg{$rps{$u}{alignment}}) {
 	    $fortune = $uniquemsg{$rps{$u}{alignment}}.' ';
 	}
-	$notice = "${fortune}You have found the " . unique_describe($uniques[$uid], $level, 1);
+	$notice = "${fortune}You have found " . 
+	    item_describe($uref->{typeid},"$level$suffix",1,0) . "! $uref->{enemies}";
     }
     else {
 	my $type = $items[$typeid];
@@ -2487,16 +2487,18 @@ sub read_items {
         }
         elsif($line =~ s/^unique:\s*//) {
             my %hash=();
-            while($line =~ s/([ubrtsd])="([^\"]*)"\s+// or
-                  $line =~ s/([ubrtsd])=(\w+)\s+//) {
+	    while($line =~ s/([ubrtsde])="([^\"]*)"\s+// or
+		  $line =~ s/([ubrtsde])=(\w+)\s+//) {
                 if($1 eq 'u') { $hash{'userlevel'} = int($2); }
                 elsif($1 eq 'b') { $hash{'baselevel'} = int($2); }
                 elsif($1 eq 'r') { $hash{'levelrange'} = int($2); }
                 elsif($1 eq 't') { $hash{'typeid'} = int($2); }
                 elsif($1 eq 's') { $hash{'suffix'} = $2; }
                 elsif($1 eq 'd') { $hash{'desc'} = $2; }
+		elsif($1 eq 'e') { $hash{'enemies'} = $2; }
             }
             $context="";
+	    $hash{'enemies'} //= ($hash{'desc'} =~ s/^([^!.])[!.]\s*(.*)$/$1/) ? $2 : '';
             if(!length($line)) { push(@uniques, \%hash); ++$gotu; $uniques{$hash{'suffix'}} = $#uniques; }
             else { debug("Error: trailing fields defining unique: '$line'",1); }
         }
