@@ -1405,13 +1405,13 @@ sub team_battle { # pit three players against three other players
     }
 }
 
-sub unique_notice($$$) {
+sub unique_notice($$$) { # user, uref, level
     my $user=$_[0];
     my $fortune=''; # "The light of the gods shines down upon you! "
     if($uniquemsg{$rps{$user}{alignment}}) {
 	$fortune = $uniquemsg{$rps{$user}{alignment}}.' ';
     }
-    return "${fortune}You have found ".unique_level($_[1],$_[2],'the',1);
+    return "${fortune}You have found ".unique_describe($_[1],$_[2],'the',1);
 }
 
 sub downgrade_item { # returns the decreased item level
