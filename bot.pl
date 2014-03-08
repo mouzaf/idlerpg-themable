@@ -1103,24 +1103,21 @@ sub plain_describe($$) { # typeid, level
     my ($typeid,$level) = @_;
     if(!defined($levels[$typeid])) { return "level $level"; }
     my ($lev,$ind)=(-1,-1);
-    my ($marker,$op,$delta,$marklast);
+    my ($marker,$op,$deltaset,$deltasetlen,$deltaind,$marklast,$prec);
     while($lev<$level) {
 	#print STDERR ("$lev<$level, ind=$ind".
 	#              ($delta?", stepping=($marker,$op,$delta,$marklast)\n":"\n"));
         ++$lev;
         if($op) {
+	    my $delta=$deltaset->[$deltaind];
             $marker = ($op eq '+') ? $marker+$delta 
                 : ($op eq '-') ? $marker-$delta 
                 : $marker*$delta;
             # Ensure accuracy is sensibly represented at every step, 
             # as we need to check our bounds correctly, and don't
             # want errors to accumulate.
-            my $point;
-            if(($point = index($delta,'.'))>=0) {
-                my $prec=length($delta)-$point-1;
-                $marker=sprintf("%.${prec}f", $marker);
-                #debug("$marker -> $fix {$delta, $point, $prec)");
-            }
+	    $marker=sprintf("%.${prec}f", $marker);
+	    $deltaind=($deltaind+1)%$deltasetlen;
             if(defined($marklast) && 
                (($op eq '-') ? $marker<=$marklast : $marker>=$marklast)) {
                 undef($op); 
@@ -1128,14 +1125,19 @@ sub plain_describe($$) { # typeid, level
         }
         else {
             ++$ind;
-            if($levels[$typeid][$ind] =~ /%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/) {
-                ($marker,$op,$delta,$marklast) = ($1,$2,$3,$4);
+            if($levels[$typeid][$ind] =~ /%{([\d.]+)\#([-+*])([\d.:]+)(?:\#([\d.]+))?}%/) {
+		my $deltaall;
+                ($marker,$op,$deltaall,$marklast) = ($1,$2,$3,$4);
+		$deltaset=[split(':',$deltaall)];
+		$deltasetlen=scalar(@$deltaset);
+		$deltaind=0;
+		$prec=($deltasetlen==1?$deltaset->[0]:$marker) !~ m/\.(\d+)/ ? 0 : length($1);
             }
         }
     }
     my $template = $levels[$typeid][$ind];
     if(defined($marker)) {
-        $template =~ s/%{([\d.]+)\#([-+*])([\d.]+)(?:\#([\d.]+))?}%/$marker/;
+        $template =~ s/%{([\d.]+)\#([-+*])([\d.:]+)(?:\#([\d.]+))?}%/$marker/;
     }
     return $template;
 }
