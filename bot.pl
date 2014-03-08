@@ -175,7 +175,6 @@ if (! -e $opts{dbfile}) {
     $uname = length($uname)?$uname:$opts{owner};
     print "Enter a character class for this account: ";
     chomp(my $uclass = <STDIN>);
-    $rps{$uname}{class} = substr($uclass,0,30);
     print "Enter a password for this account: ";
     if ($^O ne "MSWin32") {
         system("stty -echo");
@@ -186,18 +185,19 @@ if (! -e $opts{dbfile}) {
     }
     $rps{$uname}{pass} = crypt($upass,mksalt());
     $rps{$uname}{next} = $opts{rpbase};
-    $rps{$uname}{nick} = "";
-    $rps{$uname}{userhost} = "";
     $rps{$uname}{level} = 0;
-    $rps{$uname}{online} = 0;
-    $rps{$uname}{idled} = 0;
+    $rps{$uname}{class} = substr($uclass,0,30);
     $rps{$uname}{created} = time();
     $rps{$uname}{lastlogin} = time();
     $rps{$uname}{x} = int(rand($opts{mapx}));
     $rps{$uname}{y} = int(rand($opts{mapy}));
     $rps{$uname}{alignment}="n";
-    $rps{$uname}{isadmin} = 1;
     $rps{$uname}{gender} = "u";
+    $rps{$uname}{nick} = "";
+    $rps{$uname}{userhost} = "";
+    $rps{$uname}{idled} = 0;
+    $rps{$uname}{online} = 0;
+    $rps{$uname}{isadmin} = 1;
     for my $item (0..$#items) {
         $rps{$uname}{item}[$item] = 0;
     }
@@ -553,19 +553,19 @@ sub parse {
 			my $uname=$arg[4];
 			++$registrations;
 			$lastreg = time();
+			$rps{$uname}{pass} = crypt($arg[5],mksalt());
 			$rps{$uname}{next} = $opts{rpbase};
-			$rps{$uname}{class} = "@arg[6..$#arg]";
 			$rps{$uname}{level} = 0;
-			$rps{$uname}{online} = 1;
-			$rps{$uname}{nick} = $usernick;
-			$rps{$uname}{userhost} = $arg[0];
+			$rps{$uname}{class} = "@arg[6..$#arg]";
 			$rps{$uname}{created} = time();
 			$rps{$uname}{lastlogin} = time();
-			$rps{$uname}{pass} = crypt($arg[5],mksalt());
 			$rps{$uname}{x} = int(rand($opts{mapx}));
 			$rps{$uname}{y} = int(rand($opts{mapy}));
 			$rps{$uname}{alignment}="n";
 			$rps{$uname}{gender}="u";
+			$rps{$uname}{nick} = $usernick;
+			$rps{$uname}{userhost} = $arg[0];
+			$rps{$uname}{online} = 1;
 			$rps{$uname}{isadmin} = 0;
 			for my $item (0..$#items) {
 			    $rps{$uname}{item}[$item] = 0;
