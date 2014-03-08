@@ -1331,6 +1331,49 @@ sub swap_items($$$) { # items will have their types automatically appended
     return $type;
 }
 
+sub generic_2way_fight($$$) {
+    my($u,$opp,$chal) = @_; # opp can only be primnick in a challenge fight
+    my $mysum = itemsum($u,1);
+    my $oppsum = itemsum($opp,1);
+    my $myroll = int(rand($mysum));
+    my $opproll = int(rand($oppsum));
+    if ($myroll >= $opproll) {
+	my $gain = ($opp eq $primnick) ? 20 : int($rps{$opp}{level}/4);
+	$gain = 7 if $gain < 7;
+	$gain = int(($gain/100)*$rps{$u}{next});
+	chanmsg_l("$u [$myroll/$mysum] has ".($chal?'challenged':'come upon').
+		  " $opp [$opproll/$oppsum] and taken ".them($opp)." in combat! ".
+		  duration($gain)." is removed from $u\'s clock.");
+	$rps{$u}{next} -= $gain;
+	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
+	my $csfactor = ($chal && $rps{$u}{alignment} eq "g") ? 50 :
+                       ($chal && $rps{$u}{alignment} eq "e") ? 20 :
+                       35;
+	if (rand($csfactor) < 1 && $opp ne $primnick) {
+	    $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
+	    chanmsg_l("$u has dealt $opp a Critical Strike! ".
+		      duration($gain)." is added to $opp\'s clock.");
+	    $rps{$opp}{next} += $gain;
+	    chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).".");
+	}
+	elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
+	    swap_items($u, $opp,
+		       "In the fierce battle, %player1% dropped %their1% %item1%! ".
+		       "%player0% picks it up, tossing %their0% old %item0% to %player1%");
+	}
+    }
+    else {
+	my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
+	$gain = 7 if $gain < 7;
+	$gain = int(($gain/100)*$rps{$u}{next});
+	chanmsg_l("$u [$myroll/$mysum] has ". ($chal?'challenged':'come upon').
+		  " $opp [$opproll/$oppsum] and been defeated in combat! ".
+		  duration($gain)." is added to $u\'s clock.");
+	$rps{$u}{next} += $gain;
+	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
+    }
+}
+
 sub challenge_opp { # pit argument player against random player
     my $u = shift;
     if ($rps{$u}{level} < 25) { return unless rand(4) < 1; }
@@ -1338,46 +1381,7 @@ sub challenge_opp { # pit argument player against random player
     return unless @opps;
     my $opp = $opps[int(rand(@opps))];
     $opp = $primnick if rand(@opps+1) < 1;
-    my $mysum = itemsum($u,1);
-    my $oppsum = itemsum($opp,1);
-    my $myroll = int(rand($mysum));
-    my $opproll = int(rand($oppsum));
-    if ($myroll >= $opproll) {
-        my $gain = ($opp eq $primnick)?20:int($rps{$opp}{level}/4);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg_l("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                  "$oppsum] in combat and won! ".duration($gain)." is ".
-                  "removed from $u\'s clock.");
-        $rps{$u}{next} -= $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-        my $csfactor = $rps{$u}{alignment} eq "g" ? 50 :
-                       $rps{$u}{alignment} eq "e" ? 20 :
-                       35;
-        if (rand($csfactor) < 1 && $opp ne $primnick) {
-            $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg_l("$u has dealt $opp a Critical Strike! ".
-                      duration($gain)." is added to $opp\'s clock.");
-            $rps{$opp}{next} += $gain;
-            chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
-                    ".");
-        }
-        elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-	    swap_items($u, $opp,
-		       "In the fierce battle, %player1% dropped %their1% %item1%! ".
-		       "%player0% picks it up, tossing %their0% old %item0% to %player1%");
-        }
-    }
-    else {
-        my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg_l("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                  "$oppsum] in combat and lost! ".duration($gain)." is ".
-                  "added to $u\'s clock.");
-        $rps{$u}{next} += $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-    }
+    generic_2way_fight($u,$opp,1);
 }
 
 sub team_battle { # pit three players against three other players
@@ -2124,46 +2128,7 @@ sub checksplits { # removed expired split hosts from the hash
     }
 }
 
-sub collision_fight {
-    my($u,$opp) = @_;
-    my $mysum = itemsum($u,1);
-    my $oppsum = itemsum($opp,1);
-    my $myroll = int(rand($mysum));
-    my $opproll = int(rand($oppsum));
-    if ($myroll >= $opproll) {
-        my $gain = int($rps{$opp}{level}/4);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum] ".
-                  "and taken ".them($opp)." in combat! ".duration($gain).
-                  " is removed from $u\'s clock.");
-        $rps{$u}{next} -= $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-        if (rand(35) < 1 && $opp ne $primnick) {
-            $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg_l("$u has dealt $opp a Critical Strike! ".
-                      duration($gain)." is added to $opp\'s clock.");
-            $rps{$opp}{next} += $gain;
-            chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
-                    ".");
-        }
-        elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-	    swap_items($u, $opp,
-		       "In the fierce battle, %player1% dropped %their1% %item1%! ".
-		       "%player0% picks it up, tossing %their0% old %item0% to %player1%");
-        }
-    }
-    else {
-        my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg_l("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                  "] and been defeated in combat! ".duration($gain)." is ".
-                  "added to $u\'s clock.");
-        $rps{$u}{next} += $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-    }
-}
+sub collision_fight { generic_2way_fight($_[0], $_[1], 0); }
 
 sub restorequest {
     my %questdef = (
