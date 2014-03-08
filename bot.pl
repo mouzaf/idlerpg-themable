@@ -550,36 +550,37 @@ sub parse {
                         if ($opts{voiceonlogin}) {
                             sts("MODE $opts{botchan} +v :$usernick");
                         }
-                        ++$registrations;
-                        $lastreg = time();
-                        $rps{$arg[4]}{next} = $opts{rpbase};
-                        $rps{$arg[4]}{class} = "@arg[6..$#arg]";
-                        $rps{$arg[4]}{level} = 0;
-                        $rps{$arg[4]}{online} = 1;
-                        $rps{$arg[4]}{nick} = $usernick;
-                        $rps{$arg[4]}{userhost} = $arg[0];
-                        $rps{$arg[4]}{created} = time();
-                        $rps{$arg[4]}{lastlogin} = time();
-                        $rps{$arg[4]}{pass} = crypt($arg[5],mksalt());
-                        $rps{$arg[4]}{x} = int(rand($opts{mapx}));
-                        $rps{$arg[4]}{y} = int(rand($opts{mapy}));
-                        $rps{$arg[4]}{alignment}="n";
-                        $rps{$arg[4]}{gender}="u";
-                        $rps{$arg[4]}{isadmin} = 0;
-                        for my $item (0..$#items) {
-                            $rps{$arg[4]}{item}[$item] = 0;
-                        }
-                        for my $pen ("pen_mesg","pen_nick","pen_part",
-                                     "pen_kick","pen_quit","pen_quest",
-                                     "pen_logout","pen_logout") {
-                            $rps{$arg[4]}{$pen} = 0;
-                        }
-                        chanmsg("Welcome $usernick\'s new player $arg[4], the ".
-                                "@arg[6..$#arg]! Next level in ".
-                                duration($opts{rpbase}).".");
-                        privmsg("Success! Account $arg[4] created. You have ".
-                                "$opts{rpbase} seconds idleness until you ".
-                                "reach level 1. ", $usernick);
+			my $uname=$arg[4];
+			++$registrations;
+			$lastreg = time();
+			$rps{$uname}{next} = $opts{rpbase};
+			$rps{$uname}{class} = "@arg[6..$#arg]";
+			$rps{$uname}{level} = 0;
+			$rps{$uname}{online} = 1;
+			$rps{$uname}{nick} = $usernick;
+			$rps{$uname}{userhost} = $arg[0];
+			$rps{$uname}{created} = time();
+			$rps{$uname}{lastlogin} = time();
+			$rps{$uname}{pass} = crypt($arg[5],mksalt());
+			$rps{$uname}{x} = int(rand($opts{mapx}));
+			$rps{$uname}{y} = int(rand($opts{mapy}));
+			$rps{$uname}{alignment}="n";
+			$rps{$uname}{gender}="u";
+			$rps{$uname}{isadmin} = 0;
+			for my $item (0..$#items) {
+			    $rps{$uname}{item}[$item] = 0;
+			}
+			for my $pen ("pen_mesg","pen_nick","pen_part",
+				     "pen_kick","pen_quit","pen_quest",
+				     "pen_logout","pen_logout") {
+			    $rps{$uname}{$pen} = 0;
+			}
+			chanmsg("Welcome $usernick\'s new player $uname, the ".
+				"@arg[6..$#arg]! Next level in ".
+				duration($opts{rpbase}).".");
+			privmsg("Success! Account $uname created. You have ".
+				"$opts{rpbase} seconds idleness until you ".
+				"reach level 1. ", $usernick);
                         privmsg("NOTE: The point of the game is to see who ".
                                 "can idle the longest. As such, talking in ".
                                 "the channel, parting, quitting, and changing ".
