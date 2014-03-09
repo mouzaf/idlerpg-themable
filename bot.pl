@@ -236,7 +236,7 @@ if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") {
 }
 
 my %cmd_permissions=(
-    (map {$_=>'admin'} qw/delold del hog event rehash chpass chuser chclass push newquest die/,
+    (map {$_=>'admin'} qw/delold del brawl hog event rehash chpass chuser chclass push newquest die/,
      qw/reloaddb backup pause silent jump restart clearq eventtest/),
     peval=>'admin+ownerpevalonly', mkadmin=>'admin+owneraddonly', deladmin=>'admin+ownerdelonly',
     info=>'admin|allowuserinfo',
@@ -658,6 +658,12 @@ sub parse {
                     privmsg("Account $arg[4] is no longer a bot admin.",
                             $usernick, 1);
                 }
+            }
+            elsif ($arg[3] eq "brawl") {
+		my $updown = (defined($arg[4]) && $arg[4] eq 'evil') ? 1 : -1;
+		my %desc=(-1=>'righteous duel', 1=>'bloodthirsty brawl'); #civilised
+		chanmsg("$usernick has brought about a $desc{$updown}.");
+		brawl($updown);
             }
             elsif ($arg[3] eq "hog") {
 		chanmsg("$usernick has summoned the Hand of God.");
@@ -1428,6 +1434,15 @@ sub challenge_opp { # pit argument player against random player
     my $opp = $opps[int(rand(@opps))];
     $opp = $primnick if ($opp eq $u);
     generic_2way_fight($u,$opp,"challenged");
+}
+
+sub brawl($) {
+    my @players = grep { $rps{$_}{online} } keys(%rps);
+    return unless(scalar(@players)>=2);
+    my $u = $players[int(rand(@players))];
+    my $opp;
+    while(($opp=$players[int(rand(@players))]) eq $u) { ; }
+    new_generic_2way_fight($u,$opp,$_[0],"been forced to fight");
 }
 
 sub team_battle { # pit three players against three other players
