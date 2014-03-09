@@ -1160,7 +1160,9 @@ sub item_describe($$$$) { # typeid, level, article, saytype
 	}
 	$desc = $article . $desc;
     }
-    if($desc !~ s/%type%/$items[$typeid]/g and $saytype) { $desc .= " $items[$typeid]"; }
+    my $type=$items[$typeid];
+    my %types = ( type=>$type, Type=>ucfirst($type), TYPE=>uc($type) );
+    if($desc !~ s/%(type)%/$types{$1}/ig and $saytype) { $desc .= " $items[$typeid]"; }
     return $desc;
 }
 sub user_item($$) {
