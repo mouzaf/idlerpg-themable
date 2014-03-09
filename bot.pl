@@ -1344,8 +1344,9 @@ sub generic_2way_fight($$$) {
 	my $gain = ($opp eq $primnick) ? 20 : int($rps{$opp}{level}/4);
 	$gain = 7 if $gain < 7;
 	$gain = int(($gain/100)*$rps{$u}{next});
+	my $them = $opp eq $primnick ? "them" : them($opp);
 	chanmsg_l("$u [$myroll/$mysum] has $chal $opp [$opproll/$oppsum]".
-		  " and taken ".them($opp)." in combat! ".
+		  " and taken $them in combat! ".
 		  duration($gain)." is removed from $u\'s clock.");
 	$rps{$u}{next} -= $gain;
 	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
