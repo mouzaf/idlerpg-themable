@@ -1380,10 +1380,10 @@ sub generic_2way_fight($$$) {
 sub challenge_opp { # pit argument player against random player
     my $u = shift;
     if ($rps{$u}{level} < 25) { return unless rand(4) < 1; }
-    my @opps = grep { $rps{$_}{online} && $u ne $_ } keys(%rps);
-    return unless @opps;
+    my @opps = grep { $rps{$_}{online} } keys(%rps);
+    return unless scalar(@opps)>1;
     my $opp = $opps[int(rand(@opps))];
-    $opp = $primnick if rand(@opps+1) < 1;
+    $opp = $primnick if ($opp eq $u);
     generic_2way_fight($u,$opp,"challenged");
 }
 
