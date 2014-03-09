@@ -20,17 +20,19 @@ item6: n="processor" c=" overclocked too much, overheating %his% CPU!" g=" upgra
 levels6: %{4#+2#12}% MHz, %{15#+5#30}% MHz, 33 MHz, %{40#+10#60}% MHz, 66 MHz, 75 MHz, %{80#+10#100}% MHz, %{120#+30#180}% MHz, %{200#+33#266}% MHz, 300 MHz, 330 MHz, 366 MHz, 400 MHz, 433 MHz, %{500#+50#600}% MHz, 660 MHz, %{700#+50#900}% MHz, 1 GHz, %{1.066#+.067#1.2}% GHz, 1.266 GHz, 1.3 GHz, 1.333 GHz, 1.4 GHz, 1.45 GHz, %{1.5#+0.1}% GHz
 
 item7: n="RAM" c=" got hit with static, badly affecting %his% RAM!" g=" reseated %his% RAM chips!"
+levels7: !a %{32#*2#1024}% words of magnetic core memory%notype%, !a %{2#*1.5:1.333333333#1536}% KiB, !a %{2#*1.5:1.333333333#1536}% MiB, !a %{2#*1.5:1.333333333#1536}% GiB %type%, !a %{2#*1.5:1.333333333}% TiB of %type%
 
 item8: n="OS"
 levels8: linux 0.01, linux 0.12, linux 0.95, linux 0.99, linux 1.0, linux 1.1, linux 1.2.0, linux 2.%{0#+1#5}%, linux 2.6.%{0#+1#39}%, linux 3.%{0#+1}%
 
 item9: n="coffee machine" c=" got demoted to the basement with a crappier coffee machine!" g=" got promoted, and a new office with a better coffee machine!"
 
-# Unique items - there may be any number at all. Order is important
+# Unique items - there may be any number at all. Order is important. Note that presently %notype% is unnecessary, uniques never saytype
 unique: u=25 b=50 r=25 t=0 s=a d="psychic %type% which predicts what you want to see next" e="Your enemies get headaches just looking at their own poor refresh rate."
-unique: u=30 b=70 r=35 t=8 s=b d="Linus's final bug-free Ready for the Desktop version of Linux" e="Your enemies do the three fingered salute in awe."
+unique: u=30 b=70 r=35 t=8 s=b d="Linus's final bug-free Ready for the Desktop version of Linux%notype%" e="Your enemies do the three fingered salute in awe."
 unique: u=35 b=100 r=50 t=6 s=c d="Deathstation 3%ulevel% %type%" e="Your rivals simply cannot compile their code for your platform."
-unique: u=40 b=100 r=75 t=4 s=d d="Ray Kurzweil's direct retinal holoprojection unit" e="Your enemies look on in confusion as you stare into space apparently at nothing."
+unique: u=40 b=100 r=75 t=4 s=d d="Ray Kurzweil's direct retinal holoprojection unit%notype%" e="Your enemies look on in confusion as you stare into space apparently at nothing."
 unique: u=45 b=125 r=50 t=6 s=e d="world's first actual quantum %type%" e="Your rivals are both jealous and not jealous of you."
 unique: u=48 b=150 r=80 t=2 s=f d="megabyte %type%" e="Your nemeses are prepared to travel back in time to stop you obtaining this, and consider you the ultimate foe."
-unique: u=52 b=180 r=100 t=9 s=g d="genetically modified asian palm civet which shits perfect fresh coffee on demand" e="Your foes twitch at the the very thought of this."
+unique: u=50 b=180 r=100 t=9 s=g d="genetically modified asian palm civet which shits perfect fresh coffee on demand%notype%" e="Your foes twitch at the the very thought of this."
+unique: u=52 b=200 r=120 t=2 s=h d="Einstein's Tachyonic Antitelephone%notype%" e="Your rivals have been perturbed by this for many centuries."
