@@ -45,7 +45,10 @@ C watched meatspin for %{20##200}% spins
 C got fooled into following a goatse link
 C ran out of coffee
 C relied on "the cloud" for backup storage
-C got all retro and played %{Pong|Zaxxon|Donkey Kong|Breakout|Jet Set Willy|Elite|Doom}% all day
+C got all retro and played %{Space Invaders|Pong|Zaxxon|Donkey Kong|Breakout|Jet Set Willy|Elite|Doom}% all day
+C had an alien spaceship upload a virus onto %his% Macintosh Powerbook 5300
+C got chatted up by Cleverbot
+C 's random number generator only ever returns the number %{4|7}%
 C got locked out of %{Google+|LinkedIn|GMail|Yahoo!}%
 C got tasked with fixing healthcare.gov
 G got paid to consult on fixing healthcare.gov
@@ -54,7 +57,7 @@ G got a comment moderated to +5 %{troll|flamebait}% on SoylentNews
 G added slashdot.org to %his% HOSTS file
 G reverse engineered how overclocking works in %his% BIOS
 G cracked %{Bill Gates'|Richard Stallman's|Hans Peter Anvin's|Linus Torvald's|Miguel de Icaza's}% password
-G installed a rootkit on %{100##2000}% %{US|Chinese}% government machines, forming a botnet
+G installed a rootkit on %{100##2000}% %{US|Chinese|Russian}% government machines, forming a botnet
 G discovered new optimisation flags for %his% compiler
 G cracked %his% neighbours' wifi
 G pulled an all-nighter, thanks to %{5##20}% cups of coffee
@@ -72,6 +75,7 @@ G became a member of the Cult of the Dead Cow
 G hacked lulzsec, and found out their identities
 G cleared all %{1##500}% GB of porn off %his% hard disks
 G uninstalled all %{3##15}% toolbars from %his% browser
+G 3D-printed a 3D printer capable of 3D-printing a more powerful 3D printer
 Q2 225 415 280 460 retrieve the original paper tapes to the mighty Colossus and return them to Bletchley Park
 Q2 480 415 325 270 locate the original Unics master tapes and leave them in the care of Ken Thompson
 Q1 quell the riot that has sprung up between Mac-weenies and PC-weenies
