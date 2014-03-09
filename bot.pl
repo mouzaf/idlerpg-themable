@@ -1350,9 +1350,9 @@ sub generic_2way_fight($$$) {
 		  duration($gain)." is removed from $u\'s clock.");
 	$rps{$u}{next} -= $gain;
 	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-	my $csfactor = ($chal && $rps{$u}{alignment} eq "g") ? 50 :
-                       ($chal && $rps{$u}{alignment} eq "e") ? 20 :
-                       35;
+	my $csfactor = ($chal=~m/^ch/ && $rps{$u}{alignment} eq "g") ? 50
+		     : ($chal=~m/^ch/ && $rps{$u}{alignment} eq "e") ? 20
+		     : 35;
 	if (rand($csfactor) < 1 && $opp ne $primnick) {
 	    $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
 	    chanmsg_l("$u has dealt $opp a Critical Strike! ".
