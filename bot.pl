@@ -1344,8 +1344,8 @@ sub generic_2way_fight($$$) {
 	my $gain = ($opp eq $primnick) ? 20 : int($rps{$opp}{level}/4);
 	$gain = 7 if $gain < 7;
 	$gain = int(($gain/100)*$rps{$u}{next});
-	chanmsg_l("$u [$myroll/$mysum] has ".($chal?'challenged':'come upon').
-		  " $opp [$opproll/$oppsum] and taken ".them($opp)." in combat! ".
+	chanmsg_l("$u [$myroll/$mysum] has $chal $opp [$opproll/$oppsum]".
+		  " and taken ".them($opp)." in combat! ".
 		  duration($gain)." is removed from $u\'s clock.");
 	$rps{$u}{next} -= $gain;
 	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
@@ -1369,8 +1369,8 @@ sub generic_2way_fight($$$) {
 	my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
 	$gain = 7 if $gain < 7;
 	$gain = int(($gain/100)*$rps{$u}{next});
-	chanmsg_l("$u [$myroll/$mysum] has ". ($chal?'challenged':'come upon').
-		  " $opp [$opproll/$oppsum] and been defeated in combat! ".
+	chanmsg_l("$u [$myroll/$mysum] has $chal $opp [$opproll/$oppsum]".
+		  " and been defeated in combat! ".
 		  duration($gain)." is added to $u\'s clock.");
 	$rps{$u}{next} += $gain;
 	chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
@@ -1384,7 +1384,7 @@ sub challenge_opp { # pit argument player against random player
     return unless @opps;
     my $opp = $opps[int(rand(@opps))];
     $opp = $primnick if rand(@opps+1) < 1;
-    generic_2way_fight($u,$opp,1);
+    generic_2way_fight($u,$opp,"challenged");
 }
 
 sub team_battle { # pit three players against three other players
@@ -2131,7 +2131,7 @@ sub checksplits { # removed expired split hosts from the hash
     }
 }
 
-sub collision_fight { generic_2way_fight($_[0], $_[1], 0); }
+sub collision_fight($$$) { generic_2way_fight($_[0], $_[1], "come upon"); }
 
 sub restorequest {
     my %questdef = (
