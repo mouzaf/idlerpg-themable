@@ -1339,6 +1339,43 @@ sub swap_items($$$) { # items will have their types automatically appended
     return $type;
 }
 
+sub battle_result($$) {
+    my ($delta,$them)=@_;
+    my $phrase = 'has a blow-less standoff, considering it a victory'; # draws
+    #              1       3       9        27        81          243      729     2187
+    my @results=qw/chaffed bruised battered pummelled overpowered defeated crushed destroyed/;
+    if($delta<0) { while($delta<=-1) { $phrase="but is ".shift(@results); $delta/=3; } }
+    else       { while($delta>=1) { $phrase="and ".shift(@results)." $them"; $delta/=3; } }
+    return $phrase;
+}
+
+sub new_generic_2way_fight($$$$) {
+    my @p=($_[0],$_[1]);
+    my ($flag,$chal) = ($_[2]<=>0, $_[3]); # opp can only be primnick in a challenge fight
+    my @sum = map { itemsum($_,1); } @p;
+    my @roll = map { int(rand($_)); } @sum;
+    my $winner = $roll[0] >= $roll[1] ? 0 : 1; # asymmetry - FIX!
+    my $loser = 1-$winner; # not used much - is it worth having?
+    my $changer = (0, $loser, $winner)[$flag]; # use [-1] to access final element
+    my $nochange = 1-$changer; # want $p[$nochange] more often than this
+    my $sign = $flag || (2*$winner-1); # 0 -> p0wins=-1, p0loses=+1
+    my $gain = ($p[$nochange] eq $primnick) ? (15-5*$sign) : int($rps{$p[$nochange]}{level}/4);
+    $gain = 7 if $gain < 7;
+    if($p[$changer] eq $primnick) { # bot can't change, pretend nothing happened
+	chanmsg_l("There's tension in the air, but nobody does anything.");
+	return;
+    }
+    $gain = int(($gain/100)*$rps{$p[$changer]}{next});
+    my $gainmsg = duration($gain)." is ".($sign>0?"added to":"removed from")." $p[$changer]\'s clock";
+    my $them = $p[1] eq $primnick ? "them" : them($p[1]);
+    chanmsg_l("$p[0] [$roll[0]/$sum[0]] has $chal $p[1] [$roll[1]/$sum[1]] ".
+	      battle_result($roll[0]-$roll[1],$them)." in combat! $gainmsg.");
+    $rps{$p[$changer]}{next} += $sign * $gain;
+    chanmsg("$p[$changer] reaches next level in ".duration($rps{$p[$changer]}{next}).".");
+    # Here would be critical strikes and swaps
+    return $roll[0]-$roll[1];
+}
+
 sub generic_2way_fight($$$) {
     my($u,$opp,$chal) = @_; # opp can only be primnick in a challenge fight
     my $mysum = itemsum($u,1);
