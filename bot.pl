@@ -2143,7 +2143,7 @@ sub restorequest {
                     text => "",
                     type => 1,
                     stage => 1); # quest info
-    return %questdef unless ($opts{writequestfile} and open(QF, "<$opts{writequestfile}"));
+    return %questdef unless ($opts{writequestfile} and open(QF, "<$opts{questfilename}"));
     my $type;
     while(<QF>) {
         if(m/^T (.*?)\s*$/) { $questdef{text} = $1; }
@@ -2151,10 +2151,12 @@ sub restorequest {
         elsif(m/^S (\d+)\s*$/) { $questdef{$type==1?'qtime':'stage'} = int($1); }
         elsif($type==2 and m/^P (\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/) 
         { $questdef{p1}=[$1,$2]; $questdef{p2}=[$3,$4]; }
-        elsif(m/^P(\d) (\S+)/) { $questdef{questers}->[$1] = $2; }
-        else { debug("Unknown line in questfile $opts{writequestfile}: $_"); }
+        elsif(m/^P(\d) (\S+)/) { $questdef{questers}->[$1-1] = $2; }
+        else { debug("Unknown line in questfile $opts{questfilename}: $_"); }
     }
     close(QF);
+    my $lack=join('',map{defined($questdef{questers}->[$_])?'':$_}(0..3));
+    if(length($lack)) { debug("Lacking questers: $lack in questfile $opts{questfilename}:"); }
     return %questdef;
 }
 
