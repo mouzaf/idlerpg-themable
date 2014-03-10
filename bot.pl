@@ -1234,10 +1234,8 @@ sub rpcheck { # check levels, update database
     if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
-            chanmsg_l(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                      "$quest{questers}->[3] have blessed the realm by ".
-                      "completing their quest! 25% of their burden is ".
-                      "eliminated.");
+	    my $plist = join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
+	    chanmsg_l(get_event("QS",$plist,undef));
             for (@{$quest{questers}}) {
                 $rps{$_}{next} = int($rps{$_}{next} * .75);
             }
@@ -1989,12 +1987,7 @@ sub questpencheck {
     my ($quester,$player);
     for $quester (@{$quest{questers}}) {
         if ($quester eq $k) {
-            chanmsg_l("$k\'s prudence and self-regard has brought the ".
-                      "wrath of the gods upon the realm. All your great ".
-                      "wickedness makes you as it were heavy with lead, ".
-                      "and to tend downwards with great weight and ".
-                      "pressure towards hell. Therefore have you drawn ".
-                      "yourselves 15 steps closer to that gaping maw.");
+            chanmsg_l(get_event('QF', $quester, undef));
             for $player (grep { $rps{$_}{online} } keys %rps) {
                 my $gain = int(15 * ($opts{rppenstep}**$rps{$player}{level}));
                 $rps{$player}{pen_quest} += $gain;
@@ -2388,9 +2381,9 @@ sub read_events {
         return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
     }
     @quests = ();
-    %events = (G => [], C => [], W => [], L => [], H => [], E => []);
+    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[], QS=>[], QF=>[]);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWLHE])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLHE]|Q[SF])\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2408,12 +2401,14 @@ sub read_events {
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
 	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, and ".
-          @quests." quests.",0);
+          @quests." quests with ".@{$events{QF}}." failures and ".@{$events{QS}}." sucesses.",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
     if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
     if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
+    if(!@{$events{QS}}) { push(@{$events{QS}},"%player% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
+    if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
 }
 
 sub get_event($$$) {
