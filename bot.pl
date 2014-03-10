@@ -1369,7 +1369,7 @@ sub new_generic_2way_fight($$$$) {
     $gain = 7 if $gain < 7;
     if($p[$changer] eq $primnick) { # bot can't change, pretend nothing happened
 	chanmsg_l("There's tension in the air, but nobody does anything.");
-	return;
+	return 0;
     }
     $gain = int(($gain/100)*$rps{$p[$changer]}{next});
     my $gainmsg = duration($gain)." is ".($sign>0?"added to":"removed from")." $p[$changer]\'s clock";
@@ -1378,7 +1378,7 @@ sub new_generic_2way_fight($$$$) {
 	      battle_result($roll[0]-$roll[1],$them)." in combat! $gainmsg.");
     $rps{$p[$changer]}{next} += $sign * $gain;
     chanmsg("$p[$changer] reaches next level in ".duration($rps{$p[$changer]}{next}).".");
-    return $roll[0]-$roll[1];
+    return ($roll[0]-$roll[1])/($sum[$winner]||1);
 }
 
 sub generic_2way_fight($$$) {
