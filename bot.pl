@@ -1384,18 +1384,18 @@ sub new_generic_2way_fight($$$$) {
 sub generic_2way_fight($$$) {
     my($u,$opp,$chal) = @_; # opp can only be primnick in a challenge fight
     my $delta=new_generic_2way_fight($u,$opp,0,$chal);
-    if ($delta<0) { return; }
+    if (($delta<0) or ($opp eq $primnick)) { return; }
     my $csfactor = ($chal=~m/^ch/ && $rps{$u}{alignment} eq "g") ? 50
 	: ($chal=~m/^ch/ && $rps{$u}{alignment} eq "e") ? 20
 	: 35;
-    if (rand($csfactor) < 1 && $opp ne $primnick) {
+    if (rand($csfactor) < 1) {
 	my $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
 	chanmsg_l("$u has dealt $opp a Critical Strike! ".
 		  duration($gain)." is added to $opp\'s clock.");
 	$rps{$opp}{next} += $gain;
 	chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).".");
     }
-    elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
+    elsif (rand(25) < 1 && $rps{$u}{level} > 19) {
 	swap_items($u, $opp,
 		   "In the fierce battle, %player1% dropped %their1% %item1%! ".
 		   "%player0% picks it up, tossing %their0% old %item0% to %player1%");
