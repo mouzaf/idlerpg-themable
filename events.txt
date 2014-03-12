@@ -74,6 +74,7 @@ Q2 235 125 430 60 setup a trade route through the mountains to the neighboring l
 Q2 155 155 325 270 live among and learn the ancient magick of the tribe of pygmie people, the Jow Botzi
 Q2 70 125 170 100 kill the resurrected Jow Botzian zombies produced by a young wizard's wayward spell
 Q1 worship the sacred Cow until such time as she is satiated
+QI %player% have been chosen by the gods to %quest%.
 QF %player%'s prudence and self-regard has brought the wrath of the gods upon the realm. All your great wickedness makes you as it were heavy with lead, and to tend downwards with great weight and pressure towards hell. Therefore have you drawn yourselves 15 steps closer to that gaping maw.
 QS %player% have blessed the realm by completing their quest! 25% of their burden is eliminated.
 
