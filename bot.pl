@@ -2037,16 +2037,7 @@ sub penalize {
     my $type = shift;
     my ($pentype,$pen,$why) = @{$why{$type}};
     questpencheck($username);
-    if ($type eq "quit") {
-        $rps{$username}{online}=0;
-    }
-    elsif ($type eq "part") {
-        $rps{$username}{online}=0;
-    }
-    elsif ($type eq "kick") {
-        $rps{$username}{online}=0;
-    }
-    elsif ($type eq "logout") {
+    if ($type =~ m/^(?:quit|part|kick|logout)$/) {
         $rps{$username}{online}=0;
     }
     elsif ($type eq "nick") {
