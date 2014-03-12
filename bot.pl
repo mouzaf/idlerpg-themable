@@ -2026,47 +2026,35 @@ sub backup() {
 }
 
 sub penalize {
-    my %why = (#quit=>'', part=>'', # don't talk to them after they leave
-               privmsg=>'privmsg', notice=>'notice',
-               nick=>"nick change", kick=>'being kicked', 'logout'=>'logging out');
+    my %why = (quit=>['pen_quit',20,undef], part=>['pen_part',200,undef], # don't msg goners
+	       privmsg=>['pen_mesg',undef,'privmsg'], notice=>['pen_mesg',undef,'notice'],
+	       kick=>['pen_kick',250,'being kicked'], logout=>['pen_logout',20,'logging out'],
+	       nick=>['pen_nick',30,'nick change'],);
 
     my $username = shift;
     return 0 if !defined($username);
     return 0 if !exists($rps{$username});
     my $type = shift;
-    my $pen = 0;
-    my $why = $why{$type};
-    my $pentype;
+    my ($pentype,$pen,$why) = @{$why{$type}};
     questpencheck($username);
     if ($type eq "quit") {
-        $pen = 20;
-        $pentype = 'pen_quit';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "nick") {
         my $newnick = shift;
-        $pen = 30;
-        $pentype = 'pen_nick';
         $rps{$username}{nick} = substr($newnick,1);
 	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
         $pen = shift(@_);
-        $pentype = 'pen_mesg';
     }
     elsif ($type eq "part") {
-        $pen = 200;
-        $pentype = 'pen_part';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "kick") {
-        $pen = 250;
-        $pentype = 'pen_kick';
         $rps{$username}{online}=0;
     }
     elsif ($type eq "logout") {
-        $pen = 20;
-        $pentype = 'pen_logout';
         $rps{$username}{online}=0;
     }
     $pen = int($pen * ($opts{rppenstep}**$rps{$username}{level}));
