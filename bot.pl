@@ -303,10 +303,8 @@ while (1) {
         $fh->recv($buffer2,512,0);
         if (length($buffer2)) {
             $buffer .= $buffer2;
-            while (index($buffer,"\n") != -1) {
-                my $line = substr($buffer,0,index($buffer,"\n")+1);
-                $buffer = substr($buffer,length($line));
-                parse($line);
+	    while ($buffer =~ s/^(.*?\n)//) {
+                parse($1);
             }
         }
         else {
