@@ -2027,8 +2027,8 @@ sub backup() {
 
 sub penalize {
     my %why = (quit=>['pen_quit',20,undef], part=>['pen_part',200,undef], # don't msg goners
-	       privmsg=>['pen_mesg',undef,'privmsg'], notice=>['pen_mesg',undef,'notice'],
 	       kick=>['pen_kick',250,'being kicked'], logout=>['pen_logout',20,'logging out'],
+	       privmsg=>['pen_mesg',undef,'privmsg'], notice=>['pen_mesg',undef,'notice'],
 	       nick=>['pen_nick',30,'nick change'],);
 
     my $username = shift;
@@ -2040,14 +2040,6 @@ sub penalize {
     if ($type eq "quit") {
         $rps{$username}{online}=0;
     }
-    elsif ($type eq "nick") {
-        my $newnick = shift;
-        $rps{$username}{nick} = substr($newnick,1);
-	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
-    }
-    elsif ($type eq "privmsg" || $type eq "notice") {
-        $pen = shift(@_);
-    }
     elsif ($type eq "part") {
         $rps{$username}{online}=0;
     }
@@ -2056,6 +2048,14 @@ sub penalize {
     }
     elsif ($type eq "logout") {
         $rps{$username}{online}=0;
+    }
+    elsif ($type eq "nick") {
+        my $newnick = shift;
+        $rps{$username}{nick} = substr($newnick,1);
+	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
+    }
+    elsif ($type eq "privmsg" || $type eq "notice") {
+        $pen = shift(@_);
     }
     $pen = int($pen * ($opts{rppenstep}**$rps{$username}{level}));
     if ($opts{limitpen} && $pen > $opts{limitpen}) {
