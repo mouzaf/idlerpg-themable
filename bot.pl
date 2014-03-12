@@ -1964,17 +1964,15 @@ sub quest {
     }
     %quest = %{get_quest()};
     $quest{questers} = \@questers;
+    my $questers=join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
+    my $questtext=get_event('QI', $questers, undef);
+    $questtext =~ s/%quest%/$quest{text}/; # only expect one, more is noise
     if ($quest{type} == 1) {
         $quest{qtime} = time()+43200+int(rand(43201));
-        chanmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                "$quest{questers}->[3] have been chosen by the gods to ".
-                "$quest{text}. Quest to end in ".duration($quest{qtime}-time()).
-                ".");
+        chanmsg("$questtext Quest to end in ".duration($quest{qtime}-time()).".");
     }
     elsif ($quest{type} == 2) {
-        chanmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                "$quest{questers}->[3] have been chosen by the gods to ".
-                "$quest{text}. Participants must first reach [$quest{p1}->[0],".
+        chanmsg("$questtext Participants must first reach [$quest{p1}->[0],".
                 "$quest{p1}->[1]], then [$quest{p2}->[0],$quest{p2}->[1]].".
                 ($opts{mapurl}?" See $opts{mapurl} to monitor their journey's ".
                 "progress.":""));
@@ -2360,9 +2358,9 @@ sub read_events {
         return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
     }
     @quests = ();
-    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[], QS=>[], QF=>[]);
+    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[], QI=>[], QS=>[], QF=>[]);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWLHE]|Q[SF])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLHE]|Q[ISF])\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2380,12 +2378,14 @@ sub read_events {
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
 	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, and ".
-          @quests." quests with ".@{$events{QF}}." failures and ".@{$events{QS}}." sucesses.",0);
+          @quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
+	  " failures, and ".@{$events{QS}}." sucesses).",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
     if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
     if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
+    if(!@{$events{QI}}) { push(@{$events{QI}},"%player% have begun a quest, for the good of the realm."); }
     if(!@{$events{QS}}) { push(@{$events{QS}},"%player% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
     if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
 }
@@ -2394,7 +2394,7 @@ sub get_event($$$) {
     return rewrite_event($events{$_[0]}[int(rand(@{$events{$_[0]}}))], $_[1], $_[2]);
 }
 sub get_quest($) {
-    return $quests[int(rand(scalar(@quests)))];
+    return $quests[int(rand(scalar(@quests)))];    
 }
 
 sub read_items {
