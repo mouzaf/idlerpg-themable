@@ -2033,8 +2033,8 @@ sub penalize {
     return 0 if !defined($username);
     return 0 if !exists($rps{$username});
     my $type = shift;
-    my ($pentype,$pen,$why) = @{$why{$type}};
     questpencheck($username);
+    my ($pentype,$pen,$why) = @{$why{$type}};
     if ($type =~ m/^(?:quit|part|kick|logout)$/) {
         $rps{$username}{online}=0;
     }
