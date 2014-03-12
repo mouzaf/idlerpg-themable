@@ -1647,10 +1647,10 @@ sub movesomeplayers(@) {
         $rps{$player}{x} += int(rand(3))-1;
         $rps{$player}{y} += int(rand(3))-1;
         # if player goes over edge, wrap them back around
-        if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x} = 0; }
-        if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y} = 0; }
-        if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}; }
-        if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}; }
+        if ($rps{$player}{x} >= $opts{mapx}) { $rps{$player}{x} = 0; }
+        if ($rps{$player}{y} >= $opts{mapy}) { $rps{$player}{y} = 0; }
+        if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}-1; }
+        if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}-1; }
 
         if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
             !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
