@@ -94,3 +94,4 @@ Q1 quell the riot that has sprung up between C++-weenies and Java-weenies
 Q2 400 475 480 380 teach the One True Brace Style to the non-believers at Cl'guba
 Q1 Locate and slay the beastly dragon foretold by the sages Aho and Ullman
 Q2 290 65 325 270 Gather the finest craftsmen in the land, so that Charles Babbage may complete his Analytical Engine
+QI %player% have been chosen by the %{EFF|FSF|ACLU}% to %quest%.
