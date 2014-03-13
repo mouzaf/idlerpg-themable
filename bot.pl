@@ -2383,7 +2383,7 @@ sub read_events {
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
     if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
     if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
-    if(!@{$events{QI}}) { push(@{$events{QI}},"%player% have begun a quest, for the good of the realm."); }
+    if(!@{$events{QI}}) { push(@{$events{QI}},"%player% have begun a quest to %quest%, for the good of the realm."); }
     if(!@{$events{QS}}) { push(@{$events{QS}},"%player% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
     if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
 }
