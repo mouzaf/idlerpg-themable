@@ -1643,6 +1643,7 @@ bail_loaddb:
 sub movesomeplayers(@) {
     my @temp=@_;
     my %positions = ();
+    my $numtomove=scalar(@temp);
     while(@temp) {
 	my $player=splice(@temp,rand(scalar(@temp)),1);
         $rps{$player}{x} += int(rand(3))-1;
@@ -1661,7 +1662,7 @@ sub movesomeplayers(@) {
                         $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
                         " and bows humbly.");
             }
-            if (rand(@temp) < 1) {
+            if (rand($numtomove) < 1) {
                 $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
                 collision_fight($player,
                                 $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
