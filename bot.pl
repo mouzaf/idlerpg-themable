@@ -303,7 +303,7 @@ while (1) {
         $fh->recv($buffer2,512,0);
         if (length($buffer2)) {
             $buffer .= $buffer2;
-	    while ($buffer =~ s/^(.*?\n)//) {
+	    while ($buffer =~ s/^(.*?)\n//) {
                 parse($1);
             }
         }
