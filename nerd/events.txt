@@ -49,10 +49,12 @@ C got all retro and played %{Space Invaders|Pong|Zaxxon|Donkey Kong|Breakout|Jet
 C had an alien spaceship upload a virus onto %his% Macintosh Powerbook 5300
 C got chatted up by Cleverbot
 C 's random number generator only ever returns the number %{4|7}%
+C gets recruited by the Church of Soylentology and no longer makes any sense
 C got locked out of %{Google+|LinkedIn|GMail|Yahoo!}%
 C got tasked with fixing healthcare.gov
 G got paid to consult on fixing healthcare.gov
 G cancelled his %{Google+|LinkedIn|Yahoo!}% account with extreme prejudice
+G founds the Church of Soylentology in order to make money from his unintelligible writings
 G got a comment moderated to +5 %{troll|flamebait}% on SoylentNews
 G added slashdot.org to %his% HOSTS file
 G reverse engineered how overclocking works in %his% BIOS
