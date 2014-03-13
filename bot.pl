@@ -1643,7 +1643,8 @@ bail_loaddb:
 sub movesomeplayers(@) {
     my @temp=@_;
     my %positions = ();
-    for my $player (@temp) {
+    while(@temp) {
+	my $player=splice(@temp,rand(scalar(@temp)),1);
         $rps{$player}{x} += int(rand(3))-1;
         $rps{$player}{y} += int(rand(3))-1;
         # if player goes over edge, wrap them back around
