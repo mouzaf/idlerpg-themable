@@ -77,4 +77,3 @@ Q1 worship the sacred Cow until such time as she is satiated
 QI %player% have been chosen by the gods to %quest%.
 QF %player%'s prudence and self-regard has brought the wrath of the gods upon the realm. All your great wickedness makes you as it were heavy with lead, and to tend downwards with great weight and pressure towards hell. Therefore have you drawn yourselves 15 steps closer to that gaping maw.
 QS %player% have blessed the realm by completing their quest! 25% of their burden is eliminated.
-

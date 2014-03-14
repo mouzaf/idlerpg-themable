@@ -3,7 +3,7 @@ W Dennis Ritchie thinks that %player% is quirky, flawed, and an enormous success
 W Seymore Cray thinks that with %player%'s clever ideas he can push his cores to over %{2.0#+0.1#8.0}% GHz, so advanced %him%
 L Dijkstra frowned upon %player% and %his% haphazard use of goto to create spaghetti code, so slowed %him%
 L John McCarthy, perturbed by %player%'s jumble of brackets that was not worthy to be called either code or data, delayed %him%
-L Dan Bernstein rants and raves bout how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%
+L Dan Bernstein rants and raves about how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%
 L Linus Torvalds publicly lambasted %player% on LKML such that %he% can no longer look %his% coworkers in the eye. This delayed %him%
 H %player0% and %player1%'s frequent contributions to an Open Source project impress the Flying Spaghetti Monster, and he touches them with his noodly appendage.
 H %player0% and %player1%'s persistent refuting of Microsoft FUD impresses the Flying Spaghetti Monster, and he touches them with his noodly appendage.
