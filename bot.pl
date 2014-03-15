@@ -1906,8 +1906,8 @@ sub rewrite_event($$$) {
             my $numsteps = int(($4-$1)/$step)+1;
             substr($s,$start,$len) = $1+int($r*$numsteps)*$step;
         } else {
-            debug("No choice in macro ". substr($s,$start,$end));
-            substr($s,$start,$len) = substr($s,$start+2,$end-2);
+            debug("No choice in macro ". substr($s,$start,$len));
+            substr($s,$start,$len) = substr($s,$start+2,$len-4);
         }
     }
     return $s;
