@@ -1896,7 +1896,7 @@ sub rewrite_event($$$) {
     my ($s,$p,$r)=@_;
     $s=rewrite_for_players($s,[$p]);
     while($s =~ m/.*%{(.*?)}%/) { # work from inside out - don't worrry about .* complexity
-        my ($start, $end)=($-[0], $+[0]);
+	my ($start, $end)=($-[1]-2, $+[1]+2);
         my $len=$end-$start;
         if(index($1,'|')>=0 or index($1,'#')<0) {
             my @list=split(/\|/, $1);
