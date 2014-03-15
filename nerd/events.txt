@@ -17,7 +17,7 @@ C has a very brown power supply
 C forgot %{1##6}% characters in %his% password
 C suffered from very brown electricity
 C had damaging electrical spikes of up to %{300#+100#20000}% volts
-C 's webserver got hit by a %{XSS flaw|SQL injection|DDoS}%
+C 's webserver got hit by a %{XSS flaw|SQL injection|%{1#+1#1000}%TB DDoS}%
 C 's ISP had downtime
 C had upstream routing problems
 C ran out of storage space
