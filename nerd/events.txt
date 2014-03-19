@@ -52,6 +52,8 @@ C 's random number generator only ever returns the number %{4|7}%
 C gets recruited by the Church of Soylentology and no longer makes any sense
 C got locked out of %{Google+|LinkedIn|GMail|Yahoo!}%
 C got tasked with fixing healthcare.gov
+C accidentally the whole bottle
+G accidentally the whole bottle
 G got paid to consult on fixing healthcare.gov
 G cancelled his %{Google+|LinkedIn|Yahoo!}% account with extreme prejudice
 G founds the Church of Soylentology in order to make money from his unintelligible writings
