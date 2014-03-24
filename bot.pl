@@ -1973,12 +1973,13 @@ sub quest {
     my $questers=join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
     my $questtext=get_event('QI', $questers, undef);
     $questtext =~ s/%quest%/$quest{text}/; # only expect one, more is noise
+    $quest{text} = rewrite_programatics($questtext,undef);
     if ($quest{type} == 1) {
         $quest{qtime} = time()+43200+int(rand(43201));
-        chanmsg("$questtext Quest to end in ".duration($quest{qtime}-time()).".");
+        chanmsg("$quest{text} Quest to end in ".duration($quest{qtime}-time()).".");
     }
     elsif ($quest{type} == 2) {
-        chanmsg("$questtext Participants must first reach [$quest{p1}->[0],".
+        chanmsg("$quest{text} Participants must first reach [$quest{p1}->[0],".
                 "$quest{p1}->[1]], then [$quest{p2}->[0],$quest{p2}->[1]].".
                 ($opts{mapurl}?" See $opts{mapurl} to monitor their journey's ".
                 "progress.":""));
