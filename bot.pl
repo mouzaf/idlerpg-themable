@@ -1892,9 +1892,8 @@ sub rewrite_for_players($$) {
     $s =~ s/%(was|were)([01]?)%/were($p->[int("0$2")])/eg;
     return $s;
 }
-sub rewrite_event($$$) {
-    my ($s,$p,$r)=@_;
-    $s=rewrite_for_players($s,[$p]);
+sub rewrite_programatics($$) {
+    my ($s,$r)=@_;
     while($s =~ m/.*%{(.*?)}%/) { # work from inside out - don't worrry about .* complexity
 	my ($start, $end)=($-[1]-2, $+[1]+2);
         my $len=$end-$start;
@@ -1910,6 +1909,13 @@ sub rewrite_event($$$) {
             substr($s,$start,$len) = substr($s,$start+2,$len-4);
         }
     }
+    return $s;
+}
+
+sub rewrite_event($$$) {
+    my ($s,$p,$r)=@_;
+    $s=rewrite_for_players($s,[$p]);
+    $s=rewrite_programatics($s,$r);
     return $s;
 }
 
