@@ -795,7 +795,7 @@ sub parse {
             elsif ($arg[3] eq "inventory") {
 		my @list = map { item_describe($_,$rps{$username}{item}[$_],1,1); }(0..$#items);
 		$list[-1]="and $list[-1].";
-		privmsg("You are carrying ".join(", ", @list), $usernick);
+		privmsg("You are carrying ". comma_list(\@list), $usernick);
             }
             elsif ($arg[3] eq "newpass") {
 		if (!defined($arg[4])) {
@@ -1699,8 +1699,7 @@ sub moveplayers {
                 writequestfile();
             }
             elsif ($quest{stage} == 2 && $allgo) {
-                chanmsg_l(join(", ",(@questers)[0..2]).", ".
-                          "and $questers[3] have completed their ".
+                chanmsg_l(comma_list(\@questers)." have completed their ".
                           "journey! 25% of their burden is eliminated.");
                 for (@questers) {
                     $rps{$_}{next} = int($rps{$_}{next} * .75);
