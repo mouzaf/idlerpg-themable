@@ -2179,8 +2179,7 @@ sub holiness {
     return unless @players > 1;
     splice(@players,int(rand(@players)),1) while @players > 2;
     my $gain = 5 + int(rand(8));
-    my $holiness=$events{H}->[int(rand(@{$events{H}}))];
-    $holiness = rewrite_for_players($holiness, \@players);
+    my $holiness=get_event('H', \@players, undef);
     $holiness =~ s/%gain%/$gain/g;
     chanmsg_l($holiness);
     $rps{$players[0]}{next} = int($rps{$players[0]}{next}*(1 - ($gain/100)));
@@ -2218,8 +2217,7 @@ sub evilness {
     else { # being evil only pays about half of the time...
         my $gain = 1 + int(rand(5));
 	my $duration = duration(int($rps{$me}{next} * ($gain/100)));
-	my $evilness=$events{E}->[int(rand(@{$events{E}}))];
-	$evilness = rewrite_for_players($evilness, [$me]);
+	my $evilness=get_event('E',[$me],undef);
 	$evilness =~ s/%duration%/$duration/g;
 	chanmsg_l($evilness);
         $rps{$me}{next} = int($rps{$me}{next} * (1 + ($gain/100)));
