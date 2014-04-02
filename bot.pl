@@ -125,10 +125,10 @@ my %hisherits = (m=>'his',f => 'her', u => 'their',n => 'its',pc => 'his/her/its
 my %hishersits= (m=>'his',f => 'hers',u =>'theirs',n => 'its',pc => 'his/hers/its');
 
 my %rps; # role-players
-sub they( $ ) { return $hesheit{$rps{$_[0]}{gender}}; }
-sub them( $ ) { return $himherit{$rps{$_[0]}{gender}}; }
-sub their( $ ) { return $hisherits{$rps{$_[0]}{gender}}; }
-sub were( $ ) { return $rps{$_[0]}{gender} eq 'u' ? 'were' : 'was'; }
+sub they( $ ) { return $hesheit{   exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
+sub them( $ ) { return $himherit{  exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
+sub their( $ ) { return $hisherits{exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
+sub were( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'were' : 'was'; }
 
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
