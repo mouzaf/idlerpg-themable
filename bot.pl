@@ -1187,7 +1187,7 @@ sub hog { # summon the hand of god
     my $win = !!int(rand(5));
     my $rand = rand();
     my $time = int(((5 + int($rand*71))/100) * $rps{$player}{next});
-    my $event = get_event($win?'W':'L', $player, $rand);
+    my $event = get_event($win?'W':'L', [$player], $rand);
     chanmsg_l("$event ".duration($time)." $tofrom[$win] level ".
               ($rps{$player}{level}+1).".");
     $rps{$player}{next} += $win ? -$time : $time;
@@ -1233,7 +1233,7 @@ sub rpcheck { # check levels, update database
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
 	    my $plist = join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
-	    chanmsg_l(get_event("QS",$plist,undef));
+	    chanmsg_l(get_event("QS",[$plist],undef));
             for (@{$quest{questers}}) {
                 $rps{$_}{next} = int($rps{$_}{next} * .75);
             }
@@ -1914,7 +1914,7 @@ sub rewrite_programatics($$) {
 
 sub rewrite_event($$$) {
     my ($s,$p,$r)=@_;
-    $s=rewrite_for_players($s,[$p]);
+    $s=rewrite_for_players($s,$p);
     $s=rewrite_programatics($s,$r);
     return $s;
 }
@@ -1931,7 +1931,7 @@ sub modify_item($) {
             $typeid = $fragileitems[rand(@fragileitems)];
             $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
         }
-        $change = rewrite_event($change, $player, undef); # random number not used currently
+        $change = rewrite_event($change, [$player], undef); # random number not used currently
         my $type = $items[$typeid];
         my $suffix="";
         if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2",0,1); }
@@ -1947,7 +1947,7 @@ sub modify_item($) {
 			  'wondrous godsend has accelerated');
         my $rand = rand();
         my $time = int(int(5 + $rand*8) / 100 * $rps{$player}{next});
-        my $actioned = get_event($good?'G':'C', $player, $rand);
+        my $actioned = get_event($good?'G':'C', [$player], $rand);
         chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
                   "This $timechange[$good] ".them($player)." ".
                   duration($time)." $tofrom[$good] level ".
@@ -1971,7 +1971,7 @@ sub quest {
     %quest = %{get_quest()};
     $quest{questers} = \@questers;
     my $questers=join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
-    my $questtext=get_event('QI', $questers, undef);
+    my $questtext=get_event('QI', [$questers], undef);
     $questtext =~ s/%quest%/$quest{text}/; # only expect one, more is noise
     $quest{text} = rewrite_programatics($questtext,undef);
     if ($quest{type} == 1) {
@@ -1992,7 +1992,7 @@ sub questpencheck {
     my ($quester,$player);
     for $quester (@{$quest{questers}}) {
         if ($quester eq $k) {
-            chanmsg_l(get_event('QF', $quester, undef));
+            chanmsg_l(get_event('QF', [$quester], undef));
             for $player (grep { $rps{$_}{online} } keys %rps) {
                 my $gain = int(15 * ($opts{rppenstep}**$rps{$player}{level}));
                 $rps{$player}{pen_quest} += $gain;
