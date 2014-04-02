@@ -334,6 +334,14 @@ while (1) {
     if ((time()-$lasttime) >= $opts{self_clock}) { rpcheck(); }
 }
 
+sub comma_list($) {
+    my $l=$_[0];
+    my $list=join(", ",@$l);
+    if($#$l>1) { substr($list,-length($l->[-1]),0)='and '; } # last element modified
+    elsif($#$l==1) { substr($list,-length($l->[-1])-2,1)=' and'; } # last ", " modified
+    return $list;
+}
+
 sub parse {
     my($in) = shift;
     $inbytes += length($in); # increase parsed byte count
@@ -1886,6 +1894,7 @@ sub rewrite_for_items($$$) {
 sub rewrite_for_players($$) {
     my ($s,$p)=@_;
     $s =~ s/%player([01]?)%/$p->[int("0$1")]/g;
+    $s =~ s/%players%/comma_list($p)/eg;
     $s =~ s/%(he|she|they)([01]?)%/they($p->[int("0$2")])/eg;
     $s =~ s/%(his|her|their)([01]?)%/their($p->[int("0$2")])/eg;
     $s =~ s/%(him|her|them)([01]?)%/them($p->[int("0$2")])/eg; # her is impossible here
