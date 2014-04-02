@@ -759,21 +759,17 @@ sub parse {
                 if (!@{$quest{questers}}) {
                     privmsg("There is no active quest.",$usernick);
                 }
-                elsif ($quest{type} == 1) {
-                    privmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                            "$quest{questers}->[3] are on a quest to ".
-                            "$quest{text}. Quest to complete in ".
-                            duration($quest{qtime}-time()).".",$usernick);
-                }
-                elsif ($quest{type} == 2) {
-                    privmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                            "$quest{questers}->[3] are on a quest to ".
-                            "$quest{text}. Participants must first reach ".
-                            "[$quest{p1}->[0],$quest{p1}->[1]], then ".
-                            "[$quest{p2}->[0],$quest{p2}->[1]].".
-                            ($opts{mapurl}?" See $opts{mapurl} to monitor ".
-                            "their journey's progress.":""),$usernick);
-                }
+		elsif ($quest{type} == 1) {
+		    privmsg("$quest{text} Quest to complete in ".
+			    duration($quest{qtime}-time()).".", $usernick);
+		}
+		elsif ($quest{type} == 2) {
+		    privmsg("$quest{text} Participants must first reach ".
+			    "[$quest{p1}->[0],$quest{p1}->[1]], then ".
+			    "[$quest{p2}->[0],$quest{p2}->[1]].".
+			    ($opts{mapurl}?" See $opts{mapurl} to monitor ".
+			     "their journey's progress.":""), $usernick);
+		}
             }
             elsif ($arg[3] eq "status" && $opts{statuscmd}) {
                 # argument is optional
