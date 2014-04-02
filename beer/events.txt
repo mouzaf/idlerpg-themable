@@ -12,7 +12,7 @@ G finally gets bought a beer by %{Kumppulainen|Tranquillity}%
 G receives a package from %{BierKompass|Cracked Kettle|BierZweig|Alvinne}% that contains a freebie unrated beer %he% didn't order
 G has a beer brewed specially for %him% by %{Struise|Mikkeller|Beer Hunters}%
 G chances upon a fellow ratebeerian down the pub, and can therefore go halfsies
-G invented a new style of beer -%{ Imperial| Double|}%%{ Black| Red| Amber| Brown| White|}%%{ Session|}%%{ Vanuatu| India|Bongobongoland| American| Tuvalu|}%%{ Pale|}%%{ Ice-| }%%{Ale|Cider|Mild|Stout}% 
+G invented a new style of beer -%{ Imperial| Double|}%%{ Black| Red| Amber| Brown| White|}%%{ Session| Sour| Barrel Aged|}%%{ Vanuatu| India| Bongobongoland| American| Tuvalu|}%%{ Pale|}%%{ Ice-| }%%{Ale|Cider|Mild|Stout}% 
 G asked Gazza for a guided tour of the best beer pubs in London, and got dragged to Sheffield
 C accidentally the whole bottle
 G accidentally the whole bottle
