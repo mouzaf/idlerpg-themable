@@ -237,7 +237,7 @@ if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") {
 
 my %cmd_permissions=(
     (map {$_=>'admin'} qw/delold del hog event rehash chpass chuser chclass push newquest die/,
-     qw/reloaddb backup pause silent jump restart clearq/),
+     qw/reloaddb backup pause silent jump restart clearq eventtest/),
     peval=>'admin+ownerpevalonly', mkadmin=>'admin+owneraddonly', deladmin=>'admin+ownerdelonly',
     info=>'admin|allowuserinfo',
     );
@@ -1006,6 +1006,12 @@ sub parse {
 			   $usernick); 
 		}
             }
+	    elsif ($arg[3] eq 'eventtest' and $arg[4] =~ /^([WLGCHE])$/i) {
+		my $t=$1;
+		my @p = ($arg[5]//'name1');
+		if($t=~/H/) { push(@p, $arg[6]//'name2'); }
+		notice(($t=~/[GC]/i?"$p[0] ":'').get_event($t, \@p, rand()), $usernick);
+	    }
         }
         # penalize returns true if user was online and successfully penalized.
         # if the user is not logged in, then penalize() fails. so, if user is
