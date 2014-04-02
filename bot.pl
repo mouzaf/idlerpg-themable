@@ -1236,8 +1236,7 @@ sub rpcheck { # check levels, update database
     if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
-	    my $plist = join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
-	    chanmsg_l(get_event("QS",[$plist],undef));
+	    chanmsg_l(get_event("QS",$quest{questers},undef));
             for (@{$quest{questers}}) {
                 $rps{$_}{next} = int($rps{$_}{next} * .75);
             }
@@ -1974,8 +1973,7 @@ sub quest {
     }
     %quest = %{get_quest()};
     $quest{questers} = \@questers;
-    my $questers=join(", ",(@{$quest{questers}})[0..2]).", and $quest{questers}->[3]";
-    my $questtext=get_event('QI', [$questers], undef);
+    my $questtext=get_event('QI', \@questers, undef);
     $questtext =~ s/%quest%/$quest{text}/; # only expect one, more is noise
     $quest{text} = rewrite_programatics($questtext,undef);
     if ($quest{type} == 1) {
@@ -2394,8 +2392,8 @@ sub read_events {
     if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
     if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
     if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
-    if(!@{$events{QI}}) { push(@{$events{QI}},"%player% have begun a quest to %quest%, for the good of the realm."); }
-    if(!@{$events{QS}}) { push(@{$events{QS}},"%player% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
+    if(!@{$events{QI}}) { push(@{$events{QI}},"%players% have begun a quest to %quest%, for the good of the realm."); }
+    if(!@{$events{QS}}) { push(@{$events{QS}},"%players% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
     if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
 }
 
