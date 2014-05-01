@@ -800,7 +800,6 @@ sub parse {
             }
             elsif ($arg[3] eq "inventory") {
 		my @list = map { item_describe($_,$rps{$username}{item}[$_],1,1); }(0..$#items);
-		$list[-1]="and $list[-1].";
 		privmsg("You are carrying ". comma_list(\@list), $usernick);
             }
             elsif ($arg[3] eq "newpass") {
