@@ -1354,7 +1354,7 @@ sub battle_result($$) {
     return $phrase;
 }
 
-sub new_generic_2way_fight($$$$) {
+sub simple_fight($$$$) {
     my @p=($_[0],$_[1]);
     my ($flag,$chal) = ($_[2]<=>0, $_[3]); # opp can only be primnick in a challenge fight
     my @sum = map { itemsum($_,1); } @p;
@@ -1380,9 +1380,9 @@ sub new_generic_2way_fight($$$$) {
     return ($roll[0]-$roll[1])/($sum[$winner]||1);
 }
 
-sub generic_2way_fight($$$) {
+sub fight_with_side_effects($$$) {
     my($u,$opp,$chal) = @_; # opp can only be primnick in a challenge fight
-    my $delta=new_generic_2way_fight($u,$opp,0,$chal);
+    my $delta=simple_fight($u,$opp,0,$chal);
     if (($delta<0) or ($opp eq $primnick)) { return; }
     my $csfactor = ($chal=~m/^ch/ && $rps{$u}{alignment} eq "g") ? 50
 	: ($chal=~m/^ch/ && $rps{$u}{alignment} eq "e") ? 20
@@ -1408,7 +1408,7 @@ sub challenge_opp { # pit argument player against random player
     return unless scalar(@opps)>1;
     my $opp = $opps[int(rand(@opps))];
     $opp = $primnick if ($opp eq $u);
-    generic_2way_fight($u,$opp,"challenged");
+    fight_with_side_effects($u,$opp,"challenged");
 }
 
 sub brawl($) {
@@ -1417,7 +1417,7 @@ sub brawl($) {
     my $u = $players[int(rand(@players))];
     my $opp;
     while(($opp=$players[int(rand(@players))]) eq $u) { ; }
-    new_generic_2way_fight($u,$opp,$_[0],"been forced to fight");
+    simple_fight($u,$opp,$_[0],"been forced to fight");
 }
 
 sub team_battle { # pit three players against three other players
@@ -2144,7 +2144,7 @@ sub checksplits { # removed expired split hosts from the hash
     }
 }
 
-sub collision_fight($$$) { generic_2way_fight($_[0], $_[1], "come upon"); }
+sub collision_fight($$$) { fight_with_side_effects($_[0], $_[1], "come upon"); }
 
 sub restorequest {
     my %questdef = (
