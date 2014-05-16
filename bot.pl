@@ -1921,6 +1921,7 @@ sub rewrite_for_items($$$) {
 sub rewrite_for_players($$) {
     my ($s,$p)=@_;
     $s =~ s/%player([01]?)%/$p->[int("0$1")]/g;
+    $s =~ s/%level([01]?)%/$rps{$p->[int("0$1")]}{level}/g;
     $s =~ s/%players%/comma_list($p)/eg;
     $s =~ s/%(he|she|they)([01]?)%/they($p->[int("0$2")])/eg;
     $s =~ s/%(his|her|their)([01]?)%/their($p->[int("0$2")])/eg;
