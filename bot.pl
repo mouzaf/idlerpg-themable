@@ -2416,9 +2416,9 @@ sub read_events {
     @quests = ();
     %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[],
 	       QI=>[], QS=>[], QF=>[],
-	       P=>[], PG=>[], PN=>[], PE=>[]);
+	       P=>[], PG=>[], PN=>[], PE=>[], PA=>[]);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWLHE]|Q[ISF]|P[GNE]?)\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLHE]|Q[ISF]|P[AGNE]?)\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2436,7 +2436,8 @@ sub read_events {
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
 	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, ".
-	  @{$events{PG}}." good, ".@{$events{PN}}." neutral, and ".@{$events{PE}}." evil penances, ".
+	  @{$events{PG}}." good, ".@{$events{PN}}." neutral, ".
+	  @{$events{PE}}." evil, and ".@{$events{PA}." universal penances, ".
 	  " and ".@quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
 	  " failures, and ".@{$events{QS}}." sucesses).",0);
     # Must be at least one HOG win and lose line
@@ -2447,6 +2448,10 @@ sub read_events {
     if(!@{$events{QI}}) { push(@{$events{QI}},"%players% have begun a quest to %quest%, for the good of the realm."); }
     if(!@{$events{QS}}) { push(@{$events{QS}},"%players% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
     if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
+    if($events{'PA'} and scalar(@{$events{PA}})) {
+	foreach (qw{PG PN PE}) { push(@{$events{$_}}, @{$events{PA}}); };
+	delete($events{PA});
+    }
     if(!@{$events{PG}}) { push(@{$events{PG}},"%player% realises that %he% is doing something terribly wrong with %his% life, and desires to take a step back start again."); }
     if(!@{$events{PN}}) { push(@{$events{PN}},"%player% realises that %he% has lost %his% way, and needs to take a step back and start again."); }
     if(!@{$events{PE}}) { push(@{$events{PE}},"%player% realises that %he% has wasted too much of %his% time doing frivolous things, and needs to take a step back and start again."); }
