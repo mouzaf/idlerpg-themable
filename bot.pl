@@ -1256,6 +1256,21 @@ sub rpcheck { # check levels, update database
         }
         # quest type 2 awards are handled in moveplayers()
     }
+    if ($rpreport && report_threshold(43200)) { # twice-daily penance
+	my @repentant = grep { $rps{$_}{online} &&
+			     # $rps{$_}{alignment} ne 'e' &&
+			       $rps{$_}{next} > 2*ttl($rps{$_}{level}) &&
+			       $rps{$_}{level} > 0; } keys(%rps);
+	for my $r (@repentant) {
+	    # Supplication may make a comment about the current level
+	    my $supplication = get_event('P'.uc($rps{$r}{alignment}), [$r], undef);
+	    # Penance may make a comment about the destination level
+	    $rps{$r}{level}--;
+	    my $penance = get_event('P', [$r], undef);
+	    chanmsg_l("$supplication $penance");
+	    $rps{$r}{next} = int(ttl($rps{$r}{level}));
+	}
+    }				 
     if ($rpreport && report_threshold($opts{top_period}//36000)) { # default 10 hours
         my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
                        $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
@@ -2399,9 +2414,11 @@ sub read_events {
         return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
     }
     @quests = ();
-    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[], QI=>[], QS=>[], QF=>[]);
+    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[],
+	       QI=>[], QS=>[], QF=>[],
+	       P=>[], PG=>[], PN=>[], PE=>[]);
     while (my $line = <Q>) {
-        if ($line =~ /^([GCWLHE]|Q[ISF])\s+(.*)/) { push(@{$events{$1}}, $2); }
+        if ($line =~ /^([GCWLHE]|Q[ISF]|P[GNE]?)\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
         }
@@ -2418,8 +2435,9 @@ sub read_events {
     close(Q);
     debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
-	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, and ".
-          @quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
+	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, ".
+	  @{$events{PG}}." good, ".@{$events{PN}}." neutral, and ".@{$events{PE}}." evil penances, ".
+	  " and ".@quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
 	  " failures, and ".@{$events{QS}}." sucesses).",0);
     # Must be at least one HOG win and lose line
     if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
@@ -2429,6 +2447,10 @@ sub read_events {
     if(!@{$events{QI}}) { push(@{$events{QI}},"%players% have begun a quest to %quest%, for the good of the realm."); }
     if(!@{$events{QS}}) { push(@{$events{QS}},"%players% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
     if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
+    if(!@{$events{PG}}) { push(@{$events{PG}},"%player% realises that %he% is doing something terribly wrong with %his% life, and desires to take a step back start again."); }
+    if(!@{$events{PN}}) { push(@{$events{PN}},"%player% realises that %he% has lost %his% way, and needs to take a step back and start again."); }
+    if(!@{$events{PE}}) { push(@{$events{PE}},"%player% realises that %he% has wasted too much of %his% time doing frivolous things, and needs to take a step back and start again."); }
+    if(!@{$events{P}}) { push(@{$events{P}},"%player% returns to restart level %level% with a clean slate."); }
 }
 
 sub get_event($$$) {
