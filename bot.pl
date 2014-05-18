@@ -2456,7 +2456,7 @@ sub read_events {
           @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
 	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, ".
 	  @{$events{PG}}." good, ".@{$events{PN}}." neutral, ".
-	  @{$events{PE}}." evil, and ".@{$events{PA}." universal penances, ".
+	  @{$events{PE}}." evil, and ".@{$events{PA}}." universal penances, ".
 	  " and ".@quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
 	  " failures, and ".@{$events{QS}}." sucesses).",0);
     # Must be at least one HOG win and lose line
