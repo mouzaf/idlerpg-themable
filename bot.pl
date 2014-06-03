@@ -369,7 +369,7 @@ sub parse {
     elsif ($arg[1] eq 'join') {
         # %onchan holds time user joined channel. used for the advertisement ban
         $onchan{$usernick}=time();
-        if ($opts{'detectsplits'} && exists($split{substr($arg[0],1)})) {
+        if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
         }
         elsif ($opts{botnick} eq $usernick) {
@@ -382,7 +382,7 @@ sub parse {
     elsif ($arg[1] eq 'quit') {
         # if we see our nick come open, grab it (skipping queue)
         if ($usernick eq $primnick) { sts("NICK $primnick",1); }
-        elsif ($opts{'detectsplits'} &&
+        elsif ($opts{detectsplits} &&
                "@arg[2..$#arg]" =~ /^:\S+\.\S+ \S+\.\S+$/) {
             if (defined($username)) { # user was online
                 $split{substr($arg[0],1)}{time}=time();
