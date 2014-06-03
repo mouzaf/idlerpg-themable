@@ -1283,13 +1283,15 @@ sub rpcheck { # check levels, update database
         }
         backup();
     }
-    if (report_threshold(3600) && $rpreport) { # 1 hour
+    if ($rpreport && report_threshold(3600)) { # 1 hour
         my @players = grep { $rps{$_}{online} &&
                              $rps{$_}{level} > 44 } keys(%rps);
         # 20% of all players must be level 45+
         if ((scalar(@players)/scalar(grep { $rps{$_}{online} } keys(%rps))) > .15) {
             challenge_opp($players[int(rand(@players))]);
         }
+    }
+    if ($rpreport && report_threshold(3600)) { # 1 hour
         while (@bans) {
             sts("MODE $opts{botchan} -bbbb :@bans[0..3]");
             splice(@bans,0,4);
