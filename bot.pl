@@ -60,7 +60,6 @@ GetOptions(\%opts,
     "admincommurl=s",
     "doban",
     "silentmode=i",
-    "writequestfile",
     "questfilename=s",
     "voiceonlogin",
     "noccodes",
@@ -1245,7 +1244,7 @@ sub rpcheck { # check levels, update database
 
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
-    if (report_threshold(120) && $opts{writequestfile}) { writequestfile(); }
+    if (report_threshold(120) && $opts{questfilename}) { writequestfile(); }
     if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
@@ -1888,7 +1887,7 @@ usage: $prog [OPTIONS]
 # irc_settings: --owner, --detectsplits, --splitwait, 
 # irc_features: --modesperline, --senduserlist, --voiceonlogin
 # theme:        --itemsfile, --eventsfile, 
-# database:     --dbfile, --itemdbfile, --questfilename, --writequestfile
+# database:     --dbfile, --itemdbfile, --questfilename
 # logging:      --debugfile, --modsfile, 
 # game:         --mapx, --mapy, --noscale, --self_clock, --top_period
 # penalties:    --limitpen,
@@ -2190,7 +2189,7 @@ sub restorequest {
                     text => "",
                     type => 1,
                     stage => 1); # quest info
-    return %questdef unless ($opts{writequestfile} and open(QF, "<$opts{questfilename}"));
+    return %questdef unless ($opts{questfilename} and open(QF, "<$opts{questfilename}"));
     my $type;
     while(<QF>) {
         if(m/^T (.*?)\s*$/) { $questdef{text} = $1; }
@@ -2208,7 +2207,7 @@ sub restorequest {
 }
 
 sub writequestfile {
-    return unless $opts{writequestfile};
+    return unless $opts{questfilename};
     open(QF,">$opts{questfilename}") or do {
         chanmsg("Error: Cannot open $opts{questfilename}: $!");
         return;
