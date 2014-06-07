@@ -45,6 +45,7 @@ GetOptions(\%opts,
     "verbose|v",
     "debug",
     "debugfile=s",
+    "modsfile=s",
     "server|s=s",
     "botnick|n=s",
     "botuser|u=s",
@@ -70,7 +71,6 @@ GetOptions(\%opts,
     "reconnect",
     "reconnect_wait=i",
     "self_clock=i",
-    "modsfile=s",
     "casematters",
     "detectsplits",
     "splitwait=i",
@@ -94,7 +94,9 @@ GetOptions(\%opts,
     "rpbase=i",
     "rppenstep=f",
     "dbfile|irpgdb|db|d=s",
+    "itemdbfile|idb=s",
     "daemonize",
+    "top_period=i",
 ) or debug("Error: Could not parse command line. Try $0 --help\n",1);
 
 $opts{help} and do { help(); exit 0; };
@@ -1875,9 +1877,24 @@ usage: $prog [OPTIONS]
   Timing parameters:
   --rpbase             Base time to level up
   --rpstep             Time to next level = rpbase * (rpstep ** CURRENT_LEVEL)
+  --rpitembase         Base time for lifetime of dropped items
   --rppenstep          PENALTY_SECS=(PENALTY*(RPPENSTEP**CURRENT_LEVEL))
-
 ";
+# missing:
+# software:     --checkupdates,
+# network:      --localaddr, --reconnect, --reconnect_wait
+# commands:     --statuscmd, --allowuserinfo, 
+# players:      --casematters, --noccodes, --nononp,
+# irc_settings: --owner, --detectsplits, --splitwait, 
+# irc_features: --modesperline, --senduserlist, --voiceonlogin
+# theme:        --itemsfile, --eventsfile, 
+# database:     --dbfile, --itemdbfile, --questfilename, --writequestfile
+# logging:      --debugfile, --modsfile, 
+# game:         --mapx, --mapy, --noscale, --self_clock, --top_period
+# penalties:    --limitpen,
+# our_servers:  --mapurl,
+# daemon:       --daemonize, --pidfile,
+# --phonehome
 }
 
 sub itemsum {
