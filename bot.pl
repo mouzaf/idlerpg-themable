@@ -96,6 +96,7 @@ GetOptions(\%opts,
     "itemdbfile|idb=s",
     "daemonize",
     "top_period=i",
+    "chal_period",
 ) or debug("Error: Could not parse command line. Try $0 --help\n",1);
 
 $opts{help} and do { help(); exit 0; };
@@ -1284,7 +1285,7 @@ sub rpcheck { # check levels, update database
         }
         backup();
     }
-    if ($rpreport && report_threshold(3600)) { # 1 hour
+    if ($rpreport && report_threshold($opts{chal_period}//3600)) { # 1 hour
         my @players = grep { $rps{$_}{online} &&
                              $rps{$_}{level} > 44 } keys(%rps);
         # 20% of all players must be level 45+
@@ -1889,9 +1890,9 @@ usage: $prog [OPTIONS]
 # theme:        --itemsfile, --eventsfile, 
 # database:     --dbfile, --itemdbfile, --questfilename
 # logging:      --debugfile, --modsfile, 
-# game:         --mapx, --mapy, --noscale, --self_clock, --top_period
+# map:          --mapx, --mapy, --mapurl,
+# game:         --noscale, --self_clock, --top_period, --chal_period
 # penalties:    --limitpen,
-# our_servers:  --mapurl,
 # daemon:       --daemonize, --pidfile,
 # --phonehome
 }
