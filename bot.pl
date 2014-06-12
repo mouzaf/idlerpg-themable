@@ -1674,11 +1674,16 @@ bail_loaddb:
           scalar(keys(%prev_online))." previously online.");
 
     return if (!$opts{itemdbfile});
-    if (!open(ITEMS,$opts{itemdbfile})) {
-	if (-e $opts{itemdbfile}) { sts("QUIT :loaddb() failed: $!"); }
+    %mapitems = ();
+    $mapitems_dirty=0;
+    if(! -e $opts{itemdbfile}) {
+	debug("loaddb(): no items file to load, that's easy.");
 	return;
     }
-    %mapitems = ();
+    if (!open(ITEMS,$opts{itemdbfile})) {
+	if (-e $opts{itemdbfile}) { sts("QUIT :loaddb() failed ($opts{itemdbfile}): $!"); }
+	return;
+    }
     my $cnt = 0;
     my $curtime = time();
     while ($l=<ITEMS>) {
@@ -1695,7 +1700,6 @@ bail_loaddb:
 	$cnt++;
     }
     close(ITEMS);
-    $mapitems_dirty=0;
     debug("loaddb(): loaded $cnt items.");
 }
 
@@ -2386,15 +2390,21 @@ sub writedb {
 		     "level",
 		     "age")."\n";
     my $curtime = time();
+    my $cnt=0;
     while(my ($xy, $aref) = each(%mapitems)) {
 	foreach my $i (@$aref) {
 	    print ITEMS join("\t", $xy,
 			     $i->{typeid},
 			     $i->{level},
 			     $curtime-$i->{lasttime})."\n";
+	    ++$cnt;
 	}
     }
     close(ITEMS);
+    if(!$cnt) {
+	unlink($opts{itemdbfile})
+	    or chanmsg("ERROR: Cannot nuke items file");
+    }
     $mapitems_dirty=0;
 }
 
