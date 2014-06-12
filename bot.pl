@@ -138,6 +138,7 @@ my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
 my %quest = restorequest();
 
+my $mapitems_dirty;
 my %mapitems = (); # indexed by "$x:$y", each being a list of items
 
 my $rpreport = 0; # constant for reporting top players
@@ -1496,6 +1497,7 @@ sub process_items() { # decrease items lying around
 		$aref->[$i]{level} = downgrade_item($level);
 		if ($aref->[$i]{level} eq '0') { splice(@$aref,$i,1); $i--; } # ... here
 		delete($mapitems{$xy}) if (!scalar(@$aref));
+		$mapitems_dirty++;
 	    }
 	}
     }
@@ -1507,6 +1509,7 @@ sub drop_item($$$) { # drop item on the map
     if (!$opts{rpitembase} or $ulevel <= 0) { return; }
     # if(!defined($mapitems{$xy})) { $mapitems{$xy} = []; }
     push(@{$mapitems{$xy}}, { typeid=>$typeid, level=>$level, lasttime=>time() });
+    $mapitems_dirty++;
 }
 sub drop_user_item($$) {
     drop_item("$rps{$_[0]}{x}:$rps{$_[0]}{y}", $_[1], $rps{$_[0]}{item}[$_[1]]);
@@ -1692,6 +1695,7 @@ bail_loaddb:
 	$cnt++;
     }
     close(ITEMS);
+    $mapitems_dirty=0;
     debug("loaddb(): loaded $cnt items.");
 }
 
@@ -1799,6 +1803,7 @@ sub moveplayers {
 		if ($val > user_item_val($u, $item->{typeid})) {
 		    exchange_object($u, $item->{typeid}, $val, $tag);
 		    splice(@{$mapitems{"$x:$y"}},$i,1);
+		    $mapitems_dirty++;
 		    --$i; # everything's shifted up by one
 		}
 	    }
@@ -2371,6 +2376,7 @@ sub writedb {
     close(RPS);
 
     return if(!$opts{itemdbfile});
+    return if(!$mapitems_dirty);
     open(ITEMS,">$opts{itemdbfile}") or do {
 	chanmsg("ERROR: Cannot write $opts{itemdbfile}: $!");
 	return;
@@ -2389,6 +2395,7 @@ sub writedb {
 	}
     }
     close(ITEMS);
+    $mapitems_dirty=0;
 }
 
 sub readconfig {
