@@ -2502,7 +2502,8 @@ sub read_events {
 }
 
 sub get_event($$$) {
-    return rewrite_event($events{$_[0]}[int(rand(@{$events{$_[0]}}))], $_[1], $_[2]);
+    my $evsref = $events{$_[0]};
+    return rewrite_event($evsref->[int(rand(@$evsref))], $_[1], $_[2]);
 }
 sub get_quest($) {
     return $quests[int(rand(scalar(@quests)))];    
