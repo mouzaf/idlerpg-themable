@@ -130,7 +130,11 @@ my %rps; # role-players
 sub they( $ ) { return $hesheit{   exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
 sub them( $ ) { return $himherit{  exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
 sub their( $ ) { return $hisherits{exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
+
+sub are( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'are' : 'is'; }
 sub were( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'were' : 'was'; }
+sub have( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'have' : 'has'; }
+#sub verb( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? '' : 's'; }
 
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
@@ -1969,7 +1973,10 @@ sub rewrite_for_players($$) {
     $s =~ s/%(he|she|they)([01]?)%/they($p->[int("0$2")])/eg;
     $s =~ s/%(his|her|their)([01]?)%/their($p->[int("0$2")])/eg;
     $s =~ s/%(him|her|them)([01]?)%/them($p->[int("0$2")])/eg; # her is impossible here
+    $s =~ s/%(is|are)([01]?)%/are($p->[int("0$2")])/eg;
     $s =~ s/%(was|were)([01]?)%/were($p->[int("0$2")])/eg;
+    $s =~ s/%(has|have)([01]?)%/have($p->[int("0$2")])/eg;
+    #$s =~ s/%(verb|verbs)([01]?)%/verb($p->[int("0$2")])/eg;
     return $s;
 }
 sub rewrite_programatics($$) {
@@ -2488,9 +2495,9 @@ sub read_events {
 	foreach (qw{PG PN PE}) { push(@{$events{$_}}, @{$events{PA}}); };
 	delete($events{PA});
     }
-    if(!@{$events{PG}}) { push(@{$events{PG}},"%player% realises that %he% is doing something terribly wrong with %his% life, and desires to take a step back start again."); }
-    if(!@{$events{PN}}) { push(@{$events{PN}},"%player% realises that %he% has lost %his% way, and needs to take a step back and start again."); }
-    if(!@{$events{PE}}) { push(@{$events{PE}},"%player% realises that %he% has wasted too much of %his% time doing frivolous things, and needs to take a step back and start again."); }
+    if(!@{$events{PG}}) { push(@{$events{PG}},"%player% realises that %he% %is% doing something terribly wrong with %his% life, and desires to take a step back start again."); }
+    if(!@{$events{PN}}) { push(@{$events{PN}},"%player% realises that %he% %has% lost %his% way, and needs to take a step back and start again."); }
+    if(!@{$events{PE}}) { push(@{$events{PE}},"%player% realises that %he% %has% wasted too much of %his% time doing frivolous things, and needs to take a step back and start again."); }
     if(!@{$events{P}}) { push(@{$events{P}},"%player% returns to restart level %level% with a clean slate."); }
 }
 
