@@ -2104,6 +2104,17 @@ sub flog($$) {
 sub clog($) {
     flog($opts{modsfile}, shift);
 }
+my $debug_reentrancy = 0;
+sub debug {
+    my ($text, $die) = @_;
+    return if ($debug_reentrancy > 0);
+    $debug_reentrancy++;
+    $text =~ s/[\r\n]//g;
+    flog($opts{debugfile}, $text) if ($opts{debug} || $opts{verbose});
+    if ($die) { die("$text\n"); }
+    $debug_reentrancy--;
+    return $text;
+}
 
 sub backup() {
     if (! -d ".dbbackup/") { mkdir(".dbbackup",0700); }
@@ -2152,21 +2163,6 @@ sub penalize {
     notice("Penalty of ".duration($pen)." added to your timer for $why.",
            $rps{$username}{nick}) if(defined($why));
     return 1; # successfully penalized a user! woohoo!
-}
-
-sub debug {
-    (my $text = shift) =~ s/[\r\n]//g;
-    my $die = shift;
-    if ($opts{debug} || $opts{verbose}) {
-        open(DBG,">>$opts{debugfile}") or do {
-            chanmsg("Error: Cannot open debug file: $!");
-            return;
-        };
-        print DBG ts()."$text\n";
-        close(DBG);
-    }
-    if ($die) { die("$text\n"); }
-    return $text;
 }
 
 sub finduser {
