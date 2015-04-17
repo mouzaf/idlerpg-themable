@@ -2090,16 +2090,19 @@ sub questpencheck {
     }
 }
 
-sub clog {
-    my $mesg = shift;
-    open(B,">>$opts{modsfile}") or do {
-        debug("Error: Cannot open $opts{modsfile}: $!");
-        chanmsg("Error: Cannot open $opts{modsfile}: $!");
+sub flog($$) {
+    my ($file,$mesg) = @_;
+    open(B,">>$file") or do {
+        debug("Error: Cannot open $file}: $!");
+        chanmsg("Error: Cannot open $file}: $!");
         return $mesg;
     };
     print B ts()."$mesg\n";
     close(B);
     return $mesg;
+}
+sub clog($) {
+    flog($opts{modsfile}, shift);
 }
 
 sub backup() {
