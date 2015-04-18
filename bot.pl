@@ -1287,7 +1287,7 @@ sub rpcheck { # check levels, update database
     if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
 
     moveplayers();
-    process_items() if($opts{rpitembase});
+    process_items() if($opts{itemdbfile});
 
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
@@ -1559,7 +1559,7 @@ sub process_items() { # decrease items lying around
 sub drop_item($$$) { # drop item on the map
     my ($xy,$typeid,$level) = @_;
     my $ulevel = item_val($level);
-    if (!$opts{rpitembase} or $ulevel <= 0) { return; }
+    if (!$opts{itemdbfile} or $ulevel <= 0) { return; }
     # if(!defined($mapitems{$xy})) { $mapitems{$xy} = []; }
     push(@{$mapitems{$xy}}, { typeid=>$typeid, level=>$level, lasttime=>time() });
     mapitemlog(0, $xy, item_describe($typeid,$level,0,1), "was dropped");
@@ -1626,7 +1626,7 @@ sub find_item { # find item for argument player
 	       $rps{$u}{nick});
 	# should we drop this on the map - will that clutter the map?
 	# definitely not if there's no decay.
-	drop_item("$rps{$u}{x}:$rps{$u}{y}", $typeid, $level) if($opts{rpitembase});
+	drop_item("$rps{$u}{x}:$rps{$u}{y}", $typeid, $level) if($opts{itemdbfile});
     }
 }
 
@@ -1850,7 +1850,7 @@ sub moveplayers {
 	# pick up items lying around, priority amongst players is semi-random
 	# it depends on the order of hash traversal, which can change when the
 	# hash changes.
-	next if (!$opts{rpitembase});
+	next if (!$opts{itemdbfile});
 	for my $u (keys(%rps)) {
 	    next unless $rps{$u}{online};
 	    my $x = $rps{$u}{x};
@@ -2503,10 +2503,6 @@ sub readconfig {
         }
         close(CONF);
 	if(!defined($opts{rpitemstep})) { $opts{rpitemstep} = $opts{rpstep}; }
-	if(!$opts{itemdbfile} and $opts{rpitembase}) {
-	    debug("Without an itemdbfile, no objects will be dropped, blanking rpitembase");
-	    delete($opts{rpitembase});
-	}
     }
 }
 
