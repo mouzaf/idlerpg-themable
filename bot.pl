@@ -1111,13 +1111,41 @@ sub itemttl($) {
     my $lvl = $_[0];
     #exponentials grow a bit quickly, so adjust by retarding the growth
     # by a factor that increases with the level.
+
+#? foo(r,l)=local(p=1,c=p/(r-1),t=600*(r^l)*(c/(c+l))^p);if(t>86400,86400*(t/86400)^(1/log(t)),t)
+#? plot(l=1,300,foo(1.06,l))
+#
+#136453.78 |'''''''''''''''''''''''''''''''''''''''''''''''''''''''''__xx""
+#          |                                                   __xx""     |
+#          |                                              __x""           |
+#          |                                         __x""                |
+#          |                                     _xx"                     |
+#          |                                 _x""                         |
+#          |                             _x""                             |
+#          |                         _xx"                                 |
+#          |                                                              |
+#          |                        x                                     |
+#          |                        :                                     |
+#          |                       :                                      |
+#          |                       "                                      |
+#          |                                                              |
+#          |                      "                                       |
+#          |                     _                                        |
+#          |                                                              |
+#          |                    "                                         |
+#          |                  _"                                          |
+#          |                _x                                            |
+#          |             _x"                                              |
+#        0 ______xxxxx""",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+#          1                                                            300
+
     my $retardationpower = 1;
     my $cutoff = $retardationpower/($opts{rpitemstep}-1);
     my $base = $opts{rpitembase} * ($opts{rpitemstep}**$lvl);
     my $retardation = ($cutoff/($cutoff+$lvl)) ** $retardationpower;
-    my $ttl = int($base * $retardation);
-    if ($ttl > 86400) { $ttl = 86400; } # FIXME: keep increasing slowly
-    return $ttl;
+    my $ttl = $base * $retardation;
+    if ($ttl > 86400) { $ttl = 86400*($ttl/86400)**(1/log($ttl)); }
+    return int($ttl);
 }
 
 sub duration { # return human duration of seconds
