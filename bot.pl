@@ -2076,13 +2076,12 @@ sub modify_item($) {
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
-    if (@fragileitems and rand(10) < 1) {
+    my @changeableitems = grep { $good ? $godsend[$fragileitems[$_]]
+				     : $calamity[$fragileitems[$_]]; } (@fragileitems);
+    if (@changeableitems and rand(10) < 1) {
 	my @change = ('loses', 'gains');
-        my($typeid,$change);
-        while(!$change) {
-            $typeid = $fragileitems[rand(@fragileitems)];
-            $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
-        }
+	my $typeid = $changeableitems[rand(@changeableitems)];
+	my $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
         $change = rewrite_event($change, [$player], undef); # random number not used currently
         my $type = $items[$typeid];
         my $suffix="";
