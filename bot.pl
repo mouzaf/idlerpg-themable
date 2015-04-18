@@ -1107,6 +1107,18 @@ sub ttl( $ ) {
     return ($opts{rpbase} * ($opts{rpstep}**$lvl)) if $lvl <= 60;
     return (($opts{rpbase} * ($opts{rpstep}**60)) + (86400*($lvl - 60)));
 }
+sub itemttl($) {
+    my $lvl = $_[0];
+    #exponentials grow a bit quickly, so adjust by retarding the growth
+    # by a factor that increases with the level.
+    my $retardationpower = 1;
+    my $cutoff = $retardationpower/($opts{rpitemstep}-1);
+    my $base = $opts{rpitembase} * ($opts{rpitemstep}**$lvl);
+    my $retardation = ($cutoff/($cutoff+$lvl)) ** $retardationpower;
+    my $ttl = int($base * $retardation);
+    if ($ttl > 86400) { $ttl = 86400; } # FIXME: keep increasing slowly
+    return $ttl;
+}
 
 sub duration { # return human duration of seconds
     my $s = shift;
@@ -1498,13 +1510,14 @@ sub process_items() { # decrease items lying around
 	# print STDERR ("Processing ".scalar(@$aref)." items at $xy\n");
 	for (my $i=0; $i<scalar(@$aref); ++$i) { # length may  change on the fly...
 	    my $level = $aref->[$i]{level};
-	    my $ttl = int($opts{rpitembase} * ttl(item_val($level)) / 600);
+	    my $levelnum = item_val($level);
+	    my $ttl = itemttl($levelnum);
 	    if ($aref->[$i]{lasttime} + $ttl <= $curtime ) {
 		my $newlevel = downgrade_item($level);
 		mapitemlog(int($curtime - ($aref->[$i]{lasttime} + $ttl)),
 			   $xy,
 			   item_describe($aref->[$i]{typeid},$level,0,1),
-			   "decayed");
+			   "decayed (ttl for $level was $ttl)");
 		$aref->[$i]{lasttime} += $ttl;
 		$aref->[$i]{level} = $newlevel;
 		if ($aref->[$i]{level} eq '0') { splice(@$aref,$i,1); $i--; } # ... here
@@ -1903,6 +1916,7 @@ usage: $prog [OPTIONS]
   --rpbase             Base time to level up
   --rpstep             Time to next level = rpbase * (rpstep ** CURRENT_LEVEL)
   --rpitembase         Base time for lifetime of dropped items
+  --rpitemstep         Time to next decay << rpitembase * (rpitemstep ** ITEM_LEVEL)
   --rppenstep          PENALTY_SECS=(PENALTY*(RPPENSTEP**CURRENT_LEVEL))
 ";
 # missing:
@@ -2460,6 +2474,7 @@ sub readconfig {
             else { $opts{$key} = $val; }
         }
         close(CONF);
+	if(!defined($opts{rpitemstep})) { $opts{rpitemstep} = $opts{rpstep}; }
 	if(!$opts{itemdbfile} and $opts{rpitembase}) {
 	    debug("Without an itemdbfile, no objects will be dropped, blanking rpitembase");
 	    delete($opts{rpitembase});
