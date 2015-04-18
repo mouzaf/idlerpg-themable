@@ -1940,6 +1940,20 @@ usage: $prog [OPTIONS]
   --helpurl            URL to refer new users to
   --admincommurl       URL to refer admins to
 
+  Theme:
+  --itemsfile          File containing all the item/type definitions
+  --eventsfile         File containing all the event definitions
+
+  Database:
+  --dbfile             Store of player state
+  --questfilename      Store of quest state
+  --itemdbfile         Store of dropped item state (blank disables dropping)
+
+  Logging:
+  --debugfile          file logging all the bot input and output, plus actual debugs
+  --modsfile           file logging all changes to players' states
+  --decayfile          file logging all changes to dropped items' states
+
   Timing parameters:
   --rpbase             Base time to level up
   --rpstep             Time to next level = rpbase * (rpstep ** CURRENT_LEVEL)
@@ -1948,20 +1962,17 @@ usage: $prog [OPTIONS]
   --rppenstep          PENALTY_SECS=(PENALTY*(RPPENSTEP**CURRENT_LEVEL))
 ";
 # missing:
-# software:     --checkupdates,
+# software:     --checkupdates, --phonehome
 # network:      --localaddr, --reconnect, --reconnect_wait
 # commands:     --statuscmd, --allowuserinfo, 
 # players:      --casematters, --noccodes, --nononp,
 # irc_settings: --owner, --detectsplits, --splitwait, 
 # irc_features: --modesperline, --senduserlist, --voiceonlogin
-# theme:        --itemsfile, --eventsfile, 
-# database:     --dbfile, --itemdbfile, --questfilename
-# logging:      --debugfile, --modsfile, --decayfile
 # map:          --mapx, --mapy, --mapurl,
 # game:         --noscale, --self_clock, --top_period, --chal_period
 # penalties:    --limitpen,
 # daemon:       --daemonize, --pidfile,
-# --phonehome
+# 
 }
 
 sub itemsum {
