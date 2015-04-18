@@ -2093,6 +2093,7 @@ sub questpencheck {
 
 sub flog($$) {
     my ($file,$mesg) = @_;
+    return $mesg if (!defined($file) || !length($file));
     open(B,">>$file") or do {
         debug("Error: Cannot open $file}: $!");
         chanmsg("Error: Cannot open $file}: $!");
