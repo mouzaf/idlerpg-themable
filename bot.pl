@@ -46,6 +46,7 @@ GetOptions(\%opts,
     "debug",
     "debugfile=s",
     "modsfile=s",
+    "mapitemsfile=s",
     "server|s=s",
     "botnick|n=s",
     "botuser|u=s",
@@ -1488,7 +1489,9 @@ sub downgrade_item { # returns the decreased item level
     $ulevel-- if ($ulevel > 0);
     return "$ulevel$tag";
 }
-
+sub mapitemlog($$$$) {
+    maplog("$_[0]s back at $_[1], the $_[2] $_[3]") if ($opts{debug});
+}
 sub process_items() { # decrease items lying around
     my $curtime = time();
     while (my ($xy,$aref) = each(%mapitems)) {
@@ -1497,8 +1500,13 @@ sub process_items() { # decrease items lying around
 	    my $level = $aref->[$i]{level};
 	    my $ttl = int($opts{rpitembase} * ttl(item_val($level)) / 600);
 	    if ($aref->[$i]{lasttime} + $ttl <= $curtime ) {
+		my $newlevel = downgrade_item($level);
+		mapitemlog(int($curtime - ($aref->[$i]{lasttime} + $ttl)),
+			   $xy,
+			   item_describe($aref->[$i]{typeid},$level,0,1),
+			   "decayed");
 		$aref->[$i]{lasttime} += $ttl;
-		$aref->[$i]{level} = downgrade_item($level);
+		$aref->[$i]{level} = $newlevel;
 		if ($aref->[$i]{level} eq '0') { splice(@$aref,$i,1); $i--; } # ... here
 		delete($mapitems{$xy}) if (!scalar(@$aref));
 		$mapitems_dirty++;
@@ -1513,6 +1521,7 @@ sub drop_item($$$) { # drop item on the map
     if (!$opts{rpitembase} or $ulevel <= 0) { return; }
     # if(!defined($mapitems{$xy})) { $mapitems{$xy} = []; }
     push(@{$mapitems{$xy}}, { typeid=>$typeid, level=>$level, lasttime=>time() });
+    mapitemlog(0, $xy, item_describe($typeid,$level,0,1), "was dropped");
     $mapitems_dirty++;
 }
 sub drop_user_item($$) {
@@ -1811,6 +1820,8 @@ sub moveplayers {
 		my ($val,$tag) = ($item->{level} =~ /^(\d+)([a-z]?)$/);
 		if ($val > user_item_val($u, $item->{typeid})) {
 		    exchange_object($u, $item->{typeid}, $val, $tag);
+		    mapitemlog(0, "$x:$y", item_describe($item->{typeid},$val,0,1),
+			       "was picked-up");
 		    splice(@{$mapitems{"$x:$y"}},$i,1);
 		    $mapitems_dirty++;
 		    --$i; # everything's shifted up by one
@@ -1903,7 +1914,7 @@ usage: $prog [OPTIONS]
 # irc_features: --modesperline, --senduserlist, --voiceonlogin
 # theme:        --itemsfile, --eventsfile, 
 # database:     --dbfile, --itemdbfile, --questfilename
-# logging:      --debugfile, --modsfile, 
+# logging:      --debugfile, --modsfile, --mapitemsfile
 # map:          --mapx, --mapy, --mapurl,
 # game:         --noscale, --self_clock, --top_period, --chal_period
 # penalties:    --limitpen,
@@ -2107,6 +2118,9 @@ sub clog($) {
     flog($opts{modsfile}, shift);
 }
 my $debug_reentrancy = 0;
+sub maplog($) {
+    flog($opts{mapitemsfile}, shift) if ($opts{mapitemsfile});
+}
 sub debug {
     my ($text, $die) = @_;
     return if ($debug_reentrancy > 0);
