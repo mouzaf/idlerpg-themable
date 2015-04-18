@@ -46,7 +46,7 @@ GetOptions(\%opts,
     "debug",
     "debugfile=s",
     "modsfile=s",
-    "mapitemsfile=s",
+    "decayfile=s",
     "server|s=s",
     "botnick|n=s",
     "botuser|u=s",
@@ -1956,7 +1956,7 @@ usage: $prog [OPTIONS]
 # irc_features: --modesperline, --senduserlist, --voiceonlogin
 # theme:        --itemsfile, --eventsfile, 
 # database:     --dbfile, --itemdbfile, --questfilename
-# logging:      --debugfile, --modsfile, --mapitemsfile
+# logging:      --debugfile, --modsfile, --decayfile
 # map:          --mapx, --mapy, --mapurl,
 # game:         --noscale, --self_clock, --top_period, --chal_period
 # penalties:    --limitpen,
@@ -2161,7 +2161,7 @@ sub clog($) {
 }
 my $debug_reentrancy = 0;
 sub maplog($) {
-    flog($opts{mapitemsfile}, shift) if ($opts{mapitemsfile});
+    flog($opts{decayfile}, shift) if ($opts{decayfile});
 }
 sub debug {
     my ($text, $die) = @_;
