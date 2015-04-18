@@ -1800,6 +1800,7 @@ sub moveplayers {
 	# pick up items lying around, priority amongst players is semi-random
 	# it depends on the order of hash traversal, which can change when the
 	# hash changes.
+	next if (!$opts{rpitembase});
 	for my $u (keys(%rps)) {
 	    next unless $rps{$u}{online};
 	    my $x = $rps{$u}{x};
