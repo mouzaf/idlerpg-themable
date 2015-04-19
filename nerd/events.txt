@@ -24,7 +24,7 @@ C ran out of storage space
 C forgot to make backups for %{1##10}% %{days|weeks|months}%
 C %{was arrested|was apprehended|had %his% computers confiscated}% by %{the NSA|Interpol|the Serious Crime Squad|U.N.I.T.}%
 C was DDoSed off the net by over %{100#+10#1000}% machines
-C tried installing Windows %{XP|Vista|7|8}%
+C tried installing Windows %{95|2000|ME|XP|Vista|7|8|10}%
 C rebooted into %{Net|Open|Free}%BSD for %{5##60}% minutes
 C couldn't use %{1##30}% sticky keys on %his% keyboard
 C lost the ball from %his% mouse
