@@ -1108,44 +1108,7 @@ sub ttl( $ ) {
     return (($opts{rpbase} * ($opts{rpstep}**60)) + (86400*($lvl - 60)));
 }
 sub itemttl($) {
-    my $lvl = $_[0];
-    #exponentials grow a bit quickly, so adjust by retarding the growth
-    # by a factor that increases with the level.
-
-#? foo(r,l)=local(p=1,c=p/(r-1),t=600*(r^l)*(c/(c+l))^p);if(t>86400,86400*(t/86400)^(1/log(t)),t)
-#? plot(l=1,300,foo(1.06,l))
-#
-#136453.78 |'''''''''''''''''''''''''''''''''''''''''''''''''''''''''__xx""
-#          |                                                   __xx""     |
-#          |                                              __x""           |
-#          |                                         __x""                |
-#          |                                     _xx"                     |
-#          |                                 _x""                         |
-#          |                             _x""                             |
-#          |                         _xx"                                 |
-#          |                                                              |
-#          |                        x                                     |
-#          |                        :                                     |
-#          |                       :                                      |
-#          |                       "                                      |
-#          |                                                              |
-#          |                      "                                       |
-#          |                     _                                        |
-#          |                                                              |
-#          |                    "                                         |
-#          |                  _"                                          |
-#          |                _x                                            |
-#          |             _x"                                              |
-#        0 ______xxxxx""",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-#          1                                                            300
-
-    my $retardationpower = 1;
-    my $cutoff = $retardationpower/($opts{rpitemstep}-1);
-    my $base = $opts{rpitembase} * ($opts{rpitemstep}**$lvl);
-    my $retardation = ($cutoff/($cutoff+$lvl)) ** $retardationpower;
-    my $ttl = $base * $retardation;
-    if ($ttl > 86400) { $ttl = 86400*($ttl/86400)**(1/log($ttl)); }
-    return int($ttl);
+    return int($opts{rpitembase} * $_[0]);
 }
 
 sub duration { # return human duration of seconds
@@ -2169,10 +2132,11 @@ sub flog($$) {
 sub clog($) {
     flog($opts{modsfile}, shift);
 }
-my $debug_reentrancy = 0;
 sub maplog($) {
     flog($opts{decayfile}, shift) if ($opts{decayfile});
 }
+my $debug_reentrancy;
+$debug_reentrancy = 0;
 sub debug {
     my ($text, $die) = @_;
     return if ($debug_reentrancy > 0);
