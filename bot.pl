@@ -2045,11 +2045,16 @@ sub modify_item($) {
 	my @change = ('loses', 'gains');
 	my $typeid = $changeableitems[rand(@changeableitems)];
 	my $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
+	# Traditionally, changes lazily miss off the sole leading %player%.
+	# Add it back here, but make it optional. If there's mention of
+	# %player% anywhere in the string, presume there's no laziness.
+	# This permits things like c="Rust develops on %player%'s %type%".
+	my $sayplayer = index($change, '%player%') < 0 ? $player : '';
         $change = rewrite_event($change, [$player], undef); # random number not used currently
         my $type = $items[$typeid];
         my $suffix="";
         if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2",0,1); }
-        $change = "${player}$change" .
+        $change = "$sayplayer$change" .
             " $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg_l($change);
 
