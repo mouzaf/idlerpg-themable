@@ -15,7 +15,7 @@ levels3: %{2#+1#8}%-litre, %{10#+5#50}%-litre, %{60#+20#200}%-litre, %{250#+50#1
 item4: n="cellar" g=" builds an extension to %his% cellar!"
 levels4: empty, %{20#+10#200}%-bottle, %{220#+20#600}%-bottle, %{650#+50}%-bottle
 
-item5: n="tasting glass" c=" glass hasn't been cleaned for a while, and is going fluffy!"
+item5: n="tasting glass" c="'s glass hasn't been cleaned for a while, and is going fluffy!"
 levels5: 1 litre, %{950#-50#600}%ml, 1 pint, half litre, %{480#-20#360}%ml, 355ml, %{330#-10#270}%ml, half pint, %{250#-10#190}%ml, third pint, %{185#-5#70}%ml, %{68#-2#20}%ml, %{19#-1#2}%ml, %{1#-0}%ml
 
 item6: n="ratings notebook"
