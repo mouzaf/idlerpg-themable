@@ -3,23 +3,23 @@
 
 item0: n="graphics card"
 
-item1: n="hard disk" c=" had a head crash, wrecking %his% hard disk!" g=" installed on-the-fly compression, boosting %his% hard disk!"
+item1: n="hard disk" c=" had a head crash, wrecking %his% hard disk" g=" installed on-the-fly compression, boosting %his% hard disk"
 levels1: 5 MB, 10 MB, 20 MB, 32 MB, 50 MB, 80 MB, 120 MB, 160 MB, 200 MB, 300 MB, 400 MB, 500 MB, 600 MB, 750 MB, 1 GB, 1.2 GB, 1.5 GB, 1.8 GB, 2 GB, 2.5 GB, 3 GB, 4 GB, 6 GB, 8 GB, 10 GB, 12 GB, 15 GB, 20 GB, 25 GB, 30 GB, 40 GB, 60 GB, 80 GB, 100 GB, 120 GB, 150 GB, 180 GB, 200 GB, 250 GB, 300 GB, 400 GB, 500 GB, 600 GB, 800 GB, 1 TB, 1.2 TB, 1.4 TB, 1.6 TB, 1.8 TB, %{2#+.5}% TB
 
-item2: n="modem" c=" suffered from too much line noise in %his% modem!" g="'s ISP upgraded the lines to %his% modem!"
+item2: n="modem" c=" suffered from too much line noise in %his% modem" g="'s ISP upgraded the lines to %his% modem"
 levels2: 110 bps, 300 bps V.21, 1200/75 bps V.23, 1200 bps V.22, 2400 bps V.22bis, 4800/2400 bps V.27ter, 4800 bps V.29, 7200 bps V.29, 9600/4800 bps V.32, 9600 bps V.29, 12.2 kbps V.32bis, 14.4 kbps V.32bis, 16.8 kbps V.32ter, 19.2 kbps V.32ter, 21 kbps, 24 kpbs V.34, 28.8 kbps V.FC, 31.2 kbps V.34bis, 33.6 kbps V.34bis, 56.0/33.6 kbps V.90, 56.0/48.0 kbps V.92, 56 kbps, 64 kpbs ISDN, 128 kbps ISDN, %{128#+64#768}% kpbs ADSL, %{1024#+256}% kbps ADSL
 
-item3: n="wireless card" c=" has bandwidth stealing neighbours flooding %his% wireless network!" g="'s bandwidth stealing neighbours move away!"
+item3: n="wireless card" c=" has bandwidth stealing neighbours flooding %his% wireless network" g="'s bandwidth stealing neighbours move away"
 
-item4: n="monitor" g=" degaussed %his% monitor, and recalibrated it!"
+item4: n="monitor" g=" degaussed %his% monitor, and recalibrated it"
 levels4: %{8#+1#14}%" amber, %{10#+1#16}%" b/w, %{12#+1#24}%" CRT, %{14#+.5}%" TFT
 
-item5: n="USB key" c=" keeps getting errors from the flash translation layer!"
+item5: n="USB key" c=" keeps getting errors from the flash translation layer"
 
-item6: n="processor" c=" overclocked too much, overheating %his% CPU!" g=" upgraded %his% CPU's fan and cooling system!"
+item6: n="processor" c=" overclocked too much, overheating %his% CPU" g=" upgraded %his% CPU's fan and cooling system"
 levels6: %{4#+2#12}% MHz, %{15#+5#30}% MHz, 33 MHz, %{40#+10#60}% MHz, 66 MHz, 75 MHz, %{80#+10#100}% MHz, %{120#+30#180}% MHz, %{200#+33#266}% MHz, 300 MHz, 330 MHz, 366 MHz, 400 MHz, 433 MHz, %{500#+50#600}% MHz, 660 MHz, %{700#+50#900}% MHz, 1 GHz, %{1.066#+.067#1.2}% GHz, 1.266 GHz, 1.3 GHz, 1.333 GHz, 1.4 GHz, 1.45 GHz, %{1.5#+0.1}% GHz
 
-item7: n="RAM" c=" got hit with static, badly affecting %his% RAM!" g=" reseated %his% RAM chips!"
+item7: n="RAM" c=" got hit with static, badly affecting %his% RAM" g=" reseated %his% RAM chips"
 levels7: !a %{32#*2#1024}% words of magnetic core memory%notype%, !a %{2#*1.5:1.333333333#1536}% KiB, !a %{2#*1.5:1.333333333#1536}% MiB, !a %{2#*1.5:1.333333333#1536}% GiB %type%, !a %{2#*1.5:1.333333333}% TiB of %type%
 
 item8: n="OS"
