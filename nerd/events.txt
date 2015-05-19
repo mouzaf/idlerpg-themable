@@ -42,7 +42,9 @@ C got locked out of %{Google+|LinkedIn|GMail}%
 C got -%{1##50}% karma on SoylentNews
 C got forceably migrated to Slashdot Beta
 C watched meatspin for %{20##200}% spins
-C got fooled into following a goatse link
+C got fooled into following a %{goatse link|Rickroll}%
+C heard sniggering when walking through the X-ray back-scatter machine at the airport
+C realises he's being surveilled as part of the NSA's Operation Dick-Pic
 C ran out of coffee
 C relied on "the cloud" for backup storage
 C got all retro and played %{Space Invaders|Pong|Zaxxon|Donkey Kong|Breakout|Jet Set Willy|Elite|Doom}% all day
