@@ -2142,16 +2142,15 @@ sub clog($) {
 sub maplog($) {
     flog($opts{decayfile}, shift) if ($opts{decayfile});
 }
-my $debug_reentrancy;
-$debug_reentrancy = 0;
+$::debug_reentrancy = 0;
 sub debug {
     my ($text, $die) = @_;
-    return if ($debug_reentrancy > 0);
-    $debug_reentrancy++;
+    return if ($::debug_reentrancy > 0);
+    $::debug_reentrancy++;
     $text =~ s/[\r\n]//g;
     flog($opts{debugfile}, $text) if ($opts{debug} || $opts{verbose});
     if ($die) { die("$text\n"); }
-    $debug_reentrancy--;
+    $::debug_reentrancy--;
     return $text;
 }
 
