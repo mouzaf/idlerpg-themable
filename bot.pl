@@ -1921,7 +1921,6 @@ usage: $prog [OPTIONS]
   --rpbase             Base time to level up
   --rpstep             Time to next level = rpbase * (rpstep ** CURRENT_LEVEL)
   --rpitembase         Base time for lifetime of dropped items
-  --rpitemstep         Time to next decay << rpitembase * (rpitemstep ** ITEM_LEVEL)
   --rppenstep          PENALTY_SECS=(PENALTY*(RPPENSTEP**CURRENT_LEVEL))
 ";
 # missing:
@@ -2482,7 +2481,6 @@ sub readconfig {
             else { $opts{$key} = $val; }
         }
         close(CONF);
-	if(!defined($opts{rpitemstep})) { $opts{rpitemstep} = $opts{rpstep}; }
     }
 }
 
