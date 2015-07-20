@@ -2481,6 +2481,7 @@ sub readconfig {
             else { $opts{$key} = $val; }
         }
         close(CONF);
+	if(!defined($opts{rpitembase})) { $opts{rpitembase} = $opts{rpbase}; }
     }
 }
 
