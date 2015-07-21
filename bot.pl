@@ -2038,7 +2038,7 @@ sub modify_item($) {
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
-    my @changeableitems = grep { $good ? $godsend[$_] : $calamity[$_]; } (@fragileitems);
+    my @changeableitems = grep { defined($good ? $godsend[$_] : $calamity[$_]); } (@fragileitems);
     if (@changeableitems and rand(10) < 1) {
 	my @change = ('loses', 'gains');
 	my $typeid = $changeableitems[rand(@changeableitems)];
