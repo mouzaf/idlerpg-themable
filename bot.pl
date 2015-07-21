@@ -2026,10 +2026,18 @@ sub rewrite_programatics($$) {
     return $s;
 }
 
-sub rewrite_event($$$) {
-    my ($s,$p,$r)=@_;
-    $s=rewrite_for_players($s,$p);
+sub rewrite_event($$$$) {
+    my ($s,$p,$t,$r)=@_;
+    $s=rewrite_for_items($s,$t,undef) if(defined($t));
     $s=rewrite_programatics($s,$r);
+    # Traditionally, changes lazily miss off the sole leading %player%.
+    # Add it back here, but make it optional. If there's mention of
+    # %player% anywhere in the string, presume there's no laziness.
+    # This permits things like c="Rust develops on %player%'s %type%".
+    if($s !~ m/%player\d?%/) {
+	$s = '%player0%' . (substr($s,0,3) eq "'s " ? '': ' ') . $s;
+    }
+    $s=rewrite_for_players($s,$p);
     return $s;
 }
 
@@ -2043,19 +2051,13 @@ sub modify_item($) {
 	my @change = ('loses', 'gains');
 	my $typeid = $changeableitems[rand(@changeableitems)];
 	my $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
-	# Traditionally, changes lazily miss off the sole leading %player%.
-	# Add it back here, but make it optional. If there's mention of
-	# %player% anywhere in the string, presume there's no laziness.
-	# This permits things like c="Rust develops on %player%'s %type%".
-	my $sayplayer = index($change, '%player%') < 0 ? $player : '';
+	my $type = $items[$typeid];
+	$change = rewrite_event($change, [$player], $type, undef); # random number not used currently
 	# May as well have the punctuation lazy too...
 	my $pling = ($change =~ m/[.!]$/) ? '' : '!';
-        $change = rewrite_event($change, [$player], undef); # random number not used currently
-        my $type = $items[$typeid];
         my $suffix="";
         if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2",0,1); }
-        $change = "$sayplayer$change$pling" .
-            " $player\'s $type $change[$good] 10% of its effectiveness.";
+	$change = "$change$pling $player\'s $type $change[$good] 10% of its effectiveness.";
         chanmsg_l($change);
 
         $rps{$player}{item}[$typeid] = int(user_item_val($player,$typeid) * (1+$_[0]*.1));
@@ -2066,11 +2068,11 @@ sub modify_item($) {
 			  'wondrous godsend has accelerated');
         my $rand = rand();
         my $time = int(int(5 + $rand*8) / 100 * $rps{$player}{next});
-        my $actioned = get_event($good?'G':'C', [$player], $rand);
-        chanmsg_l("$player".(' 'x(substr($actioned,0,3)ne"'s "))."$actioned. ".
-                  "This $timechange[$good] ".them($player)." ".
-                  duration($time)." $tofrom[$good] level ".
-                  ($rps{$player}{level}+1).".");
+	my $playeractioned = get_event($good?'G':'C', [$player], $rand);
+	chanmsg_l("$playeractioned. ".
+		  "This $timechange[$good] ".them($player)." ".
+		  duration($time)." $tofrom[$good] level ".
+		  ($rps{$player}{level}+1).".");
         $rps{$player}{next} -= $time * ($_[0] <=> 0);
         chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
                 ".");
@@ -2535,7 +2537,7 @@ sub read_events {
 
 sub get_event($$$) {
     my $evsref = $events{$_[0]};
-    return rewrite_event($evsref->[int(rand(@$evsref))], $_[1], $_[2]);
+    return rewrite_event($evsref->[int(rand(@$evsref))], $_[1], undef, $_[2]);
 }
 sub get_quest($) {
     return $quests[int(rand(scalar(@quests)))];    
