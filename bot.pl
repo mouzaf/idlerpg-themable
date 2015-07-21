@@ -1360,10 +1360,10 @@ sub swap_items($$$) { # items will have their types automatically appended
     if ($opplevel > $mylevel) {
 	my $myitem = user_item($u,$typeid);
 	my $oppitem = user_item($opp,$typeid);
-	$message = rewrite_for_players($message, [$u, $opp]);
 	$message = rewrite_for_items($message, $type, 
 				     [item_describe($typeid,$myitem,0,1), 
 				      item_describe($typeid,$oppitem,0,1)]);
+	$message = rewrite_for_players($message, [$u, $opp]);
 	chanmsg_l($message);
 	$rps{$u}{item}[$typeid] = $oppitem;
 	$rps{$opp}{item}[$typeid] = $myitem;
