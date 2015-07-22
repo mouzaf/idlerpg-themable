@@ -2497,6 +2497,9 @@ sub read_events {
 	       QI=>[], QS=>[], QF=>[],
 	       P=>[], PG=>[], PN=>[], PE=>[], PA=>[]);
     while (my $line = <Q>) {
+	# Permit "Cf" as shorthand for "C %!+f%" restricting events to single genders
+	# Note - restricting this to C and G only is *totally arbitrary - FIXME!!!
+	$line =~ s/^([CG])([mfn]) /$1 %!+$2% /;
         if ($line =~ /^([GCWLHE]|Q[ISF]|P[AGNE]?)\s+(.*)/) { push(@{$events{$1}}, $2); }
         elsif ($line =~ /^Q1 (.*)/) {
             push(@quests, { type=>1, text=>$1 });
