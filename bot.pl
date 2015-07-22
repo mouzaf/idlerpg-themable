@@ -1026,7 +1026,7 @@ sub parse {
 		my $t=$1;
 		my @p = ($arg[5]//'name1');
 		if($t=~/H/) { push(@p, $arg[6]//'name2'); }
-		notice(($t=~/[GC]/i?"$p[0] ":'').get_event($t, \@p, rand()), $usernick);
+		notice(get_event($t, \@p, rand()), $usernick);
 	    }
         }
         # penalize returns true if user was online and successfully penalized.
