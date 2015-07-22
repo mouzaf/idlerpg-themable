@@ -2539,7 +2539,23 @@ sub read_events {
 
 sub get_event($$$) {
     my $evsref = $events{$_[0]};
-    return rewrite_event($evsref->[int(rand(@$evsref))], $_[1], undef, $_[2]);
+    my $genderchar = undef;
+    if (my $player1 = $_[1]->[0]) {
+	my $genderfull = name2gender($player1);
+	my %gendermap = ( m=>'m', f=>'f', n=>'n', u=>undef, pc=>undef );
+	$genderchar = $gendermap{$genderfull};
+	# print STDERR ("player1=$player1 genderfull=$genderfull genderchar=$gendermap{$genderfull}=$genderchar\n");
+    }
+    my $event;
+    my $retry = 20;
+    while($retry-- > 0) {
+	$event = $evsref->[int(rand(@$evsref))];
+	if ($event !~ s/^%!([-+])([mfnup]+)%\s+// || !$genderchar) { last; }
+	my $found = index($2, $genderchar);
+	if (($1 eq '+') ? ($found >= 0) : ($found < 0)) { last; }
+    }
+    debug("Argh - letting inappropriate gender $genderchar suffer event $event") if($retry<=0);
+    return rewrite_event($event, $_[1], undef, $_[2]);
 }
 sub get_quest($) {
     return $quests[int(rand(scalar(@quests)))];    
