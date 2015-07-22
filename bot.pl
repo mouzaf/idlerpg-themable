@@ -130,9 +130,10 @@ my %hisherits = (m=>'his',f => 'her', u => 'their',n => 'its',pc => 'his/her/its
 my %hishersits= (m=>'his',f => 'hers',u =>'theirs',n => 'its',pc => 'his/hers/its');
 
 my %rps; # role-players
-sub they( $ ) { return $hesheit{   exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
-sub them( $ ) { return $himherit{  exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
-sub their( $ ) { return $hisherits{exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'}; }
+sub name2gender($) { return exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'; }
+sub they( $ ) { return $hesheit{name2gender($_[0])}; }
+sub them( $ ) { return $himherit{name2gender($_[0])}; }
+sub their( $ ) { return $hisherits{name2gender($_[0])}; }
 
 sub are( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'are' : 'is'; }
 sub were( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'were' : 'was'; }
