@@ -1,0 +1,21 @@
+# items - note, there no longer needs to be exactly 10
+# n=name c=calamity string(opt), g=godsend string(opt)
+
+item0: n="tricorder"
+levels0: level %{1#+1#19}% Type A, level %{1#+1#19}% Type B, level %{1#+1#19}% TR-560 %Type% VI, level %{1#+1#19}% TR-580 %Type% VII, level %{1#+1#19}% TR-590 %Type% X, level %{1#+1}% TR-590 %Type% XI
+
+item1: n="phaser" g="'s %type% gains a new '%{blow-up-heads|overkill|explode dangerously|blow up aqueduct|maximum stun|smelt ore|cut through door|heat up rocks}%' setting"
+
+item2: n="dilithium crystal" c="%{misaligns his %type%s|suffers %{flow|flux}% capacitance problems}%"
+
+item3: n="warp drive" c="spent too long at warp factor 9.7"
+
+item4: n="photon torpedo"
+
+item5: n="communicator"
+
+item6: n="deflector shield"
+
+item7: n="holodeck"
+
+unique: u=25 b=50 r=25 t=0 s=a d="Seven of Nine's TR-890 %Type% XV" e="Your enemies are sure that their tricorders have been bombarded by thoron particles"
