@@ -12,7 +12,7 @@ C has to separate the saucer section from the stardrive section
 C fails to enforce proper quarantine procedures as an epidemic rages on the ship
 C Wesley Crusher uses a digital sample of %player%'s voice to lure the engineering crew away
 #TNG s01e04
-C %!+f% Lutan forces %player% to duel to the death against his current wife Yareena
+Cf Lutan forces %player% to duel to the death against his current wife Yareena
 #TNG s01e05
 C gets stuck in a Chinese finger trap
 #TNG s01e06
@@ -26,16 +26,16 @@ C DaiMon Bok's Thought Makers make %player% relive the Battle of Maxia repeatedl
 #TNG s01e10
 C 's first officer gets granted the powers of the Q, and starts getting uppity
 #TNG s01e11
-C %!+m% Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%
-G %!+m% Lwaxana Troi flirts with %player% and massages %his% ego
+Cm Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%
+Gm Lwaxana Troi flirts with %player% and massages %his% ego
 #TNG s01e12
 C gets stuck in a malfunctioning holodeck
 #TNG s01e13
 C Wesley Crusher and Tasha Yar both try to tell %player% that something's up with Data, but %he% ignores them
 #TNG s01e14
-C %!+m% wears Angel One's indigenous male apparel as an act of diplomacy, and gets frisky with Beata
+Cm wears Angel One's indigenous male apparel as an act of diplomacy, and gets frisky with Beata
 #TNG s01e15
-C %!+m% gets stuck on the holodeck flirting with Minuet whilst the Bynars hijack the ship
+Cm gets stuck on the holodeck flirting with Minuet whilst the Bynars hijack the ship
 #TNG s01e16
 C has to transport a roid-raged Admiral Jameson to Mordan IV in order to resolve Karnas' fake hostage situation
 #TNG s01e17
@@ -61,7 +61,7 @@ C Admirals Savar, Arron, and Quinn invite %player% to a dinner of live grubs
 C has a stand-off with the Romulans in the Neutral Zone regarding destroyed outposts
 
 #TNG s02e01
-C %!+f% gets energy-raped, and carries the alien offspring to term
+Cf gets energy-raped, and carries the alien offspring to term
 
 #TNG s03e21
 C suffers from invidium contamination, and needs a complete systems and bio decontamination
