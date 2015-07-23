@@ -9,17 +9,17 @@ L Frank Boon claims that the only reason %player% always brews sour beers is bec
 H %player0% and %player1% have a little tasting sesh, splitting all the costs. This advances them %gain%\% towards their next level.
 G is %{Star4aDay|Daily Devotee}% on Ratebeer
 G finally gets bought a beer by %{Kumppulainen|Tranquillity}%
-G receives a package from %{BierKompass|Cracked Kettle|BierZweig|Alvinne}% that contains a freebie unrated beer %he% didn't order
+G receives a package from %{BierKompass|Cracked Kettle|BierZweig|Alvinne|Beergium|Ales By Mail}% that contains a freebie unrated beer %he% didn't order
 G has a beer brewed specially for %him% by %{Struise|Mikkeller|Beer Hunters}%
 G chances upon a fellow ratebeerian down the pub, and can therefore go halfsies
-G invented a new style of beer -%{ Imperial| Double|}%%{ Black| Red| Amber| Brown| White|}%%{ Session| Sour| Barrel Aged|}%%{ Vanuatu| India| Bongobongoland| American| Tuvalu|}%%{ Pale|}%%{ Ice-| }%%{Ale|Cider|Mild|Stout}%
+G invented a new style of beer -%{ Imperial| Double|}%%{ Black| Red| Amber| Brown| White|}%%{ Session| Sour| Barrel Aged|}%%{ Vanuatu| India| Bongobongoland| American| Tuvalu| Amish|}%%{ Pale|}%%{ Ice-| }%%{Ale|Cider|Mild|Stout}%
 G asked Gazza for a guided tour of the best beer pubs in London, and got dragged to Sheffield
 C accidentally the whole bottle
 G accidentally the whole bottle
 C asked Gazza for a guided tour of the best beer pubs in London, and got dragged to Sheffield
 C finds out the beer brewed specially for %him% by %{Struise|Mikkeller}% was just a dodgy rebadge
 C gets hit by falling plaster at a chris_o tasting
-C gets passed a glass that %{mjs|TBone|Rosenberg|lusikka|laiti|mto}% just dribbled into
+C gets passed a glass that %{mjs|TBone|Rosenberg|lusikka|laiti|mto|fonefan|Oh6gdx|tiong|omhper|harrisoni|FatPhil}% just dribbled into
 C keeps being pestered by the local stoned schizophrenic while %he%'s trying to rate
 C drank all the yeast from the bottom of all the bottles, and now can't stop farting
 C left %his% notes at the %{St. Albans|Peterborough|Cambridge|Bishops Stortford|Norwich|Great British}% beer festival
