@@ -1,0 +1,303 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html;charset=ISO-8859-1">
+<meta http-equiv="Content-Language" content="en-us">
+<title>Themeable IdleRPG</title>
+</head>
+<body>
+<h1>Themeable IdleRPG</h1>
+
+<p><a href="#mine">Skip to the important stuff</a></p>
+
+<h2>Background</h2>
+<p>In the beginning was <a href="http://idlerpg.net/index.php">IdleRPG</a>. If you're not 
+familiar with that, then stop reading now, and go familiarise yourself with it. It's a 
+great game, very popular, but development ceased in 2004.</p>
+
+<p>Since then, <a href="http://idle.quyo.de/index.php">some guys in Germany</a> have 
+forked it, kinda-fixing some bugs, and adding some interesting features too. Apart 
+from the dropped items patch, they didn't really change the feeling of the game at all.
+That's not to underestimate their input, adding item drops was a significant feature,
+one that I wrote a stub for many years ago, just one I never got round to fully implementing.</p>
+
+<p>That version was used as the starting point for the currently active and popular
+(i.e. seems to have many dozens of active players in 2014) <a href="http://multirpg.net/worldmap.php">MultiRPG</a>.
+They've added an enormous number of features, ones that seem to significantly alter the
+feel of the game. There seems to be a lot more going on. Your characters don't just wander
+around and occasionally find things and fight, there's all kinds of other interactions
+and things to collect. The unique items have exploded in variation too. However, I don't
+play there, I have no idea if it has the simple charm of the original. They also haven't
+opened their source, as far as I can tell.
+</p>
+
+<h2>What I Thought Needed To Change</h2>
+<p>Firstly, the game is just so corny in it's D&amp;D-like RPG aspects. And every instance,
+of which there were once <a href="http://idlerpg.net/others.php">well over a thousand</a>,
+is basically identical. It's swords and cloaks and shields. Why not have a Star Trek
+themed one? A computer-nerd themed one? A beer-drinking themed one? A Game of Thrones
+themed one? (OK, that's basically the same as the default with some names changed!) A 
+music/band themed ones? A My Little Pony themed one? A whatever-you-freaking-want themed 
+one? Get the idea. However, it's super-crazy to expect people who want to put together
+a themed game to have to go in and hack perl. Powerful language it may be, but it's not
+very forgiving of mistakes, and that's why you don't want people who aren't confident
+with the language having to tweak it. So I pulled out (almost) all of the data into
+config files, which are easy to edit without ever touching the perl code. These have
+grown and grown in functionality, and more is expected.</p>
+
+<p>Secondly, I was a bit annoyed by the messages that used the same pronoun
+for things that happened to both me and my girlfriend whilst we were idling. So I 
+added genders. Of course this added complexity to the templated (themed) messages,
+they now need to use special syntax to tell the game to select the appropriate 
+gender.</p>
+
+<p>Thirdly, I wanted dropped items to not disappear, but stay on the map. (And as you
+read above, I wasn't alone in this one.) Of course, this should be optional, at the
+sysadmin's discretion.</p>
+
+<p>Forthly, in order to make debugging easier, I added a whole bunch of extra commands
+that would let the game admin bring about all kinds of events, so that every feature
+of the game can be tested. I also wanted to give more power to the player, there's no
+point in not giving him access to game state.</p>
+
+<p>And of course, there was a bunch of bug-fixing.</p>
+
+<a id="mine"></a>
+<h2>My Version's Features</h2>
+
+<p>Plenty - but from which perspective? From the <a href="#player">player's</a>, 
+<a href="#admin">game admin's</a>, <a href="#sysadmin">sysadmin's</a>, or 
+<a href="#themer">themer's</a> perspective?</p>
+
+<a id="player"></a>
+<h3>For The Player</h3>
+<p>All the same commands as in the <a href="http://idlerpg.net/index.php">original</a>. Plus:</p>
+<dl>
+  <dt>GENDER [m/f/n/pc/u]</dt>
+  <dd>m=male, f=female, n=neuter (such as inanimate objects), pc=politically correct, u=unknown(default). 
+    These will affect the pronouns used in messages from the bot. No effect on gameplay at all
+    (presently, that is).</dd>
+  <dt>NEWCLASS [class description]</dt>
+  <dd>If you're not happy with the class you registered with, then you may change it.</dd>
+  <dt>INVENTORY</dt>
+  <dd>Lists all your items</dd>
+</dl>
+
+<a id="admin"></a>
+<h3>For The Game Admin</h3>
+<p>All the same commands as in the <a href="http://idlerpg.net/admincomms.txt">original</a>. Plus:</p>
+<dl>
+  <dt>EVENT [good/bad/random(default)]</dt>
+  <dd>Brings about a wondrous godsend or a terrible calamity, similar to HOG.</dd>
+  <dt>NEWQUEST</dt>
+  <dd>If there's no current quest, forces the triggering of one.</dd>
+  <dt>BRAWL [good(default)/evil]</dt>
+  <dd>Brings about a fight between two players. Good means only time will be 
+   creditted (to the winner), evil means only time will be added (to the loser).
+  <dt>DIE/RESTART</dt>
+  <dd>You can now include a message explaining why you're doing this action</dd>
+  <dt>TESTEVENT [G/C/W/L/H/E] [nick1] ...</dt>
+  <dd>Simulates the message that would be generated by a random
+   Godsend/Calamity/Win/Loss/Holiness/Evilness event (for the specified person(s)).</dd>
+  <dt>ITEMLEVEL type level</dt>
+  <dd>Describe an item with specified type id and leven number.
+   (Todo - document how uniques work.)</dd>
+</dl>
+
+<a id="sysadmin"></a>
+<h3>For The Sysadmin</h3>
+<p>AFAICR, it's mostly the same as the <a href="http://idlerpg.net/index.php">original</a>. 
+However, <strong>the save files (irpg.db) are incompatible</strong>. My version will read
+in an old file, and write it out in new format, but there's no going back in the other
+direction. So keep a backup if you're just experimenting. If you're competent enough to
+admin this, then you should be able to work out how to undo the changes, but if it becomes
+an issue I guess I could write a helper script.</p>
+
+<p><strong>Note:</strong> Now that there are several themes, each in its own subdirectory,
+you must run the perl script from within that directory, so that it picks up the right
+.irpg.conf, events.txt, items.txt configuration, and the save files.</p>
+
+<a id="themer"></a>
+<h3>For The Themer</h3>
+<p>Create a new subdirectory, create a new items.txt and events.txt file with your themed
+messages/items. The lines are as follows (you fill in the [blanks]):</p>
+
+<h4>Items</h4>
+<ul>
+  <li>item[digit]: n="[type]" (optional c="[calamity]") (optional g="[godsend]")</li>
+  <li>(optional levels[digit]: [comma-separated list of item descriptors rather than boring "level 1" etc. (has special sauce, see below)])</li>
+  <li>unique: u=[user level] b=[base level] r=[range] t=[digit specifying item type] s=[letter] d="[description]" r="[longer comment, typically about rivals' reactions to this happening]"</li>
+</ul>
+<p>The order of the uniques is important - if deciding to hand out a unique they will be tried for relevance in
+the order they are listed. The s=[letter] field must be a unique letter, that's the unique identifier used to
+identify that object.</p>
+
+<h4>Events</h4>
+<ul>
+  <li>H [Goodness event, refering to %player0% and %player1%, and maybe mentioning how much they %gain% (a percentage)]</li>
+  <li>E [Evilness event, refering to %player% and the %duration% added to %their% clock]</li>
+  <li>W [Win event, refering to %player%, description of how much they win is handled in the core code]</li>
+  <li>L [Lose event, refering to %player%, description of how much they lose is handled in the core code]</li>
+  <li>U [Unique message, for introducing a statement about picking up a unique item]</li>
+  <li>UG, UN, and UE may be used to restrict the unique message to just one alignment</li>
+  <li>C/Cm/Cf/Cn [Calamity message, if the %player% isn't explicit, it will be prepended. m/f/n restrict to one gender (also see special sauce below)]</li>
+  <li>G/Gm/Gf/Gn [Godsend message, features as per Calamity messages]
+  <li>Q1 [type 1 quest description, will follow the words "a quest to", so starting with a verb]<li>
+  <li>Q2 [x1] [y1] [x2] [y2] [type 2 quest description as per Q1]
+  <li>Q[ISF] [init, success, and fail messages for quests, refering to %player% which expands to all questers]</li>
+</ul>
+
+<h4 id="specialsauce">Special Sauce</h4>
+<p>There are different special sauces in the different contexts, and they can
+behave slightly differently, but all of them are sustitutions (sometimes called
+"macros" in other language). All macros are enclosed in <code>%</code> symbols.
+Programattic macros start <code>%{</code> and end <code>}%</code></p>
+
+<h5 id="example1">Example 1: Item level descriptions - programmatic counters</h5>
+<p>The syntax <code>%{[start]#[delta]#[end]}%</code> will expand in turn to
+<code>start</code>, <code>start+delta</code>, <code>start+2*delta</code>, &hellip;
+until it finally reaches <code>end</code>. If <code>[end]</code> is absent,
+then the sequence continues indefinitiely. <code>[delta]</code> can be 
+of the form <code>+[number]</code> or <code>-[number]</code> in order to
+increment or decrement from <code>start</code>. If <code>[delta]</code> is
+completely absent, then <code>+1</code> is assumed. Additionally, if
+<code>[delta]</code> is of the form <code>*[number]</code>, then the macro
+in subsequent levels will expand to <code>start*delta</code>,
+<code>start*delta<sup>2</sup></code>, &hellip;.
+</p>
+
+<p>So for example:</p>
+<blockquote><pre>item4: n="monitor" g=" degaussed %his% monitor, and recalibrated it!"
+levels4: %{8#+1#14}%" amber, %{10#+1#16}%" b/w, %{12#+1#24}%" CRT, %{14#+.5}%" TFT</pre></blockquote>
+<p>expands as follows:</p>
+<table border="1"><thead><tr><th>level</th><th>description</th></tr></thead>
+<tbody>
+ <tr><td>0</td><td><code>an 8" amber monitor</code></td></tr>
+ <tr><td>1</td><td><code>a 9" amber monitor</code></td></tr>
+ <tr><td>...</td><td>&hellip;</td></tr>
+ <tr><td>6</td><td><code>a 14" amber monitor</code></td></tr>
+ <tr><td>7</td><td><code>a 10" b/w monitor</code></td></tr>
+ <tr><td>...</td><td>&hellip;</td></tr>
+ <tr><td>13</td><td><code>a 16" b/w monitor</code></td></tr>
+ <tr><td>14</td><td><code>a 12" CRT monitor</code></td></tr>
+ <tr><td>...</td><td>&hellip;</td></tr>
+ <tr><td>26</td><td><code>a 24" CRT monitor</code></td></tr>
+ <tr><td>27</td><td><code>a 14" TFT monitor</code></td></tr>
+ <tr><td>28</td><td><code>a 14.5" TFT monitor</code></td></tr>
+ <tr><td>29</td><td><code>a 15" TFT monitor</code></td></tr>
+ <tr><td>...</td><td>&hellip;</td></tr>
+</tbody></table>
+<p>Note that by default, the desciption is prefixed by "a" (or "an"), and ends
+with the name of the type as given in <code>n="[type]"</code>. Both of these
+can be overridden, as shown in the next example.</p>
+
+<h5 id="example2">Example 2: Item level descriptions - advanced programmatic counters</h5>
+<p>As in the previous example, but <code>[delta]</code> can be an operator
+followed by a colon-separated list of values which will be cycled through
+in turn. As a trivial example <code>%{1#+1:9#}%</code> will expand to
+<code>1</code>, <code>2</code>, <code>11</code>, <code>12</code>, &hellip;.</p>
+
+<p>So for example, the following:
+<blockquote><pre>item7: n="RAM" c=" got hit with static, badly affecting %his% RAM!" g=" reseated %his% RAM chips!"
+levels7: !a %{32#*2#1024}% words of magnetic core memory%notype%, !a %{2#*1.5:1.333333333#1536}% KiB, !a %{2#*1.5:1.333333333#1536}% MiB, !a %{2#*1.5:1.333333333#1536}% GiB %type%, !a %{2#*1.5:1.333333333}% TiB of %type%</pre></blockquote>
+<p>expands to:</p>
+<blockquote><code>32 words of magnetic core memory</code>,
+<code>64 words of magnetic core memory</code>, &hellip;,
+<code>1024 words of magnetic core memory</code>,
+<code>2 KiB RAM</code>, <code>3 KiB RAM</code>, <code>4 KiB RAM</code>, <code>6 KiB RAM</code>, &hellip;,
+<code>1024 KiB RAM</code>, <code>1536 KiB RAM</code>, <code>2 MiB RAM</code>, &hellip;</blockquote>
+
+<h5 id="example3">Example 3: Item level descriptions - suppression of "a/an"</h5>
+<p>See <a href="#example2">example 2</a> - <code>!a</code> at the start of an item description will
+suppress the "a/an" in the description of the item. Usually used before numbers,
+as shown above.</p>
+
+<h5 id="example4">Example 4: Item level descriptions - suppression or movement of the item type</h5>
+<p>See <a href="#example2">example 2</a> - <code>%notype%</code> in the level description will
+suppress the type name being included at the end of the description. <code>%type%</code>in the
+description will be replaced by the item type no matter where it occurs.</p>
+
+<h5 id="example5">Example 5: multi-context pronoun replacements</h5>
+<p>See the calamaties and godsends in <a href="#example2">example 2</a> - the
+<code>%his%</code> will be replaced by the gender-appropriate pronoun for the
+player posessing this object - e.g. his/her/its/their.</p>
+<table border="1"><thead><tr><th>macro(s)</th><th>expansion</th><th>notes</th></tr></thead>
+<tbody>
+<tr><td><code>%he%</code>, <code>%she%</code>, <code>%they%</code></td>
+    <td>he/she/they/it/&hellip;</td><td>Whichever is appropriate for the player.</td></tr>
+<tr><td><code>%his%</code>, <code>%her%</code>, <code>%their%</code></td>
+    <td>his/her/their/its/&hellip;</td><td>Ditto. Note the ambiguity of "her".</td></tr>
+<tr><td><code>%him%</code>, <code>%them%</code></td>
+    <td>him/her/them/it/&hellip;</td><td>Ditto. Don't use <code>%her%</code> for this.</td></tr>
+</tbody></table>
+
+<h5 id="example6">Example 6: multi-context verb agreement</h5>
+<p>Sometimes you need a verb to agree with the pronoun substituted as per
+<a href="#example5">example 5</a>. In these cases you may use
+<code>%is%</code>, <code>%are%</code>, <code>%was%</code>, <code>%were%</code>,
+<code>%has%</code>, and <code>%have%</code>, and the appropriate conjugation will
+be selected.</p>
+
+<h5 id="example7">Example 7: Events - player name substitution</h5>
+<p><code>%player%</code> will be replaced by the relevant player's name</p>
+<p>In events which involve more than one player, such as "goodness", the two players are
+denoted <code>%player0%</code> and <code>%player1%</code>. For example:</p>
+<blockquote><code>L Dan Bernstein rants and raves about how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%<code></blockquote>
+
+<h5 id="example8">Example 8: Events - random values</h5>
+<p>These use exactly the same syntax as item level descriptions' programmatic
+counters from <a href="#example1">example 1</a> except that <code>delta</code>
+must not be <code>*[number]</code>, and that <code>[end]</code> must be given.</p>
+<p>For example, the code sample in <a href="#example7">example 7</a> will have
+<code>%{60#-4#36}%</code> replaced by one of 60, 56, 52, &hellip;, 40, 36.</p>
+
+<h5 id="example9">Example 9: Events - random selection from a list</h5>
+<p><code>%{[choice1]|[choice 2]|[a third choice]|&hellip;}%</code> will expand to
+one of the choices between the <code>|</code> separators.
+<blockquote><code>C %{was arrested|was apprehended|had %his% computers confiscated}% by %{the NSA|Interpol|the Serious Crime Squad|U.N.I.T.}%</code></blockquote>
+<p>In the above, there are 12 possible replacements - three from the first list, and four from the second list, in any combination. Note also that pronoun replacement will be performed if <code>had %his% computers confiscated</code> is selected.</p>
+
+<h5 id="example10">Example 10: Events - advanced nested macros</h5>
+<p>You may include random values inside list selections.</p>
+<blockquote><code>C 's webserver got hit by a %{XSS flaw|SQL injection|%{1#+1#1000}%TB DDoS}%</code></blockquote>
+<p>If the list selection selects <code>%{1#+1#1000}%TB DDoS</code>, then that will be expanded using random value expansion.</p>
+
+<h5 id="example11">Example 11: Events - limitting Calamities and Godsends to specific genders</h5>
+<p>If the first part of the C or G message is the magic carbunkle
+<code>%![+/-][m/f/n]% </code>, then that event will only be performed
+if the event recipient is of that gender (with the "<code>+</code>" prefix
+or <em>not</em> of that gender (with the "<code>-</code>" prefix). Players
+who have selected <code>pc</code> gender may suffer any event, as may those
+whose gender is unknown. Note that as there are only 3 differentiable genders,
+<code>+mf</code> is identical to <code>-n</code>.</p>
+<p>Note that "<code>C %!+f% foo</code>" can be abbreviated to "<code>Cf foo</code>",
+for better readability, ditto with m and n genders too.</p>
+<p>So for example, the following:
+<blockquote><code>Cm Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%</code></blockquote>
+<p>is equivalent to:</p>
+<blockquote><code>C %!+m% Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%</code></blockquote>
+<p>and will only be returned as an event if the player undergoing the event is male.
+<strong>Note:</strong><em>It is sometimes possible that an inappropriate event
+will be returned, if an appropriate one can't be found after several (20) retries.</p>
+
+<h2>Get The Source</h2>
+<p>You can clone the source:<br>
+<code>git clone <a href="/git/idlerpg.git">http://fatphil.org/git/idlerpg.git</a></code><br>
+You may also peruse its <a href="git-log.txt">git log</a>
+</p>
+<p>Patches and bug-reports to the obvious e-mail address are welcome.</p>
+
+<h2>Thank-Yous</h2>
+<p>To the original authors, obviously, and the German guys for some ideas; 
+to the idle beernerds who humoured me years ago and to Anna for really helping with testing;
+and finally to the <a href="http://www.soylentnews.org/">SoylentNews</a>
+<a href="irc://irc.soylentnews.org:6697/#irpg">crowd</a> for encouraging me to 
+resurrect this project with its IT-nerd theme.</p>
+
+<p><a href="http://validator.w3.org/check?uri=referer">
+  <img src="http://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01 Transitional" height="31" width="88"></a>
+</p>
+
+</body>
+</html>
