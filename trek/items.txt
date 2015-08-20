@@ -19,3 +19,6 @@ item6: n="deflector shield"
 item7: n="holodeck"
 
 unique: u=25 b=50 r=25 t=0 s=a d="Seven of Nine's TR-890 %Type% XV" e="Your enemies are sure that their tricorders have been bombarded by thoron particles"
+
+#TNG s03e22
+unique: u=80 b=150 r=200 t=1 s=b d="Varon-T Disruptor" e="Your enemies are so enraged, they almost feel like they're being torn apart, from the inside out"

@@ -62,9 +62,32 @@ C has a stand-off with the Romulans in the Neutral Zone regarding destroyed outp
 
 #TNG s02e01
 Cf gets energy-raped, and carries the alien offspring to term
+#TNG s02e02
+C has %his% limited existence as a human put to the test by Nagilum
+#TNG s02e03
+C has to persuade an out-of-control holodeck program from taking control of the whole ship
+#TNG s02e04
+C has to sit through Lieutenant Commander Data's stand-up act
 
 #TNG s03e21
 C suffers from invidium contamination, and needs a complete systems and bio decontamination
+#TNG s03e22
+C has to neutralise a tricyanate contamination using hitridium suspiciously sold to him by Kivas Fajo
+#TNG s03e23
+C Sarek's inability to control his emotions causes all %player%'s crew to keep getting into fights
+#TNG s03e24
+Cf DaiMon Tog takes rather a liking to %player%, and %she% has to give him oo-mox whilst in captivity
+
+#TNG s03e25
+C Worf insists "Less talk, more synthahol!"
+G Worf insists "Less talk, more synthahol!"
+
+#TNG s03e26/s04e01
+C %{godsends are|calamaties are|idling is}% irrelevent. %player% is assimilated by the borg
+C is requested to rendezvous with the rest of the fleet at Wolf 359
+G modulates his shield harmonics and delays the borg
+C turns down yet another promotion to captain in order to stay on the Enterprise
+G turns down yet another promotion to captain in order to stay on the Enterprise
 
 #TY Den of Geek TNG s01e16
 C Data and Geordi rewire %player%'s replicator so it only creates left-handed versions of popular utensils
