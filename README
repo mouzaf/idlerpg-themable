@@ -1,62 +1,206 @@
---------------------------------------------------------------------------------
-First-time users:
---------------------------------------------------------------------------------
+IdleRPG-Themable is an attempt to add new features to Themable IdleRPG by Phil Carmody, itself built on IdleRPG by Jotan.
 
-1. Using your favorite text editor, open the bot's source. Read the file header.
-   If you don't agree with the license, please delete the source and remove
-   each of your brain cells associated with it. Kthx.
-2. Open the file .irpg.conf and edit the bot's options to suit you. You must
-   also move this file into the same directory where the bot resides.
-3. Run it with: perl bot.filename.pl
-4. If you have problems, try running it in debug mode:
-   perl bot.filename.pl --debug
-   If you cannot diagnose the problem, post to http://idlerpg.net/forum.php
-5. Thanks for your interest in Idle RPG!
+Recent Changes:
+Added wars
 
---------------------------------------------------------------------------------
-IRPG 3.0 users looking to upgrade:
---------------------------------------------------------------------------------
-
-1. Using your favorite text editor, open the bot's source. Read the file header.
-   If you don't agree with the license, please delete the source and remove
-   each of your brain cells associated with it. Kthx.
-2. Open the file .irpg.conf and edit the bot's options to suit you. You must
-   also move this file into the same directory where the bot resides.
-3. Replace your old bot source with the new one, ie, rm -f that old, buggy crap.
-4. Run it with: perl bot.filename.pl
-5. If you have problems, try running it in debug mode:
-   perl bot.filename.pl --debug
-   If you cannot diagnose the problem, post to http://idlerpg.net/forum.php
-6. Thanks for your interest in Idle RPG!
+ToDo:
+Finish cleaning up ancient item list
+Create a new theme
+More admin commands
+Tournaments?
 
 
---------------------------------------------------------------------------------
-IRPG 2.4 users looking to upgrade:
---------------------------------------------------------------------------------
+--- Original contents of http://fatphil.org/idlerpg/ ---
 
-1. Using your favorite text editor, open the bot's source. Read the file header.
-   If you don't agree with the license, please delete the source and remove
-   each of your brain cells associated with it. Kthx.
-2. Run the db conversion tool: perl irpgdbtool
-3. Answer the questions to suit you.
-4. Open the file .irpg.conf and edit the bot's options to suit you. You must
-   also move this file into the same directory where the bot resides.
-5. Run it with: perl bot.filename.pl
-6. If you have problems, try running it in debug mode:
-   perl bot.filename.pl --debug
-   If you cannot diagnose the problem, post to http://idlerpg.net/forum.php
-7. Thanks for your interest in Idle RPG!
+Themeable IdleRPG
 
+Background
 
---------------------------------------------------------------------------------
-Pre-2.4 users looking to upgrade:
---------------------------------------------------------------------------------
+In the beginning was IdleRPG. If you're not familiar with that, then stop reading now, and go familiarise yourself with it. It's a great game, very popular, but development ceased in 2004.
 
-1. Using your favorite text editor, open the bot's source. Read the file header.
-   If you don't agree with the license, please delete the source and remove
-   each of your brain cells associated with it. Kthx.
-2. I don't think the irpgdbtool will help you unless you're comfortable with
-   Perl, sorry. :/ If you are, though, you can pull the loaddb() sub from the
-   bot that you're currently using instead of using the loaddb() supplied in
-   irpgdbtool. You'll also need to add code to add in the other missing fields
-   that exist in v2.4.
+Since then, some guys in Germany have forked it, kinda-fixing some bugs, and adding some interesting features too. Apart from the dropped items patch, they didn't really change the feeling of the game at all. That's not to underestimate their input, adding item drops was a significant feature, one that I wrote a stub for many years ago, just one I never got round to fully implementing.
+
+That version was used as the starting point for the currently active and popular (i.e. seems to have many dozens of active players in 2014) MultiRPG. They've added an enormous number of features, ones that seem to significantly alter the feel of the game. There seems to be a lot more going on. Your characters don't just wander around and occasionally find things and fight, there's all kinds of other interactions and things to collect. The unique items have exploded in variation too. However, I don't play there, I have no idea if it has the simple charm of the original. They also haven't opened their source, as far as I can tell.
+What I Thought Needed To Change
+
+Firstly, the game is just so corny in it's D&D-like RPG aspects. And every instance, of which there were once well over a thousand, is basically identical. It's swords and cloaks and shields. Why not have a Star Trek themed one? A computer-nerd themed one? A beer-drinking themed one? A Game of Thrones themed one? (OK, that's basically the same as the default with some names changed!) A music/band themed ones? A My Little Pony themed one? A whatever-you-freaking-want themed one? Get the idea. However, it's super-crazy to expect people who want to put together a themed game to have to go in and hack perl. Powerful language it may be, but it's not very forgiving of mistakes, and that's why you don't want people who aren't confident with the language having to tweak it. So I pulled out (almost) all of the data into config files, which are easy to edit without ever touching the perl code. These have grown and grown in functionality, and more is expected.
+
+Secondly, I was a bit annoyed by the messages that used the same pronoun for things that happened to both me and my girlfriend whilst we were idling. So I added genders. Of course this added complexity to the templated (themed) messages, they now need to use special syntax to tell the game to select the appropriate gender.
+
+Thirdly, I wanted dropped items to not disappear, but stay on the map. (And as you read above, I wasn't alone in this one.) Of course, this should be optional, at the sysadmin's discretion.
+
+Forthly, in order to make debugging easier, I added a whole bunch of extra commands that would let the game admin bring about all kinds of events, so that every feature of the game can be tested. I also wanted to give more power to the player, there's no point in not giving him access to game state.
+
+And of course, there was a bunch of bug-fixing.
+My Version's Features
+
+Plenty - but from which perspective? From the player's, game admin's, sysadmin's, or themer's perspective?
+For The Player
+
+All the same commands as in the original. Plus:
+
+GENDER [m/f/n/pc/u]
+    m=male, f=female, n=neuter (such as inanimate objects), pc=politically correct, u=unknown(default). These will affect the pronouns used in messages from the bot. No effect on gameplay at all (presently, that is).
+NEWCLASS [class description]
+    If you're not happy with the class you registered with, then you may change it.
+INVENTORY
+    Lists all your items
+
+For The Game Admin
+
+All the same commands as in the original. Plus:
+
+EVENT [good/bad/random(default)]
+    Brings about a wondrous godsend or a terrible calamity, similar to HOG.
+NEWQUEST
+    If there's no current quest, forces the triggering of one.
+BRAWL [good(default)/evil]
+    Brings about a fight between two players. Good means only time will be creditted (to the winner), evil means only time will be added (to the loser). 
+DIE/RESTART
+    You can now include a message explaining why you're doing this action
+TESTEVENT [G/C/W/L/H/E] [nick1] ...
+    Simulates the message that would be generated by a random Godsend/Calamity/Win/Loss/Holiness/Evilness event (for the specified person(s)).
+ITEMLEVEL type level
+    Describe an item with specified type id and leven number. (Todo - document how uniques work.)
+
+For The Sysadmin
+
+AFAICR, it's mostly the same as the original. However, the save files (irpg.db) are incompatible. My version will read in an old file, and write it out in new format, but there's no going back in the other direction. So keep a backup if you're just experimenting. If you're competent enough to admin this, then you should be able to work out how to undo the changes, but if it becomes an issue I guess I could write a helper script.
+
+Note: Now that there are several themes, each in its own subdirectory, you must run the perl script from within that directory, so that it picks up the right .irpg.conf, events.txt, items.txt configuration, and the save files.
+For The Themer
+
+Create a new subdirectory, create a new items.txt and events.txt file with your themed messages/items. The lines are as follows (you fill in the [blanks]):
+Items
+
+    item[digit]: n="[type]" (optional c="[calamity]") (optional g="[godsend]")
+    (optional levels[digit]: [comma-separated list of item descriptors rather than boring "level 1" etc. (has special sauce, see below)])
+    unique: u=[user level] b=[base level] r=[range] t=[digit specifying item type] s=[letter] d="[description]" r="[longer comment, typically about rivals' reactions to this happening]"
+
+The order of the uniques is important - if deciding to hand out a unique they will be tried for relevance in the order they are listed. The s=[letter] field must be a unique letter, that's the unique identifier used to identify that object.
+Events
+
+    H [Goodness event, refering to %player0% and %player1%, and maybe mentioning how much they %gain% (a percentage)]
+    E [Evilness event, refering to %player% and the %duration% added to %their% clock]
+    W [Win event, refering to %player%, description of how much they win is handled in the core code]
+    L [Lose event, refering to %player%, description of how much they lose is handled in the core code]
+    U [Unique message, for introducing a statement about picking up a unique item]
+    UG, UN, and UE may be used to restrict the unique message to just one alignment
+    C/Cm/Cf/Cn [Calamity message, if the %player% isn't explicit, it will be prepended. m/f/n restrict to one gender (also see special sauce below)]
+    G/Gm/Gf/Gn [Godsend message, features as per Calamity messages]
+    Q1 [type 1 quest description, will follow the words "a quest to", so starting with a verb]
+    Q2 [x1] [y1] [x2] [y2] [type 2 quest description as per Q1]
+    Q[ISF] [init, success, and fail messages for quests, refering to %player% which expands to all questers]
+
+Special Sauce
+
+There are different special sauces in the different contexts, and they can behave slightly differently, but all of them are sustitutions (sometimes called "macros" in other language). All macros are enclosed in % symbols. Programattic macros start %{ and end }%
+Example 1: Item level descriptions - programmatic counters
+
+The syntax %{[start]#[delta]#[end]}% will expand in turn to start, start+delta, start+2*delta, … until it finally reaches end. If [end] is absent, then the sequence continues indefinitiely. [delta] can be of the form +[number] or -[number] in order to increment or decrement from start. If [delta] is completely absent, then +1 is assumed. Additionally, if [delta] is of the form *[number], then the macro in subsequent levels will expand to start*delta, start*delta2, ….
+
+So for example:
+
+    item4: n="monitor" g=" degaussed %his% monitor, and recalibrated it!"
+    levels4: %{8#+1#14}%" amber, %{10#+1#16}%" b/w, %{12#+1#24}%" CRT, %{14#+.5}%" TFT
+
+expands as follows:
+level	description
+0	an 8" amber monitor
+1	a 9" amber monitor
+...	…
+6	a 14" amber monitor
+7	a 10" b/w monitor
+...	…
+13	a 16" b/w monitor
+14	a 12" CRT monitor
+...	…
+26	a 24" CRT monitor
+27	a 14" TFT monitor
+28	a 14.5" TFT monitor
+29	a 15" TFT monitor
+...	…
+
+Note that by default, the desciption is prefixed by "a" (or "an"), and ends with the name of the type as given in n="[type]". Both of these can be overridden, as shown in the next example.
+Example 2: Item level descriptions - advanced programmatic counters
+
+As in the previous example, but [delta] can be an operator followed by a colon-separated list of values which will be cycled through in turn. As a trivial example %{1#+1:9#}% will expand to 1, 2, 11, 12, ….
+
+So for example, the following:
+
+    item7: n="RAM" c=" got hit with static, badly affecting %his% RAM!" g=" reseated %his% RAM chips!"
+    levels7: !a %{32#*2#1024}% words of magnetic core memory%notype%, !a %{2#*1.5:1.333333333#1536}% KiB, !a %{2#*1.5:1.333333333#1536}% MiB, !a %{2#*1.5:1.333333333#1536}% GiB %type%, !a %{2#*1.5:1.333333333}% TiB of %type%
+
+expands to:
+
+    32 words of magnetic core memory, 64 words of magnetic core memory, …, 1024 words of magnetic core memory, 2 KiB RAM, 3 KiB RAM, 4 KiB RAM, 6 KiB RAM, …, 1024 KiB RAM, 1536 KiB RAM, 2 MiB RAM, …
+
+Example 3: Item level descriptions - suppression of "a/an"
+
+See example 2 - !a at the start of an item description will suppress the "a/an" in the description of the item. Usually used before numbers, as shown above.
+Example 4: Item level descriptions - suppression or movement of the item type
+
+See example 2 - %notype% in the level description will suppress the type name being included at the end of the description. %type%in the description will be replaced by the item type no matter where it occurs.
+Example 5: multi-context pronoun replacements
+
+See the calamaties and godsends in example 2 - the %his% will be replaced by the gender-appropriate pronoun for the player posessing this object - e.g. his/her/its/their.
+macro(s)	expansion	notes
+%he%, %she%, %they% 	he/she/they/it/…	Whichever is appropriate for the player.
+%his%, %her%, %their% 	his/her/their/its/…	Ditto. Note the ambiguity of "her".
+%him%, %them% 	him/her/them/it/…	Ditto. Don't use %her% for this.
+Example 6: multi-context verb agreement
+
+Sometimes you need a verb to agree with the pronoun substituted as per example 5. In these cases you may use %is%, %are%, %was%, %were%, %has%, and %have%, and the appropriate conjugation will be selected.
+Example 7: Events - player name substitution
+
+%player% will be replaced by the relevant player's name
+
+In events which involve more than one player, such as "goodness", the two players are denoted %player0% and %player1%. For example:
+
+    L Dan Bernstein rants and raves about how %player% is in %{60#-4#36}%-bit la-la land, so retarded %him%
+
+Example 8: Events - random values
+
+These use exactly the same syntax as item level descriptions' programmatic counters from example 1 except that delta must not be *[number], and that [end] must be given.
+
+For example, the code sample in example 7 will have %{60#-4#36}% replaced by one of 60, 56, 52, …, 40, 36.
+Example 9: Events - random selection from a list
+
+%{[choice1]|[choice 2]|[a third choice]|…}% will expand to one of the choices between the | separators.
+
+    C %{was arrested|was apprehended|had %his% computers confiscated}% by %{the NSA|Interpol|the Serious Crime Squad|U.N.I.T.}%
+
+In the above, there are 12 possible replacements - three from the first list, and four from the second list, in any combination. Note also that pronoun replacement will be performed if had %his% computers confiscated is selected.
+Example 10: Events - advanced nested macros
+
+You may include random values inside list selections.
+
+    C 's webserver got hit by a %{XSS flaw|SQL injection|%{1#+1#1000}%TB DDoS}%
+
+If the list selection selects %{1#+1#1000}%TB DDoS, then that will be expanded using random value expansion.
+Example 11: Events - limitting Calamities and Godsends to specific genders
+
+If the first part of the C or G message is the magic carbunkle %![+/-][m/f/n]% , then that event will only be performed if the event recipient is of that gender (with the "+" prefix or not of that gender (with the "-" prefix). Players who have selected pc gender may suffer any event, as may those whose gender is unknown. Note that as there are only 3 differentiable genders, +mf is identical to -n.
+
+Note that "C %!+f% foo" can be abbreviated to "Cf foo", for better readability, ditto with m and n genders too.
+
+So for example, the following:
+
+    Cm Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%
+
+is equivalent to:
+
+    C %!+m% Lwaxana Troi flirts with %player% and makes suggestive insinuations about %him%
+
+and will only be returned as an event if the player undergoing the event is male. Note:It is sometimes possible that an inappropriate event will be returned, if an appropriate one can't be found after several (20) retries.
+Get The Source
+
+You can clone the source:
+git clone http://fatphil.org/git/idlerpg.git
+You may also peruse its git log.
+Some people have reported issues with cloning, so I'll occasionally update a tarball of the whole repo here - prod me if this seems out of date.
+
+Patches and bug-reports to the obvious e-mail address are welcome.
+Thank-Yous
+
+To the original authors, obviously, and the German guys for some ideas; to the idle beernerds who humoured me years ago and to Anna for really helping with testing; and finally to the SoylentNews crowd for encouraging me to resurrect this project with its IT-nerd theme.
