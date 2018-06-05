@@ -1251,6 +1251,7 @@ sub rpcheck { # check levels, update database
     }
     if (rand((8*86400)/$opts{self_clock}) < $onlineevil) { evilness(); }
     if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
+    if (rand((10*86400)/$opts{self_clock}) < 1) { war(); }
 
     moveplayers();
     process_items() if($opts{itemdbfile});
@@ -1429,6 +1430,81 @@ sub fight_with_side_effects($$$) {
 	swap_items($u, $opp,
 		   "In the fierce battle, %player1% dropped %their1% %item1%! ".
 		   "%player0% picks it up, tossing %their0% old %item0% to %player1%");
+    }
+}
+
+sub war { # let the four quadrants battle
+    my @players = grep { $rps{$_}{online} } keys(%rps);
+    my @quadrantname = ("Northeast", "Southeast", "Southwest", "Northwest");
+    my %quadrant = ();
+    my @sum = (0,0,0,0,0);
+    # get quadrant for each player and item sum per quadrant
+    for my $k (@players) {
+        # "quadrant" 4 is for players in the middle
+        $quadrant{$k} = 4;
+        if (2 * $rps{$k}{y} + 1 < $opts{mapy}) {
+            $quadrant{$k} = 3 if (2 * $rps{$k}{x} + 1 < $opts{mapx});
+            $quadrant{$k} = 0 if (2 * $rps{$k}{x} + 1 > $opts{mapx});
+        }
+        elsif (2 * $rps{$k}{y} + 1 > $opts{mapy})
+        {
+            $quadrant{$k} = 2 if (2 * $rps{$k}{x} + 1 < $opts{mapx});
+            $quadrant{$k} = 1 if (2 * $rps{$k}{x} + 1 > $opts{mapx});
+        }
+        $sum[$quadrant{$k}] += itemsum($k);
+    }
+    # roll for each quadrant
+    my @roll = (0,0,0,0);
+    $roll[$_] = int(rand($sum[$_])) foreach (0..3);
+    # winner if value >= maximum value of both direct neighbors, "quadrant" 4 never wins
+    my @iswinner = map($_ < 4 && $roll[$_] >= $roll[($_ + 1) % 4] &&
+                                 $roll[$_] >= $roll[($_ + 3) % 4],(0..4));
+    my @winners = map("the $quadrantname[$_] [$roll[$_]/$sum[$_]]",grep($iswinner[$_],(0..3)));
+    # construct text from winners array
+    my $winnertext = "";
+    $winnertext = pop(@winners) if (scalar(@winners) > 0);
+    $winnertext = pop(@winners)." and $winnertext" if (scalar(@winners) > 0);
+    $winnertext = pop(@winners).", $winnertext" while (scalar(@winners) > 0);
+    $winnertext = "has shown the power of $winnertext" if ($winnertext ne "");
+    # loser if value < minimum value of both direct neighbors, "quadrant" 4 never loses
+    my @isloser = map($_ < 4 && $roll[$_] < $roll[($_ + 1) % 4] &&
+                                $roll[$_] < $roll[($_ + 3) % 4],(0..4));
+    my @losers = map("the $quadrantname[$_] [$roll[$_]/$sum[$_]]",grep($isloser[$_],(0..3)));
+    # construct text from losers array
+    my $losertext = "";
+    $losertext = pop(@losers) if (scalar(@losers) > 0);
+    $losertext = pop(@losers)." and $losertext" if (scalar(@losers) > 0);
+    $losertext = pop(@losers).", $losertext" while (scalar(@losers) > 0);
+    $losertext = "led $losertext to perdition" if ($losertext ne "");
+    # build array of text for neutrals
+    my @neutrals = map("the $quadrantname[$_] [$roll[$_]/$sum[$_]]",grep(!$iswinner[$_] && !$isloser[$_],(0..3)));
+    # construct text from neutrals array
+    my $neutraltext = "";
+    $neutraltext = pop(@neutrals) if (scalar(@neutrals) > 0);
+    $neutraltext = pop(@neutrals)." and $neutraltext" if (scalar(@neutrals) > 0);
+    $neutraltext = pop(@neutrals).", $neutraltext" while (scalar(@neutrals) > 0);
+    $neutraltext = " The diplomacy of $neutraltext was admirable." if ($neutraltext ne "");
+    if ($winnertext ne "" && $losertext ne "") {
+        # there are winners and losers
+        chanmsg(clog("The war between the four parts of the realm ".
+                     "$winnertext, whereas it $losertext.$neutraltext"));
+    }
+    elsif ($winnertext eq "" && $losertext eq "") {
+        # there are only neutrals
+        chanmsg(clog("The war between the four parts of the realm ".
+                     "was well-balanced.$neutraltext"));
+    }
+    else {
+        # there are either winners or losers
+        chanmsg(clog("The war between the four parts of the realm ".
+                     "$winnertext$losertext.$neutraltext"));
+    }
+    for my $k (@players) {
+        # halve ttl of users in winning quadrant
+        # users in "quadrant" 4 are not awarded or penalized
+        $rps{$k}{next} = int($rps{$k}{next} / 2) if ($iswinner[$quadrant{$k}]);
+        # double ttl of users in losing quadrant
+        $rps{$k}{next} *= 2 if ($isloser[$quadrant{$k}]);
     }
 }
 
