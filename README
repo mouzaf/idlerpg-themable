@@ -1,4 +1,4 @@
-IdleRPG-Themable is an attempt to add new features to Themable IdleRPG by FatPhil, itself built on IdleRPG by Jotan.
+IdleRPG-Themable is an attempt to add new features to Themable IdleRPG by FatPhil, itself built on IdleRPG by Jotan. The database format is incompatible with vanilla IdleRPG, however it is fairly trivial to convert between the two. The IdleRPG forums are no longer online, and thus many of the community submitted patches seem lost to time. If you have any of these patches or patched idlerpg bots lying around please submit them so we can extend this bot and make it one of the more complete IdleRPG bots available.
 
 Recent Changes:
 Added wars
