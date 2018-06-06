@@ -3,13 +3,13 @@ IdleRPG-Themable is an attempt to add new features to Themable IdleRPG by FatPhi
 Recent Changes:
 Added wars
 
-ToDo:
+ToDo (in no particular order):
 Finish cleaning up ancient item list
 Create a new theme
 More admin commands
 Modify irpgdbtool to allow conversion of vanilla IdleRPG databases to IdleRPG-Themable
 IPV6 suport
-Tournaments?
+Network/channel affiliations; war by affiliation type
 
 
 --- Original contents of http://fatphil.org/idlerpg/ ---
