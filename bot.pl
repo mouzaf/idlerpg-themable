@@ -430,21 +430,21 @@ sub parse {
         # us who just lost it
         elsif ($usernick eq $primnick) { sts("NICK $primnick",1); }
         elsif (defined(finduser($arg[2]))) {
-			my $usernick = $arg[2];
-			my $username = finduser($arg[2]);
+			my $usrnk = $arg[2];
+			my $usrnm = finduser($arg[2]);
             if ($opts{voiceonlogin}) {
-            sts("MODE $opts{botchan} +v :$usernick");
+            sts("MODE $opts{botchan} +v :$usrnk");
             }
-            $rps{$username}{online} = 1;
-            $rps{$username}{nick} = $usernick;
-            $rps{$username}{userhost} = substr($arg[0],1);
-            $rps{$username}{lastlogin} = time();
-            chanmsg("$username, the level $rps{$username}{level} ".
-                    "$rps{$username}{class}, has been automatically ".
-                    "logged in from nickname $usernick. Next level in ".
-            duration($rps{$username}{next}).".");
+            $rps{$usrnm}{online} = 1;
+            $rps{$usrnm}{nick} = $usrnk;
+            $rps{$usrnm}{userhost} = substr($arg[0],1);
+            $rps{$usrnm}{lastlogin} = time();
+            chanmsg("$usrnm, the level $rps{$usrnm}{level} ".
+                    "$rps{$usrnm}{class}, has been automatically ".
+                    "logged in from nickname $usrnk. Next level in ".
+            duration($rps{$usrnm}{next}).".");
             notice("Logon successful. Next level in ".
-            duration($rps{$username}{next}).".", $usernick);
+            duration($rps{$usrnm}{next}).".", $usrnk);
         }
         else {
             penalize($username,"nick",$arg[2]);
