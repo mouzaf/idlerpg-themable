@@ -383,7 +383,7 @@ sub parse {
         if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
 	}
-        if (defined($username)) {
+        elsif (defined($username)) {
             if ($opts{voiceonlogin}) {
             sts("MODE $opts{botchan} +v :$usernick");
             }
