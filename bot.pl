@@ -382,8 +382,23 @@ sub parse {
         $onchan{$usernick}=time();
         if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
+	}
+        if (defined($username)) {
+            if ($opts{voiceonlogin}) {
+            sts("MODE $opts{botchan} +v :$usernick");
+            }
+            $rps{$username}{online} = 1;
+            $rps{$username}{nick} = $usernick;
+            $rps{$username}{userhost} = substr($arg[0],1);
+            $rps{$username}{lastlogin} = time();
+            chanmsg("$username, the level $rps{$username}{level} ".
+                    "$rps{$username}{class}, has been automatically ".
+                    "logged in from nickname $usernick. Next level in ".
+            duration($rps{$username}{next}).".");
+            notice("Logon successful. Next level in ".
+            duration($rps{$username}{next}).".", $usernick);
         }
-        elsif ($opts{botnick} eq $usernick) {
+	elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
             (my $opcmd = $opts{botopcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($opcmd);
@@ -393,6 +408,7 @@ sub parse {
     elsif ($arg[1] eq 'quit') {
         # if we see our nick come open, grab it (skipping queue)
         if ($usernick eq $primnick) { sts("NICK $primnick",1); }
+
         elsif ($opts{detectsplits} &&
                "@arg[2..$#arg]" =~ /^:\S+\.\S+ \S+\.\S+$/) {
             if (defined($username)) { # user was online
