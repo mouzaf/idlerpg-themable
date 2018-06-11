@@ -447,23 +447,6 @@ sub parse {
         # if we see our nick come open, grab it (skipping queue), unless it was
         # us who just lost it
         elsif ($usernick eq $primnick) { sts("NICK $primnick",1); }
-        elsif (defined(finduser($arg[2]))) {
-			my $usrnk = $arg[2];
-			my $usrnm = finduser($arg[2]);
-            if ($opts{voiceonlogin}) {
-            sts("MODE $opts{botchan} +v :$usrnk");
-            }
-            $rps{$usrnm}{online} = 1;
-            $rps{$usrnm}{nick} = $usrnk;
-            $rps{$usrnm}{userhost} = substr($arg[0],1);
-            $rps{$usrnm}{lastlogin} = time();
-            chanmsg("$usrnm, the level $rps{$usrnm}{level} ".
-                    "$rps{$usrnm}{class}, has been automatically ".
-                    "logged in from nickname $usrnk. Next level in ".
-            duration($rps{$usrnm}{next}).".");
-            notice("Logon successful. Next level in ".
-            duration($rps{$usrnm}{next}).".", $usrnk);
-        }
         else {
             penalize($username,"nick",$arg[2]);
             $onchan{substr($arg[2],1)} = delete($onchan{$usernick});
