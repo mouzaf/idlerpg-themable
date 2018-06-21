@@ -2,6 +2,10 @@ IdleRPG-Themable adds new features to Themable IdleRPG by FatPhil (http://fatphi
 itself built on IdleRPG by Jotan (https://idlerpg.net/)
 Also added some features from other idlerpg bots (https://github.com/ticklemynausea/idlerpg) 
 
+Exisiting idlerpg 3.x databases can be read in by this bot but once modified are no longer compatible with 
+vanilla idlerpg, so make a backup before trying this bot if upgrading. The modified database requires modified
+sitecode to work properly, which you can find at https://github.com/oddluck/idlerpg-themable-site
+
 Recent Changes:
 IPV6 suport (ipv6 option in irpg.conf)
 auto-login (autologin option in irpg.conf)
