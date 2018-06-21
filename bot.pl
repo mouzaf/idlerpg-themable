@@ -75,6 +75,7 @@ GetOptions(\%opts,
     "self_clock=i",
     "casematters",
     "detectsplits",
+    "autologin",
     "splitwait=i",
     "allowuserinfo",
     "noscale",
@@ -389,7 +390,7 @@ sub parse {
             sts($opcmd);
             $lasttime = time(); # start rpcheck()
         }
-        else {
+        elsif ($opts{autologin}) {
             for my $k (keys %rps) {
                 if (":".$rps{$k}{userhost} eq $arg[0]) {
                     if ($opts{voiceonlogin}) {          
