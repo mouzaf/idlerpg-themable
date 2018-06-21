@@ -6,6 +6,11 @@ Exisiting idlerpg 3.x databases can be read in by this bot but once modified are
 vanilla idlerpg, so make a backup before trying this bot if upgrading. The modified database requires modified
 sitecode to work properly, which you can find at https://github.com/oddluck/idlerpg-themable-site
 
+Installation:
+clone repo
+edit .irpg.conf
+perl bot.pl
+
 Recent Changes:
 IPV6 suport (ipv6 option in irpg.conf)
 auto-login (autologin option in irpg.conf)
