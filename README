@@ -5,6 +5,7 @@ Also added some features from other idlerpg bots (https://github.com/ticklemynau
 Recent Changes:
 IPV6 suport (ipv6 option in irpg.conf)
 auto-login (autologin option in irpg.conf)
+various minor fixes
 wars
 
 ToDo (in no particular order):
