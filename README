@@ -1,6 +1,6 @@
-IdleRPG-Themable adds new features to Themable IdleRPG by FatPhil, itself built on IdleRPG by Jotan. 
+IdleRPG-Themable adds new features to Themable IdleRPG by FatPhil (http://fatphil.org/idlerpg/) 
+itself built on IdleRPG by Jotan (https://idlerpg.net/)
 Also added some features from other idlerpg bots (https://github.com/ticklemynausea/idlerpg) 
-which you can find in the folder labeled vanilla. 
 
 Recent Changes:
 IPV6 suport (ipv6 option in irpg.conf)
