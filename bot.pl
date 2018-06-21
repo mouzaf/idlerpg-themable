@@ -382,14 +382,14 @@ sub parse {
         $onchan{$usernick}=time();
         if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
-	}
-	elsif ($opts{botnick} eq $usernick) {
+        }
+        elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
             (my $opcmd = $opts{botopcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($opcmd);
             $lasttime = time(); # start rpcheck()
         }
-	else {
+        else {
             for my $k (keys %rps) {
                 if (":".$rps{$k}{userhost} eq $arg[0]) {
                     if ($opts{voiceonlogin}) {          
