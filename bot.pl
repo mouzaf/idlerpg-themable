@@ -2147,7 +2147,7 @@ sub rewrite_event($$$$) {
     # Add it back here, but make it optional. If there's mention of
     # %player% anywhere in the string, presume there's no laziness.
     # This permits things like c="Rust develops on %player%'s %type%".
-    if($s !~ m/%player\d?%/) {
+    if($s !~ m/%player\w?%/) {
 	$s = '%player0%' . (substr($s,0,3) eq "'s " ? '': ' ') . $s;
     }
     $s=rewrite_for_players($s,$p);
