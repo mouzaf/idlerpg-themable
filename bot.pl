@@ -383,28 +383,13 @@ sub parse {
         if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
 	}
-        if (defined $username) {
-            if ($opts{voiceonlogin}) {
-            sts("MODE $opts{botchan} +v :$usernick");
-            }
-            $rps{$username}{online} = 1;
-            $rps{$username}{nick} = $usernick;
-            $rps{$username}{userhost} = substr($arg[0],1);
-            $rps{$username}{lastlogin} = time();
-            chanmsg("$username, the level $rps{$username}{level} ".
-                    "$rps{$username}{class}, has been automatically ".
-                    "logged in from nickname $usernick. Next level in ".
-            duration($rps{$username}{next}).".");
-            notice("Logon successful. Next level in ".
-            duration($rps{$username}{next}).".", $usernick);
-        }
 	elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
             (my $opcmd = $opts{botopcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($opcmd);
             $lasttime = time(); # start rpcheck()
         }
-        else {
+	else {
             for my $k (keys %rps) {
                 if (":".$rps{$k}{userhost} eq $arg[0]) {
                     if ($opts{voiceonlogin}) {          
@@ -1324,7 +1309,7 @@ sub rpcheck { # check levels, update database
         my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
                        $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
         chanmsg("Idle RPG Top Players:") if @u;
-        for my $i (0..2) {
+        for my $i (0..9) {
             $#u >= $i and
             chanmsg("$u[$i], the level $rps{$u[$i]}{level} ".
                     "$rps{$u[$i]}{class}, is #" . ($i + 1) . "! Next level in ".
