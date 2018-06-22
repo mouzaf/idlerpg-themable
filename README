@@ -8,6 +8,9 @@ vanilla idlerpg, so make a backup before trying this bot if upgrading.
 If you want to run the website with leadeboards, world map, player pages, quests, etc. You'll need modified 
 sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
 
+Requirements:
+Perl > v5.16
+
 Installation:
 clone repo
 edit .irpg.conf
