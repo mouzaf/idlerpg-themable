@@ -2363,10 +2363,8 @@ sub checkdisconnect { # removed expired disconnected hosts from the hash
     while ($host = each(%disconnect)) {
         if (time()-$disconnect{$host}{time} > $opts{disconnectwait}) {
             $rps{$disconnect{$host}{account}}{online} = 0;
+            penalize($disconnect{$host}{account},"quit");
             delete($disconnect{$host});
-            my $unick = substr((split(/!/,$host))[0],1);
-            my $usrname = finduser($unick);
-	    penalize($usrname,"quit");
         }
     }
 }
