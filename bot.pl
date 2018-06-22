@@ -28,16 +28,18 @@
 use strict;
 use warnings;
 use IO::Socket;
-use IO::Socket::INET6;
 use IO::Select;
 use Data::Dumper;
 use Getopt::Long;
 
+my $version = "3.1.2_modFP";
+
+my $debug_reentrancy = 0;
+
 my %opts;
 
+my $conffile = '.irpg.conf';
 readconfig();
-
-my $version = "3.1.2";
 
 # command line overrides .irpg.conf
 GetOptions(\%opts,
@@ -46,6 +48,8 @@ GetOptions(\%opts,
     "ipv6",
     "debug",
     "debugfile=s",
+    "modsfile=s",
+    "decayfile=s",
     "server|s=s",
     "botnick|n=s",
     "botuser|u=s",
@@ -60,7 +64,6 @@ GetOptions(\%opts,
     "admincommurl=s",
     "doban",
     "silentmode=i",
-    "writequestfile",
     "questfilename=s",
     "voiceonlogin",
     "noccodes",
@@ -71,11 +74,12 @@ GetOptions(\%opts,
     "reconnect",
     "reconnect_wait=i",
     "self_clock=i",
-    "modsfile=s",
     "casematters",
     "detectsplits",
+    "detectdisconnect",
     "autologin",
     "splitwait=i",
+    "disconnectwait=i",
     "allowuserinfo",
     "noscale",
     "phonehome",
@@ -91,49 +95,87 @@ GetOptions(\%opts,
     "modesperline=i",
     "okurl|k=s@",
     "eventsfile=s",
+    "itemsfile=s",
     "rpstep=f",
     "rpbase=i",
     "rppenstep=f",
     "dbfile|irpgdb|db|d=s",
+    "itemdbfile|idb=s",
+    "daemonize",
+    "top_period=i",
+    "chal_period",
 ) or debug("Error: Could not parse command line. Try $0 --help\n",1);
 
 $opts{help} and do { help(); exit 0; };
 
 debug("Config: read $_: ".Dumper($opts{$_})) for keys(%opts);
 
+my @items;
+my @levels;
+my @calamity;
+my @godsend;
+my @uniques;
+my %uniques; # letter to index mapping
+my @fragileitems;
+read_items();
+
+my @quests;
+my %events;
+my %uniquemsg; # indexed by lower case alignment 'g', 'n', 'e'.
+read_events();
+
+# Utility variables that lots of parametrised functions can use
+# direction of time:
+my @tofrom = ('from', 'toward');
+# gender: male, female, unknown, neutral, politically correct
+my %hesheit = (m => 'he', f => 'she', u => 'they', n => 'it', pc => 'he/she/it');
+my %himherit = (m =>'him',f => 'her', u => 'them', n => 'it', pc => 'him/her/it');
+my %hisherits = (m=>'his',f => 'her', u => 'their',n => 'its',pc => 'his/her/its');
+my %hishersits= (m=>'his',f => 'hers',u =>'theirs',n => 'its',pc => 'his/hers/its');
+
+my %rps; # role-players
+sub name2gender($) { return exists($rps{$_[0]}) ? $rps{$_[0]}{gender} : 'u'; }
+sub they( $ ) { return $hesheit{name2gender($_[0])}; }
+sub them( $ ) { return $himherit{name2gender($_[0])}; }
+sub their( $ ) { return $hisherits{name2gender($_[0])}; }
+
+sub are( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'are' : 'is'; }
+sub were( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'were' : 'was'; }
+sub have( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? 'have' : 'has'; }
+#sub verb( $ ) { return (!exists($rps{$_[0]}) or $rps{$_[0]}{gender} eq 'u') ? '' : 's'; }
+
 my $outbytes = 0; # sent bytes
 my $primnick = $opts{botnick}; # for regain or register checks
 my $inbytes = 0; # received bytes
 my %onchan; # users on game channel
-my %rps; # role-players
-my %quest = (
-    questers => [],
-    p1 => [], # point 1 for q2
-    p2 => [], # point 2 for q2
-    qtime => time() + int(rand(21600)), # first quest starts in <=6 hours
-    text => "",
-    type => 1,
-    stage => 1); # quest info
-my %mapitems = (); # items lying around
+my %quest = restorequest();
+
+my $mapitems_dirty;
+my %mapitems = (); # indexed by "$x:$y", each being a list of items
 
 my $rpreport = 0; # constant for reporting top players
-my $oldrpreport = 0; # constant for reporting top players (last value)
+my $oldrpreport = 0; # prior $rpreport so threshold-crossing can be detected
+sub report_threshold( $ ) { return int($rpreport/$_[0]) > int($oldrpreport/$_[0]); }
+
 my %prev_online; # user@hosts online on restart, die
 my %auto_login; # users to automatically log back on
-my @bans; # bans auto-set by the bot, saved to be removed after 1 hour
 my $pausemode = 0; # pausemode on/off flag
 my $silentmode = 0; # silent mode 0/1/2/3, see head of file
-my @queue; # outgoing message queue
 my $lastreg = 0; # holds the time of the last reg. cleared every second.
                  # prevents more than one account being registered / second
 my $registrations = 0; # count of registrations this period
-my $sel; # IO::Select object
 my $lasttime = 1; # last time that rpcheck() was run
+
+# each of these is server-specific
+my @bans; # bans auto-set by the bot, saved to be removed after 1 hour
+my @queue; # outgoing message queue
+my $sel; # IO::Select object
 my $buffer; # buffer for socket stuff
 my $conn_tries = 0; # number of connection tries. gives up after trying each
                     # server twice
 my $sock; # IO::Socket::INET object
 my %split; # holds nick!user@hosts for clients that have been netsplit
+my %disconnect; #holds nick!user@hosts for clients that have been disconnected
 my $freemessages = 4; # number of "free" privmsgs we can send. 0..$freemessages
 
 sub daemonize(); # prototype to avoid warnings
@@ -149,7 +191,6 @@ if (! -e $opts{dbfile}) {
     $uname = length($uname)?$uname:$opts{owner};
     print "Enter a character class for this account: ";
     chomp(my $uclass = <STDIN>);
-    $rps{$uname}{class} = substr($uclass,0,30);
     print "Enter a password for this account: ";
     if ($^O ne "MSWin32") {
         system("stty -echo");
@@ -160,21 +201,21 @@ if (! -e $opts{dbfile}) {
     }
     $rps{$uname}{pass} = crypt($upass,mksalt());
     $rps{$uname}{next} = $opts{rpbase};
-    $rps{$uname}{nick} = "";
-    $rps{$uname}{userhost} = "";
     $rps{$uname}{level} = 0;
-    $rps{$uname}{online} = 0;
-    $rps{$uname}{idled} = 0;
+    $rps{$uname}{class} = substr($uclass,0,30);
     $rps{$uname}{created} = time();
     $rps{$uname}{lastlogin} = time();
     $rps{$uname}{x} = int(rand($opts{mapx}));
     $rps{$uname}{y} = int(rand($opts{mapy}));
     $rps{$uname}{alignment}="n";
+    $rps{$uname}{gender} = "u";
+    $rps{$uname}{nick} = "";
+    $rps{$uname}{userhost} = "";
+    $rps{$uname}{idled} = 0;
+    $rps{$uname}{online} = 0;
     $rps{$uname}{isadmin} = 1;
-    for my $item ("ring","amulet","charm","weapon","helm",
-                  "tunic","pair of gloves","shield",
-                  "set of leggings","pair of boots") {
-        $rps{$uname}{item}{$item} = 0;
+    for my $item (0..$#items) {
+        $rps{$uname}{item}[$item] = 0;
     }
     for my $pen ("pen_mesg","pen_nick","pen_part",
                  "pen_kick","pen_quit","pen_quest",
@@ -186,41 +227,57 @@ if (! -e $opts{dbfile}) {
 }
 
 # this is almost silly...
-if ($opts{checkupdates}) {
-    print "Checking for updates...\n\n";
-    my $tempsock = IO::Socket::INET->new(PeerAddr=>"jotun.ultrazone.org:80",
+my $versionhash;
+my $gitdir=$0; $gitdir =~ s/[^\/]+$/.git/;
+if ($opts{checkupdates} and -r "$gitdir/refs/heads/master") { 
+    my $branch=`cat "$gitdir/HEAD"`; $branch=~s/ref: refs\/heads\/(\S+).*$/$1/s;
+    $versionhash=`cat "$gitdir/refs/heads/$branch"`; chomp($versionhash);
+    print "Checking for updates (at $versionhash)\n";
+    my $tempsock = IO::Socket::INET->new(PeerAddr=>"fatphil.org:80",
                                          Timeout => 15);
     if ($tempsock) {
-        print $tempsock "GET /g7/version.php?version=$version HTTP/1.1\r\n".
-                        "Host: jotun.ultrazone.org:80\r\n\r\n";
+        print $tempsock "GET /git/idlerpg.git/refs/heads/master HTTP/1.1\r\n".
+                        "Host: fatphil.org\r\n\r\n";
         my($line,$newversion);
         while ($line=<$tempsock>) {
             chomp($line);
-            next() unless $line;
-            if ($line =~ /^Current version : (\S+)/) {
-                if ($version ne $1) {
-                    print "There is an update available! Changes include:\n";
-                    $newversion=1;
-                }
-                else {
-                    print "You are running the latest version (v$1).\n";
-                    close($tempsock);
-                    last();
-                }
-            }
-            elsif ($newversion && $line =~ /^(  -? .+)/) { print "$1\n"; }
-            elsif ($newversion && $line =~ /^URL: (.+)/) {
-                print "\nGet the newest version from $1!\n";
-                close($tempsock);
-                last();
+            if ($line =~ /^([0-9a-f]+)$/) {
+		print "You are ".($1 eq $versionhash ?"up to date\n":"NOT running the latest version (commit id $1).\n");
+		last();
             }
         }
+        close($tempsock);
     }
     else { print debug("Could not connect to update server.")."\n"; }
 }
 
-print "\n".debug("Becoming a daemon...")."\n";
-daemonize();
+my %cmd_permissions=(
+    (map {$_=>'admin'} qw/delold del brawl hog event rehash chpass chuser chclass push newquest die/,
+     qw/reloaddb backup pause silent jump restart clearq eventtest/),
+    peval=>'admin+ownerpevalonly', mkadmin=>'admin+owneraddonly', deladmin=>'admin+ownerdelonly',
+    info=>'admin|allowuserinfo',
+    );
+sub cmd_admin_check($$) {
+    my ($cmd,$username)=@_;
+    # Always OK if we're the owner
+    if(defined($username) and ($username eq $opts{owner})) { return 1; }
+    # OK if admin not needed
+    if(!exists($cmd_permissions{$cmd})) { return 1; }
+    my $ex=$cmd_permissions{$cmd};
+    # OK if opts enable this for anyone
+    if($ex =~ m/^admin\|(allowuser\w+)$/) { return $opts{$1} ? 1 : ha($username); }
+    # If permissions require admin with no modification, then we can bail
+    if($ex =~ m/^admin$/) { return ha($username); }
+    # So we're admin but not owner - is that a problem?
+    if($ex =~ m/^admin\+(owner\w+only)/) { return $opts{$1} ? 0 : ha($username); }
+    # Fail if we don't understand the exception?
+    return length($ex) ? 0 : 1;
+}
+my %cmd_login_req=(map{$_=>1} qw/logout status whoami inventory newpass newclass align gender removeme/);
+sub cmd_login_check($$) { return exists($cmd_login_req{$_[0]}) && !defined($_[1]); }
+
+print "\n".debug(($opts{daemonize}?"B":"NOT b")."ecoming a daemon...")."\n";
+daemonize() if($opts{daemonize});
 
 $SIG{HUP} = "readconfig"; # sighup = reread config file
 
@@ -228,20 +285,19 @@ CONNECT: # cheese.
 
 loaddb();
 
-while (!$sock && $conn_tries < 100000*@{$opts{servers}}) {
+while (!$sock && $conn_tries < 2*@{$opts{servers}}) {
     debug("Connecting to $opts{servers}->[0]...");
-    my %sockinfo = (PeerAddr => $opts{servers}->[0]);
+    my %sockinfo = (PeerAddr => $opts{servers}->[0],
+                    PeerPort => 6667);
     if ($opts{localaddr}) { $sockinfo{LocalAddr} = $opts{localaddr}; }
-
     if ($opts{ipv6}) {
         $sock = IO::Socket::INET6->new(%sockinfo) or
-            debug("Error: failed to connect: $!\n");
+        debug("Error: failed to connect: $!\n");
     }
     else {
         $sock = IO::Socket::INET->new(%sockinfo) or
-            debug("Error: failed to connect: $!\n");
+        debug("Error: failed to connect: $!\n");
     }
-
     ++$conn_tries;
     if (!$sock) {
         # cycle front server to back if connection failed
@@ -269,10 +325,8 @@ while (1) {
         $fh->recv($buffer2,512,0);
         if (length($buffer2)) {
             $buffer .= $buffer2;
-            while (index($buffer,"\n") != -1) {
-                my $line = substr($buffer,0,index($buffer,"\n")+1);
-                $buffer = substr($buffer,length($line));
-                parse($line);
+	    while ($buffer =~ s/^(.*?)\n//) {
+                parse($1);
             }
         }
         else {
@@ -302,6 +356,13 @@ while (1) {
     if ((time()-$lasttime) >= $opts{self_clock}) { rpcheck(); }
 }
 
+sub comma_list($) {
+    my $l=$_[0];
+    my $list=join(", ",@$l);
+    if($#$l>1) { substr($list,-length($l->[-1]),0)='and '; } # last element modified
+    elsif($#$l==1) { substr($list,-length($l->[-1])-2,1)=' and'; } # last ", " modified
+    return $list;
+}
 
 sub parse {
     my($in) = shift;
@@ -330,12 +391,22 @@ sub parse {
     elsif ($arg[1] eq 'join') {
         # %onchan holds time user joined channel. used for the advertisement ban
         $onchan{$usernick}=time();
-        if ($opts{'detectsplits'} && exists($split{substr($arg[0],1)})) {
+        if ($opts{detectsplits} && exists($split{substr($arg[0],1)})) {
             delete($split{substr($arg[0],1)});
+            if ($opts{voiceonlogin}) {          
+            sts("MODE $opts{botchan} +v :$usernick");
+            }
+        }
+        elsif ($opts{detectdisconnect} && exists($disconnect{substr($arg[0],1)})) {
+            delete($disconnect{substr($arg[0],1)});
+            if ($opts{voiceonlogin}) {
+            sts("MODE $opts{botchan} +v :$usernick");
+            }
+            chanmsg("$usernick has reconnected and remains logged in.");
         }
         elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
-            (my $opcmd = $opts{botopcmd}) =~ s/%botnick%/$opts{botnick}/eg;
+            (my $opcmd = $opts{botopcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
             sts($opcmd);
             $lasttime = time(); # start rpcheck()
         }
@@ -356,16 +427,24 @@ sub parse {
                            duration($rps{$k}{next}).".", $usernick);
                 }
             }
-        }
+        }   
     }
     elsif ($arg[1] eq 'quit') {
         # if we see our nick come open, grab it (skipping queue)
         if ($usernick eq $primnick) { sts("NICK $primnick",1); }
-        elsif ($opts{'detectsplits'} &&
+
+        elsif ($opts{detectsplits} &&
                "@arg[2..$#arg]" =~ /^:\S+\.\S+ \S+\.\S+$/) {
             if (defined($username)) { # user was online
                 $split{substr($arg[0],1)}{time}=time();
                 $split{substr($arg[0],1)}{account}=$username;
+            }
+        }
+        elsif ($opts{detectdisconnect} &&
+               "@arg[2..$#arg]" !~ /Nice downgrade/) {
+            if (defined($username)) { # user was online
+                $disconnect{substr($arg[0],1)}{time}=time();
+                $disconnect{substr($arg[0],1)}{account}=$username;
             }
         }
         else {
@@ -401,7 +480,8 @@ sub parse {
     }
     elsif ($arg[1] eq '001') {
         # send our identify command, set our usermode, join channel
-        sts($opts{botident});
+        (my $identcmd = $opts{botident}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
+        sts($identcmd);
         sts("MODE $opts{botnick} :$opts{botmodes}");
         sts("JOIN $opts{botchan}");
         $opts{botchan} =~ s/ .*//; # strip channel key if present
@@ -411,27 +491,19 @@ sub parse {
         # print < 1k of text
         if (keys(%auto_login)) {
             # not a true measure of size, but easy
-            if (length("%auto_login") < 1024 && $opts{senduserlist}) {
-                chanmsg(scalar(keys(%auto_login))." users matching ".
-                        scalar(keys(%prev_online))." hosts automatically ".
-                        "logged in; accounts: ".join(", ",keys(%auto_login)));
-            }
-            else {
-                chanmsg(scalar(keys(%auto_login))." users matching ".
-                        scalar(keys(%prev_online))." hosts automatically ".
-                        "logged in.");
-            }
+	    chanmsg("Recognised ". scalar(keys(%auto_login))." users on channel. ".
+		    "Automatically logging " .
+		    ((length("%auto_login") < 1024 && $opts{senduserlist})
+		     ? "in accounts: ".join(", ",keys(%auto_login))
+		     : "them in."));
             if ($opts{voiceonlogin}) {
                 my @vnicks = map { $rps{$_}{nick} } keys(%auto_login);
-                while (scalar @vnicks >= $opts{modesperline}) {
+                while (@vnicks) {
+                    my @removed = splice(@vnicks,0,$opts{modesperline});
                     sts("MODE $opts{botchan} +".
-                        ('v' x $opts{modesperline})." ".
-                        join(" ",@vnicks[0..$opts{modesperline}-1]));
-                    splice(@vnicks,0,$opts{modesperline});
+                        ('v' x scalar(@removed))." ".
+                        join(" ",@removed));
                 }
-                sts("MODE $opts{botchan} +".
-                    ('v' x (scalar @vnicks))." ".
-                    join(" ",@vnicks));
             }
         }
         else { chanmsg("0 users qualified for auto login."); }
@@ -456,27 +528,27 @@ sub parse {
         $arg[0] = substr($arg[0],1); # strip leading : from privmsgs
         if (lc($arg[2]) eq lc($opts{botnick})) { # to us, not channel
             $arg[3] = lc(substr($arg[3],1)); # lowercase, strip leading :
-            if ($arg[3] eq "\1version\1") {
+	    if(!cmd_admin_check($arg[3],$username)) {
+		privmsg("You don't have access to ".uc($arg[3]).".", $usernick);
+	    }
+	    elsif (cmd_login_check($arg[3],$username)) {
+		privmsg("You are not logged in.", $usernick);
+	    }
+	    elsif ($arg[3] eq "\1version\1") {
                 notice("\1VERSION IRPG bot v$version by jotun; ".
                        "http://idlerpg.net/\1",$usernick);
             }
             elsif ($arg[3] eq "peval") {
-                if (!ha($username) || ($opts{ownerpevalonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to PEVAL.", $usernick);
-                }
-                else {
-                    my @peval = eval "@arg[4..$#arg]";
-                    if (@peval >= 4 || length("@peval") > 1024) {
-                        privmsg("Command produced too much output to send ".
-                                "outright; queueing ".length("@peval").
-                                " bytes in ".scalar(@peval)." items. Use ".
-                                "CLEARQ to clear queue if needed.",$usernick,1);
-                        privmsg($_,$usernick) for @peval;
-                    }
-                    else { privmsg($_,$usernick, 1) for @peval; }
-                    privmsg("EVAL ERROR: $@", $usernick, 1) if $@;
-                }
+		my @peval = eval "@arg[4..$#arg]";
+		if (@peval >= 4 || length("@peval") > 1024) {
+		    privmsg("Command produced too much output to send ".
+			    "outright; queueing ".length("@peval").
+			    " bytes in ".scalar(@peval)." items. Use ".
+			    "CLEARQ to clear queue if needed.",$usernick,1);
+		    privmsg("$_",$usernick) for @peval;
+		}
+		else { privmsg("$_",$usernick, 1) for @peval; }
+		privmsg("EVAL ERROR: $@", $usernick, 1) if $@;
             }
             elsif ($arg[3] eq "register") {
                 if (defined $username) {
@@ -536,43 +608,43 @@ sub parse {
                                 "long.",$usernick);
                     }
                     elsif (time() == $lastreg) {
-                        privmsg("Wait 1 second and try again.",$usernick);                
+                        privmsg("Wait 1 second and try again.",$usernick);
                     }
                     else {
                         if ($opts{voiceonlogin}) {
                             sts("MODE $opts{botchan} +v :$usernick");
                         }
-                        ++$registrations;
-                        $lastreg = time();
-                        $rps{$arg[4]}{next} = $opts{rpbase};
-                        $rps{$arg[4]}{class} = "@arg[6..$#arg]";
-                        $rps{$arg[4]}{level} = 0;
-                        $rps{$arg[4]}{online} = 1;
-                        $rps{$arg[4]}{nick} = $usernick;
-                        $rps{$arg[4]}{userhost} = $arg[0];
-                        $rps{$arg[4]}{created} = time();
-                        $rps{$arg[4]}{lastlogin} = time();
-                        $rps{$arg[4]}{pass} = crypt($arg[5],mksalt());
-                        $rps{$arg[4]}{x} = int(rand($opts{mapx}));
-                        $rps{$arg[4]}{y} = int(rand($opts{mapy}));
-                        $rps{$arg[4]}{alignment}="n";
-                        $rps{$arg[4]}{isadmin} = 0;
-                        for my $item ("ring","amulet","charm","weapon","helm",
-                                      "tunic","pair of gloves","shield",
-                                      "set of leggings","pair of boots") {
-                            $rps{$arg[4]}{item}{$item} = 0;
-                        }
-                        for my $pen ("pen_mesg","pen_nick","pen_part",
-                                     "pen_kick","pen_quit","pen_quest",
-                                     "pen_logout","pen_logout") {
-                            $rps{$arg[4]}{$pen} = 0;
-                        }
-                        chanmsg("Welcome $usernick\'s new player $arg[4], the ".
-                                "@arg[6..$#arg]! Next level in ".
-                                duration($opts{rpbase}).".");
-                        privmsg("Success! Account $arg[4] created. You have ".
-                                "$opts{rpbase} seconds idleness until you ".
-                                "reach level 1. ", $usernick);
+			my $uname=$arg[4];
+			++$registrations;
+			$lastreg = time();
+			$rps{$uname}{pass} = crypt($arg[5],mksalt());
+			$rps{$uname}{next} = $opts{rpbase};
+			$rps{$uname}{level} = 0;
+			$rps{$uname}{class} = "@arg[6..$#arg]";
+			$rps{$uname}{created} = time();
+			$rps{$uname}{lastlogin} = time();
+			$rps{$uname}{x} = int(rand($opts{mapx}));
+			$rps{$uname}{y} = int(rand($opts{mapy}));
+			$rps{$uname}{alignment}="n";
+			$rps{$uname}{gender}="u";
+			$rps{$uname}{nick} = $usernick;
+			$rps{$uname}{userhost} = $arg[0];
+			$rps{$uname}{online} = 1;
+			$rps{$uname}{isadmin} = 0;
+			for my $item (0..$#items) {
+			    $rps{$uname}{item}[$item] = 0;
+			}
+			for my $pen ("pen_mesg","pen_nick","pen_part",
+				     "pen_kick","pen_quit","pen_quest",
+				     "pen_logout","pen_logout") {
+			    $rps{$uname}{$pen} = 0;
+			}
+			chanmsg("Welcome $usernick\'s new player $uname, the ".
+				"@arg[6..$#arg]! Next level in ".
+				duration($opts{rpbase}).".");
+			privmsg("Success! Account $uname created. You have ".
+				"$opts{rpbase} seconds idleness until you ".
+				"reach level 1. ", $usernick);
                         privmsg("NOTE: The point of the game is to see who ".
                                 "can idle the longest. As such, talking in ".
                                 "the channel, parting, quitting, and changing ".
@@ -592,11 +664,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "delold") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to DELOLD.", $usernick);
-                }
                 # insure it is a number
-                elsif ($arg[4] !~ /^[\d\.]+$/) {
+		if ($arg[4] !~ /^[\d\.]+$/) {
                     privmsg("Try: DELOLD <# of days>", $usernick, 1);
                 }
                 else {
@@ -609,10 +678,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "del") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to DEL.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                    privmsg("Try: DEL <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -624,11 +690,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "mkadmin") {
-                if (!ha($username) || ($opts{owneraddonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to MKADMIN.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: MKADMIN <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -640,11 +702,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "deladmin") {
-                if (!ha($username) || ($opts{ownerdelonly} &&
-                    $opts{owner} ne $username)) {
-                    privmsg("You don't have access to DELADMIN.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: DELADMIN <char name>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -659,30 +717,31 @@ sub parse {
                             $usernick, 1);
                 }
             }
+            elsif ($arg[3] eq "brawl") {
+		my $updown = (defined($arg[4]) && $arg[4] eq 'evil') ? 1 : -1;
+		my %desc=(-1=>'righteous duel', 1=>'bloodthirsty brawl'); #civilised
+		chanmsg("$usernick has brought about a $desc{$updown}.");
+		brawl($updown);
+            }
             elsif ($arg[3] eq "hog") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to HOG.", $usernick);
-                }
-                else {
-                    chanmsg("$usernick has summoned the Hand of God.");
-                    hog();
-                }
+		chanmsg("$usernick has summoned the Hand of God.");
+		hog();
+            }
+            elsif ($arg[3] eq "event") {
+		my $updown = defined($arg[4]) ? ($arg[4] eq 'good') - ($arg[4] eq 'bad') : 0;
+		my %desc=(-1 => 'bad', 1 => 'good', 0 => 'random');
+		chanmsg("$usernick has brought about a $desc{$updown} event.");
+		modify_item($updown || (rand()>0.5)*2-1);
             }
             elsif ($arg[3] eq "rehash") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to REHASH.", $usernick);
-                }
-                else {
-                    readconfig();
-                    privmsg("Reread config file.",$usernick,1);
-                    $opts{botchan} =~ s/ .*//; # strip channel key if present
-                }
+		readconfig();
+		read_items();
+		read_events();
+		privmsg("Reread config file, items, and events.",$usernick,1);
+		$opts{botchan} =~ s/ .*//; # strip channel key if present
             }
             elsif ($arg[3] eq "chpass") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHPASS.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHPASS <char name> <new pass>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -694,10 +753,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "chuser") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHUSER.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHUSER <char name> <new char name>",
                             $usernick, 1);
                 }
@@ -714,10 +770,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "chclass") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to CHCLASS.", $usernick);
-                }
-                elsif (!defined($arg[5])) {
+		if (!defined($arg[5])) {
                     privmsg("Try: CHCLASS <char name> <new char class>",
                             $usernick, 1);
                 }
@@ -731,11 +784,8 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "push") {
-                if (!ha($username)) {
-                    privmsg("You don't have access to PUSH.", $usernick);
-                }
                 # insure it's a positive or negative, integral number of seconds
-                elsif ($arg[5] !~ /^\-?\d+$/) {
+		if ($arg[5] !~ /^\-?\d+$/) {
                     privmsg("Try: PUSH <char name> <seconds>", $usernick, 1);
                 }
                 elsif (!exists($rps{$arg[4]})) {
@@ -745,87 +795,73 @@ sub parse {
                     privmsg("Time to level for $arg[4] ($rps{$arg[4]}{next}s) ".
                             "is lower than $arg[5]; setting TTL to 0.",
                             $usernick, 1);
-                    chanmsg("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
-                            "seconds toward level ".($rps{$arg[4]}{level}+1));
+                    chanmsg_l("$usernick has pushed $arg[4] $rps{$arg[4]}{next} ".
+                              "seconds toward level ".($rps{$arg[4]}{level}+1));
                     $rps{$arg[4]}{next}=0;
                 }
                 else {
                     $rps{$arg[4]}{next} -= $arg[5];
-                     chanmsg("$usernick has pushed $arg[4] $arg[5] seconds ".
-                             "toward level ".($rps{$arg[4]}{level}+1).". ".
-                             "$arg[4] reaches next level in ".
-                             duration($rps{$arg[4]}{next}).".");
+                    chanmsg_l("$usernick has pushed $arg[4] $arg[5] seconds ".
+                              "toward level ".($rps{$arg[4]}{level}+1).". ".
+                              "$arg[4] reaches next level in ".
+                              duration($rps{$arg[4]}{next}).".");
                 }
-            }   
+            }
             elsif ($arg[3] eq "logout") {
-                if (defined($username)) {
-                    penalize($username,"logout");
+		penalize($username,"logout");
+            }
+            elsif ($arg[3] eq "newquest") {
+		if(@{$quest{questers}}) {
+                    privmsg("There is already a quest.",$usernick);
                 }
                 else {
-                    privmsg("You are not logged in.", $usernick);
+                    privmsg("A new quest will start shortly.",$usernick);
+                    $quest{qtime} = time(); # schedule it for now
                 }
             }
             elsif ($arg[3] eq "quest") {
                 if (!@{$quest{questers}}) {
                     privmsg("There is no active quest.",$usernick);
                 }
-                elsif ($quest{type} == 1) {
-                    privmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                            "$quest{questers}->[3] are on a quest to ".
-                            "$quest{text}. Quest to complete in ".
-                            duration($quest{qtime}-time()).".",$usernick);
-                }
-                elsif ($quest{type} == 2) {
-                    privmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                            "$quest{questers}->[3] are on a quest to ".
-                            "$quest{text}. Participants must first reach ".
-                            "[$quest{p1}->[0],$quest{p1}->[1]], then ".
-                            "[$quest{p2}->[0],$quest{p2}->[1]].".
-                            ($opts{mapurl}?" See $opts{mapurl} to monitor ".
-                            "their journey's progress.":""),$usernick);
-                }
+		elsif ($quest{type} == 1) {
+		    privmsg("$quest{text} Quest to complete in ".
+			    duration($quest{qtime}-time()).".", $usernick);
+		}
+		elsif ($quest{type} == 2) {
+		    privmsg("$quest{text} Participants must first reach ".
+			    "[$quest{p1}->[0],$quest{p1}->[1]], then ".
+			    "[$quest{p2}->[0],$quest{p2}->[1]].".
+			    ($opts{mapurl}?" See $opts{mapurl} to monitor ".
+			     "their journey's progress.":""), $usernick);
+		}
             }
             elsif ($arg[3] eq "status" && $opts{statuscmd}) {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
                 # argument is optional
-                elsif ($arg[4] && !exists($rps{$arg[4]})) {
+		if ($arg[4] && !exists($rps{$arg[4]})) {
                     privmsg("No such user.",$usernick);
                 }
-                elsif ($arg[4]) { # optional 'user' argument
-                    privmsg("$arg[4]: Level $rps{$arg[4]}{level} ".
-                            "$rps{$arg[4]}{class}; Status: O".
-                            ($rps{$arg[4]}{online}?"n":"ff")."line; ".
-                            "TTL: ".duration($rps{$arg[4]}{next})."; ".
-                            "Idled: ".duration($rps{$arg[4]}{idled}).
-                            "; Item sum: ".itemsum($arg[4]),$usernick);
-                }
-                else { # no argument, look up this user
-                    privmsg("$username: Level $rps{$username}{level} ".
-                            "$rps{$username}{class}; Status: O".
-                            ($rps{$username}{online}?"n":"ff")."line; ".
-                            "TTL: ".duration($rps{$username}{next})."; ".
-                            "Idled: ".duration($rps{$username}{idled})."; ".
-                            "Item sum: ".itemsum($username),$usernick);
+                else {
+		    my $u=$arg[4]//$username;
+                    privmsg("$u: Level $rps{$u}{level} ".
+                            "$rps{$u}{class}; Status: O".
+                            ($rps{$u}{online}?"n":"ff")."line; ".
+                            "TTL: ".duration($rps{$u}{next})."; ".
+                            "Idled: ".duration($rps{$u}{idled}).
+                            "; Item sum: ".itemsum($u),$usernick);
                 }
             }
             elsif ($arg[3] eq "whoami") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick);
-                }
-                else {
-                    privmsg("You are $username, the level ".
-                            $rps{$username}{level}." $rps{$username}{class}. ".
-                            "Next level in ".duration($rps{$username}{next}),
-                            $usernick);
-                }
+		privmsg("You are $username, the level ".
+			$rps{$username}{level}." $rps{$username}{class}. ".
+			"Next level in ".duration($rps{$username}{next}),
+			$usernick);
+            }
+            elsif ($arg[3] eq "inventory") {
+		my @list = map { item_describe($_,$rps{$username}{item}[$_],1,1); }(0..$#items);
+		privmsg("You are carrying ". comma_list(\@list), $usernick);
             }
             elsif ($arg[3] eq "newpass") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: NEWPASS <new password>", $usernick);
                 }
                 else {
@@ -833,12 +869,19 @@ sub parse {
                     privmsg("Your password was changed.",$usernick);
                 }
             }
-            elsif ($arg[3] eq "align") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+            elsif ($arg[3] eq "newclass") {
+                if (!defined($arg[4])) {
+                    privmsg("Try: NEWCLASS <new class>", $usernick);
                 }
-                elsif (!defined($arg[4]) || (lc($arg[4]) ne "good" && 
-                       lc($arg[4]) ne "neutral" && lc($arg[4]) ne "evil")) {
+                else {
+                    $rps{$username}{class} = "@arg[4..$#arg]";
+                    privmsg("Class for $username changed to @arg[4..$#arg].",
+                            $usernick, 1);
+                }
+            }
+            elsif ($arg[3] eq "align") {
+                if (!defined($arg[4]) ||
+		    (lc($arg[4]) ne "good" && lc($arg[4]) ne "neutral" && lc($arg[4]) ne "evil")) {
                     privmsg("Try: ALIGN <good|neutral|evil>", $usernick);
                 }
                 else {
@@ -849,16 +892,22 @@ sub parse {
                             $usernick);
                 }
             }
-            elsif ($arg[3] eq "removeme") {
-                if (!defined($username)) {
-                    privmsg("You are not logged in.", $usernick)
+            elsif ($arg[3] eq "gender") {
+		if (!defined($arg[4]) || !defined($hesheit{lc($arg[4])})) {
+                    privmsg("Try: GENDER <m|f|n|u|pc>", $usernick);
                 }
                 else {
-                    privmsg("Account $username removed.",$usernick);
-                    chanmsg("$arg[0] removed his account, $username, the ".
-                            $rps{$username}{class}.".");
-                    delete($rps{$username});
+                    $rps{$username}{gender} = lc($arg[4]);
+                    chanmsg("$username has changed gender to: ".lc($arg[4]).".");
+                    privmsg("Your gender was changed to ".lc($arg[4]).".",
+                            $usernick);
                 }
+            }
+            elsif ($arg[3] eq "removeme") {
+		privmsg("Account $username removed.",$usernick);
+		chanmsg("$arg[0] removed his account, $username, the ".
+			$rps{$username}{class}.".");
+		delete($rps{$username});
             }
             elsif ($arg[3] eq "help") {
                 if (!ha($username)) {
@@ -872,20 +921,12 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "die") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to DIE.", $usernick);
-                }
-                else {
-                    $opts{reconnect} = 0;
-                    writedb();
-                    sts("QUIT :DIE from $arg[0]",1);
-                }
+		$opts{reconnect} = 0;
+		writedb();
+		sts("QUIT :DIE ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
             }
             elsif ($arg[3] eq "reloaddb") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to RELOADDB.", $usernick);
-                }
-                elsif (!$pausemode) {
+		if (!$pausemode) {
                     privmsg("ERROR: Can only use LOADDB while in PAUSE mode.",
                             $usernick, 1);
                 }
@@ -896,29 +937,16 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "backup") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to BACKUP.", $usernick);
-                }
-                else {
-                    backup();
-                    privmsg("$opts{dbfile} copied to ".
-                            ".dbbackup/$opts{dbfile}".time(),$usernick,1);
-                }
+		backup();
+		privmsg("$opts{dbfile} copied to ".
+			".dbbackup/$opts{dbfile}".time(),$usernick,1);
             }
             elsif ($arg[3] eq "pause") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to PAUSE.", $usernick);
-                }
-                else {
-                    $pausemode = $pausemode ? 0 : 1;
-                    privmsg("PAUSE_MODE set to $pausemode.",$usernick,1);
-                }
+		$pausemode = $pausemode ? 0 : 1;
+		privmsg("PAUSE_MODE set to $pausemode.",$usernick,1);
             }
             elsif ($arg[3] eq "silent") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to SILENT.", $usernick);
-                }
-                elsif (!defined($arg[4]) || $arg[4] < 0 || $arg[4] > 3) {
+		if (!defined($arg[4]) || $arg[4] < 0 || $arg[4] > 3) {
                     privmsg("Try: SILENT <mode>", $usernick,1);
                 }
                 else {
@@ -927,10 +955,7 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "jump") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to JUMP.", $usernick);
-                }
-                elsif (!defined($arg[4])) {
+		if (!defined($arg[4])) {
                     privmsg("Try: JUMP <server[:port]>", $usernick, 1);
                 }
                 else {
@@ -943,30 +968,21 @@ sub parse {
                 }
             }
             elsif ($arg[3] eq "restart") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to RESTART.", $usernick);
-                }
-                else {
-                    writedb();
-                    sts("QUIT :RESTART from $arg[0]",1);
-                    close($sock);
-                    exec("perl $0");
-                }
+		writedb();
+		sts("QUIT :RESTART ".($#arg>3?"'@arg[4..$#arg]' ":'')."from $usernick",1);
+		close($sock);
+		exec("perl $0");
             }
             elsif ($arg[3] eq "clearq") {
-                if (!ha($username)) {
-                    privmsg("You do not have access to CLEARQ.", $usernick);
-                }
-                else {
-                    undef(@queue);
-                    chanmsg("Outgoing message queue cleared by $arg[0].");
-                    privmsg("Outgoing message queue cleared.",$usernick,1);
-                }
+		undef(@queue);
+		chanmsg("Outgoing message queue cleared by $arg[0].");
+		privmsg("Outgoing message queue cleared.",$usernick,1);
             }
             elsif ($arg[3] eq "info") {
                 my $info;
                 if (!ha($username) && $opts{allowuserinfo}) {
-                    $info = "IRPG bot v$version by jotun, ".
+		    my $hash=$versionhash?(" (".substr($versionhash,0,12).")"):'';
+		    $info = "IRPG bot v$version$hash by jotun et al., ".
                             "http://idlerpg.net/. On via server: ".
                             $opts{servers}->[0].". Admins online: ".
                             join(", ", map { $rps{$_}{nick} }
@@ -1041,114 +1057,25 @@ sub parse {
                     }
                 }
             }
-
-            #
-            # normal users
-            # teleport <x> <y>
-            #
-            elsif ($arg[3] eq "teleport") {
-                if ($#arg < 5 || $arg[5] eq "" || (($arg[4] !~ /^\d+$/) && ($arg[5] !~ /^\d+$/))) {
-                    privmsg("Try: TELEPORT <x> <y>", $usernick, 1);
-                } else {
-                    privmsg("You are not eligible to use TELEPORT.", $usernick, 1, 1);
-                }
+            elsif ($arg[3] eq 'itemlevel') { # debugging aid
+		my ($ok, $typeid, $level, $nlevel) = ($arg[4] =~ /^(\d+)([a-z])$/)
+		    ? (defined($uniques[$uniques{$2}]), $uniques[$uniques{$2}]->{typeid}, $arg[4], $1)
+		    : (1, $arg[4], $arg[5], $arg[5]);
+		if(!$ok or $typeid<0 or $typeid>$#items or $nlevel<0 or $nlevel>999) {
+		    notice("0 <= item <= $#items, 0 <= level <= 999", $usernick);
+		}
+		else {
+		    notice("itemlevel($typeid,$level) = ".item_describe($typeid,$level,0,1),
+			   $usernick); 
+		}
             }
-
-            #
-            # normal users
-            # fight <Player>
-            #
-            elsif ($arg[3] eq "fight") {
-                if ($#arg < 4 || $arg[4] eq "") {
-                    privmsg("Try: FIGHT <Player>", $usernick, 1);
-                } elsif (!exists($rps{$arg[4]})) {
-                    privmsg("No such username $arg[4].", $usernick, 1, 1);
-                } else {
-                    privmsg("You are not eligible to use FIGHT.", $usernick, 1);
-                }
-            }
-
-            #
-            # admin only
-            # irc <irc raw command>
-            #
-            elsif ($arg[3] eq "irc") {
-                if (!ha($username)) {
-                   privmsg("You do not have access loser.", $usernick, 1);
-                } else {
-                   privmsg("Okay.", $usernick, 1);
-                   sts("@arg[4..$#arg]",1);
-                }
-            }
-
-            #
-            # admin only
-            # topic
-            #
-            elsif ($arg[3] eq "topic") {
-                if (!ha($username)) {
-                   privmsg("You do not have access loser.", $usernick, 1);
-                } else {
-                   privmsg("Okay.", $usernick, 1);
-                   my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
-                      $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
-
-                   my $top = "";
-                   for my $i (0..2) {
-                       $#u >= $i and
-                       $top .= "#".($i+1).": $u[$i], lv. $rps{$u[$i]}{level} $rps{$u[$i]}{class}; ";
-                   }
-                   sts("TOPIC $opts{botchan} :@arg[4..$#arg] $top", 1);
-                }
-            }
-
-            #
-            # admin only
-            # move <Player> <x> <y>
-            #
-            elsif ($arg[3] eq "move") {
-                if (!ha($username)) {
-                   privmsg("You do not have access loser.", $usernick, 1);
-                } else {
-                    if ($#arg < 6 || $arg[6] eq "" || (($arg[5] !~ /^\d+$/) && ($arg[6] !~ /^\d+$/))) {
-                        privmsg("Try: MOVE <Player> <x> <y>", $usernick, 1);
-                    } elsif (!exists($rps{$arg[4]})) {
-                       privmsg("No such username $arg[4].", $usernick, 1, 1);
-                    } else {
-                        my $old_x = $rps{$arg[4]}{x};
-                        my $old_y = $rps{$arg[4]}{y};
-                        $rps{$arg[4]}{x} = $arg[5];
-                        $rps{$arg[4]}{y} = $arg[6];
-                        privmsg("Moved $arg[4] from $old_x,$old_y to $rps{$arg[4]}{x},$rps{$arg[4]}{y}.", $usernick, 1, 1);
-                    }
-                }
-            }
-
-            #
-            # admin only
-            # pit <Player 1> <Player 2>
-            #
-            elsif ($arg[3] eq "pit") {
-                if (!ha($username)) {
-                   privmsg("You do not have access loser.", $usernick, 1);
-                } else {
-                    if ($#arg < 5 || $arg[5] eq "") {
-                        privmsg("Try: PIT <Player 1> <Player 2>", $usernick, 1);
-                    } elsif (!exists($rps{$arg[4]})) {
-                        privmsg("No such username $arg[4].", $usernick, 1, 1);
-                    } elsif (!exists($rps{$arg[5]})) {
-                        privmsg("No such username $arg[5].", $usernick, 1, 1);
-                    } else {
-                       collision_fight($arg[4], $arg[5]);
-                       privmsg("Pit $arg[4] against $arg[5].", $usernick, 1);
-                    }
-                }
-            }
-
-
-
+	    elsif ($arg[3] eq 'eventtest' and $arg[4] =~ /^([WLGCHE])$/i) {
+		my $t=$1;
+		my @p = ($arg[5]//'name1');
+		if($t=~/H/) { push(@p, $arg[6]//'name2'); }
+		notice(get_event($t, \@p, rand()), $usernick);
+	    }
         }
-
         # penalize returns true if user was online and successfully penalized.
         # if the user is not logged in, then penalize() fails. so, if user is
         # offline, and they say something including "http:", and they've been on
@@ -1225,18 +1152,13 @@ sub fq { # deliver message(s) from queue
     }
 }
 
-sub ttl { # return ttl
-    my $lvl = shift;
+sub ttl( $ ) {
+    my $lvl = $_[0];
     return ($opts{rpbase} * ($opts{rpstep}**$lvl)) if $lvl <= 60;
-    return (($opts{rpbase} * ($opts{rpstep}**60))
-             + (86400*($lvl - 60)));
+    return (($opts{rpbase} * ($opts{rpstep}**60)) + (86400*($lvl - 60)));
 }
-
-sub penttl { # return ttl with $opts{rppenstep}
-    my $lvl = shift;
-    return ($opts{rpbase} * ($opts{rppenstep}**$lvl)) if $lvl <= 60;
-    return (($opts{rpbase} * ($opts{rppenstep}**60))
-             + (86400*($lvl - 60)));
+sub itemttl($) {
+    return int($opts{rpitembase} * $_[0]);
 }
 
 sub duration { # return human duration of seconds
@@ -1244,6 +1166,89 @@ sub duration { # return human duration of seconds
     return "NA ($s)" if $s !~ /^\d+$/;
     return sprintf("%d day%s, %02d:%02d:%02d",$s/86400,int($s/86400)==1?"":"s",
                    ($s%86400)/3600,($s%3600)/60,($s%60));
+}
+
+sub unique_describe($$) { # uref, level
+    my ($uref, $level)=@_;
+    my $string=$uref->{desc};
+    my $haslevel = ($string =~ s/%ulevel%/$_[1]/g);
+    return ($haslevel ? '' : "level $_[1] ") . $string;
+}
+sub plain_describe($$) { # typeid, level
+    my ($typeid,$level) = @_;
+    if(!defined($levels[$typeid])) { return "level $level"; }
+    my ($lev,$ind)=(-1,-1);
+    my ($marker,$op,$deltaset,$deltasetlen,$deltaind,$marklast,$prec);
+    while($lev<$level) {
+	#print STDERR ("$lev<$level, ind=$ind".
+	#              ($delta?", stepping=($marker,$op,$delta,$marklast)\n":"\n"));
+        ++$lev;
+        if($op) {
+	    my $delta=$deltaset->[$deltaind];
+            $marker = ($op eq '+') ? $marker+$delta 
+                : ($op eq '-') ? $marker-$delta 
+                : $marker*$delta;
+            # Ensure accuracy is sensibly represented at every step, 
+            # as we need to check our bounds correctly, and don't
+            # want errors to accumulate.
+	    $marker=sprintf("%.${prec}f", $marker);
+	    $deltaind=($deltaind+1)%$deltasetlen;
+            if(defined($marklast) && 
+               (($op eq '-') ? $marker<=$marklast : $marker>=$marklast)) {
+                undef($op); 
+            }
+        }
+        else {
+            ++$ind;
+            if($levels[$typeid][$ind] =~ /%\{([\d.]+)\#([-+*])([\d.:]+)(?:\#([\d.]+))?}%/) {
+		my $deltaall;
+                ($marker,$op,$deltaall,$marklast) = ($1,$2,$3,$4);
+		$deltaset=[split(':',$deltaall)];
+		$deltasetlen=scalar(@$deltaset);
+		$deltaind=0;
+		$prec=($deltasetlen==1?$deltaset->[0]:$marker) !~ m/\.(\d+)/ ? 0 : length($1);
+            }
+        }
+    }
+    my $template = $levels[$typeid][$ind];
+    if(defined($marker)) {
+        $template =~ s/%\{([\d.]+)\#([-+*])([\d.:]+)(?:\#([\d.]+))?}%/$marker/;
+    }
+    return $template;
+}
+sub item_describe($$$$) { # typeid, level, article, saytype
+    my ($typeid,$level,$article,$saytype)=@_;
+    my $desc;
+    if($_[1] =~ m/^(\d+)([a-z])/) {
+	$desc = unique_describe($uniques[$uniques{$2}], int($1));
+	$article = $article?"the ":'';
+	$saytype=0; # presume uniques always include some kind of type
+    } else {
+	$desc = plain_describe($_[0], int($_[1]));
+	$article = $article?"a ":'';
+    }
+    if($desc !~ s/^!a // and $article) {
+	if(lc($article) eq 'a ' and $desc =~ /^[aeiouy18]/ and
+	   $desc !~ /^(?:1(?:[^18][^0-9]|[0-9][0-9])|e[uw]|onc?e|uni[^nmd]|u[bcfhjkqrst][aeiou])/) {
+	    substr($article,1,0) = 'n'; # would also work for A/An
+	}
+	$desc = $article . $desc;
+    }
+    my $type=$items[$typeid];
+    my %types = ( type=>$type, Type=>ucfirst($type), TYPE=>uc($type), notype=>'' );
+    if($desc !~ s/%((?:no|)type)%/$types{$1}/ig and $saytype) { $desc .= " $items[$typeid]"; }
+    return $desc;
+}
+sub user_item($$) {
+    return $rps{$_[0]}{item}[$_[1]];
+}
+sub item_val($) {
+    $_[0] =~ /^(\d+)/;
+    return $1;
+}
+
+sub user_item_val($$) {
+    return item_val(user_item($_[0], $_[1]));
 }
 
 sub ts { # timestamp
@@ -1255,28 +1260,20 @@ sub ts { # timestamp
 sub hog { # summon the hand of god
     my @players = grep { $rps{$_}{online} } keys(%rps);
     my $player = $players[rand(@players)];
-    my $win = int(rand(5));
-    my $time = int(((5 + int(rand(71)))/100) * $rps{$player}{next});
-    if ($win) {
-        chanmsg(clog("Verily I say unto thee, the Heavens have burst forth, ".
-                     "and the blessed hand of God carried $player ".
-                     duration($time)." toward level ".($rps{$player}{level}+1).
-                     "."));
-        $rps{$player}{next} -= $time;
-    }
-    else {
-        chanmsg(clog("Thereupon He stretched out His little finger among them ".
-                     "and consumed $player with fire, slowing the heathen ".
-                     duration($time)." from level ".($rps{$player}{level}+1).
-                     "."));
-        $rps{$player}{next} += $time;
-    }
+    my $win = !!int(rand(5));
+    my $rand = rand();
+    my $time = int(((5 + int($rand*71))/100) * $rps{$player}{next});
+    my $event = get_event($win?'W':'L', [$player], $rand);
+    chanmsg_l("$event ".duration($time)." $tofrom[$win] level ".
+              ($rps{$player}{level}+1).".");
+    $rps{$player}{next} += $win ? -$time : $time;
     chanmsg("$player reaches next level in ".duration($rps{$player}{next}).".");
 }
 
 sub rpcheck { # check levels, update database
     # check splits hash to see if any split users have expired
     checksplits() if $opts{detectsplits};
+    checkdisconnect() if $opts{detectdisconnect};
     # send out $freemessages lines of text from the outgoing message queue
     fq();
     # clear registration limiting
@@ -1301,22 +1298,19 @@ sub rpcheck { # check levels, update database
         godsend() if rand(2000) < 1;
     }
     if (rand((8*86400)/$opts{self_clock}) < $onlineevil) { evilness(); }
-    if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { goodness(); }
+    if (rand((12*86400)/$opts{self_clock}) < $onlinegood) { holiness(); }
     if (rand((10*86400)/$opts{self_clock}) < 1) { war(); }
 
     moveplayers();
-    process_items();
-    
+    process_items() if($opts{itemdbfile});
+
     # statements using $rpreport do not bother with scaling by the clock because
     # $rpreport is adjusted by the number of seconds since last rpcheck()
-    if (($rpreport%120 < $oldrpreport%120) && $opts{writequestfile}) { writequestfile(); }
-    if (time() > $quest{qtime}) {
+    if (report_threshold(120) && $opts{questfilename}) { writequestfile(); }
+    if (defined($quest{qtime}) and time() > $quest{qtime}) {
         if (!@{$quest{questers}}) { quest(); }
         elsif ($quest{type} == 1) {
-            chanmsg(clog(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                         "$quest{questers}->[3] have blessed the realm by ".
-                         "completing their quest! 25% of their burden is ".
-                         "eliminated."));
+	    chanmsg_l(get_event("QS",$quest{questers},undef));
             for (@{$quest{questers}}) {
                 $rps{$_}{next} = int($rps{$_}{next} * .75);
             }
@@ -1325,11 +1319,26 @@ sub rpcheck { # check levels, update database
         }
         # quest type 2 awards are handled in moveplayers()
     }
-    if ($rpreport && ($rpreport%36000 < $oldrpreport%36000)) { # 10 hours
+    if ($rpreport && report_threshold(43200)) { # twice-daily penance
+	my @repentant = grep { $rps{$_}{online} &&
+			     # $rps{$_}{alignment} ne 'e' &&
+			       $rps{$_}{next} > 2*ttl($rps{$_}{level}) &&
+			       $rps{$_}{level} > 0; } keys(%rps);
+	for my $r (@repentant) {
+	    # Supplication may make a comment about the current level
+	    my $supplication = get_event('P'.uc($rps{$r}{alignment}), [$r], undef);
+	    # Penance may make a comment about the destination level
+	    $rps{$r}{level}--;
+	    my $penance = get_event('P', [$r], undef);
+	    chanmsg_l("$supplication $penance");
+	    $rps{$r}{next} = int(ttl($rps{$r}{level}));
+	}
+    }				 
+    if ($rpreport && report_threshold($opts{top_period}//36000)) { # default 10 hours
         my @u = sort { $rps{$b}{level} <=> $rps{$a}{level} ||
                        $rps{$a}{next}  <=> $rps{$b}{next} } keys(%rps);
-        chanmsg("IdleRPG Top Players:") if @u;
-        for my $i (0..4) {
+        chanmsg("Idle RPG Top Players:") if @u;
+        for my $i (0..9) {
             $#u >= $i and
             chanmsg("$u[$i], the level $rps{$u[$i]}{level} ".
                     "$rps{$u[$i]}{class}, is #" . ($i + 1) . "! Next level in ".
@@ -1337,32 +1346,35 @@ sub rpcheck { # check levels, update database
         }
         backup();
     }
-    if (($rpreport%3600 < $oldrpreport%3600) && $rpreport) { # 1 hour
+    if ($rpreport && report_threshold($opts{chal_period}//3600)) { # 1 hour
         my @players = grep { $rps{$_}{online} &&
                              $rps{$_}{level} > 44 } keys(%rps);
         # 20% of all players must be level 45+
         if ((scalar(@players)/scalar(grep { $rps{$_}{online} } keys(%rps))) > .15) {
             challenge_opp($players[int(rand(@players))]);
         }
+    }
+    if ($rpreport && report_threshold(3600)) { # 1 hour
         while (@bans) {
             sts("MODE $opts{botchan} -bbbb :@bans[0..3]");
             splice(@bans,0,4);
         }
     }
-    if ($rpreport%1800 < $oldrpreport%1800) { # 30 mins
+    if (report_threshold(1800)) { # 30 mins
         if ($opts{botnick} ne $primnick) {
-            sts($opts{botghostcmd}) if $opts{botghostcmd};
+            (my $ghostcmd = $opts{botghostcmd}) =~ s/%(owner|botnick)%/$opts{$1}/eg;
+            sts($ghostcmd) if $ghostcmd;
             sts("NICK $primnick");
         }
     }
-    if (($rpreport%600 < $oldrpreport%600) && $pausemode) { # warn every 10m
+    if (report_threshold(600) && $pausemode) { # warn every 10m
         chanmsg("WARNING: Cannot write database in PAUSE mode!");
     }
     # do not write in pause mode, and do not write if not yet connected. (would
     # log everyone out if the bot failed to connect. $lasttime = time() on
     # successful join to $opts{botchan}, initial value is 1). if fails to open
     # $opts{dbfile}, will not update $lasttime and so should have correct values
-    # on next rpcheck(). 
+    # on next rpcheck().
     if ($lasttime != 1) {
         my $curtime=time();
         for my $k (keys(%rps)) {
@@ -1371,12 +1383,12 @@ sub rpcheck { # check levels, update database
                 $rps{$k}{next} -= ($curtime - $lasttime);
                 $rps{$k}{idled} += ($curtime - $lasttime);
                 if ($rps{$k}{next} < 1) {
-                    my $ttl = int(ttl($rps{$k}{level}));
                     $rps{$k}{level}++;
-                    $rps{$k}{next} += $ttl;
+		    my $ttl = int(ttl($rps{$k}{level}));
+		    $rps{$k}{next} += $ttl;
                     chanmsg("$k, the $rps{$k}{class}, has attained level ".
                             "$rps{$k}{level}! Next level in ".
-                            duration($ttl).".");
+                            duration($rps{$k}{next}).".");
                     find_item($k);
                     challenge_opp($k);
                 }
@@ -1384,10 +1396,88 @@ sub rpcheck { # check levels, update database
             # attempt to make sure this is an actual user, and not just an
             # artifact of a bad PEVAL
         }
-        if (!$pausemode && ($rpreport%60 < $oldrpreport%60)) { writedb(); }
-        $oldrpreport = $rpreport;
-        $rpreport += $curtime - $lasttime;
+	if (!$pausemode && report_threshold(60)) { writedb(); }
+	$oldrpreport = $rpreport;
+	$rpreport += $curtime - $lasttime;
         $lasttime = $curtime;
+    }
+}
+
+sub swap_items($$$) { # items will have their types automatically appended
+    my ($u,$opp,$message)=@_;
+    my $typeid = int(rand(@items));
+    my $type = $items[$typeid];
+    my $mylevel = user_item_val($u,$typeid);
+    my $opplevel = user_item_val($opp,$typeid);
+    if ($opplevel > $mylevel) {
+	my $myitem = user_item($u,$typeid);
+	my $oppitem = user_item($opp,$typeid);
+	$message = rewrite_for_items($message, $type, 
+				     [item_describe($typeid,$myitem,0,1), 
+				      item_describe($typeid,$oppitem,0,1)]);
+	$message = rewrite_for_players($message, [$u, $opp]);
+	chanmsg_l($message);
+	$rps{$u}{item}[$typeid] = $oppitem;
+	$rps{$opp}{item}[$typeid] = $myitem;
+	return undef;
+    }
+    return $type;
+}
+
+sub battle_result($$) {
+    my ($delta,$them)=@_;
+    my $phrase = 'has a blow-less standoff, considering it a victory'; # draws
+    #              1       3       9        27        81          243      729     2187
+    my @results=qw/chaffed bruised battered pummelled overpowered defeated crushed destroyed/;
+    if($delta<0) { while($delta<=-1) { $phrase="but is ".shift(@results); $delta/=3; } }
+    else       { while($delta>=1) { $phrase="and ".shift(@results)." $them"; $delta/=3; } }
+    return $phrase;
+}
+
+sub simple_fight($$$$) {
+    my @p=($_[0],$_[1]);
+    my ($flag,$chal) = ($_[2]<=>0, $_[3]); # opp can only be primnick in a challenge fight
+    my @sum = map { itemsum($_,1); } @p;
+    my @roll = map { int(rand($_)); } @sum;
+    my $winner = $roll[0] >= $roll[1] ? 0 : 1; # asymmetry - FIX!
+    my $loser = 1-$winner; # not used much - is it worth having?
+    my $changer = (0, $loser, $winner)[$flag]; # use [-1] to access final element
+    my $nochange = 1-$changer; # want $p[$nochange] more often than this
+    my $sign = $flag || (2*$winner-1); # 0 -> p0wins=-1, p0loses=+1
+    my $gain = ($p[$nochange] eq $primnick) ? (15-5*$sign) : int($rps{$p[$nochange]}{level}/4);
+    $gain = 7 if $gain < 7;
+    if($p[$changer] eq $primnick) { # bot can't change, pretend nothing happened
+	chanmsg_l("There's tension in the air, but nobody does anything.");
+	return 0;
+    }
+    $gain = int(($gain/100)*$rps{$p[$changer]}{next});
+    my $gainmsg = duration($gain)." is ".($sign>0?"added to":"removed from")." $p[$changer]\'s clock";
+    my $them = $p[1] eq $primnick ? "them" : them($p[1]);
+    chanmsg_l("$p[0] [$roll[0]/$sum[0]] has $chal $p[1] [$roll[1]/$sum[1]] ".
+	      battle_result($roll[0]-$roll[1],$them)." in combat! $gainmsg.");
+    $rps{$p[$changer]}{next} += $sign * $gain;
+    chanmsg("$p[$changer] reaches next level in ".duration($rps{$p[$changer]}{next}).".");
+    return ($roll[0]-$roll[1])/($sum[$winner]||1);
+}
+
+sub fight_with_side_effects($$$) {
+    my($u,$opp,$chal) = @_; # opp can only be primnick in a challenge fight
+    my $delta=simple_fight($u,$opp,0,$chal);
+    if (($delta<0) or ($opp eq $primnick)) { return; }
+    my $csfactor = ($chal=~m/^ch/ && $rps{$u}{alignment} eq "g") ? 50
+	: ($chal=~m/^ch/ && $rps{$u}{alignment} eq "e") ? 20
+	: 35;
+    if (rand($csfactor) < 1) {
+	my $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
+	chanmsg_l("$u has dealt $opp a Critical Strike! ".
+		  duration($gain)." is added to $opp\'s clock.");
+	$rps{$opp}{next} += $gain;
+	chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).".");
+    }
+    elsif (rand(25) < 1 && $rps{$u}{level} > 19) {
+	swap_items($u, $opp,
+		   "In the fierce battle, %player1% dropped %their1% %item1%! ".
+		   "%player0% picks it up, tossing %their0% old %item0% to %player1%");
     }
 }
 
@@ -1469,90 +1559,27 @@ sub war { # let the four quadrants battle
 sub challenge_opp { # pit argument player against random player
     my $u = shift;
     if ($rps{$u}{level} < 25) { return unless rand(4) < 1; }
-    my @opps = grep { $rps{$_}{online} && $u ne $_ } keys(%rps);
-    return unless @opps;
+    my @opps = grep { $rps{$_}{online} } keys(%rps);
+    return unless scalar(@opps)>1;
     my $opp = $opps[int(rand(@opps))];
-    $opp = $primnick if rand(@opps+1) < 1;
-    my $mysum = itemsum($u,1);
-    my $oppsum = itemsum($opp,1);
-    my $myroll = int(rand($mysum));
-    my $opproll = int(rand($oppsum));
-    if ($myroll >= $opproll) {
-        my $gain = ($opp eq $primnick)?20:int($rps{$opp}{level}/4);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                     "$oppsum] in combat and won! ".duration($gain)." is ".
-                     "removed from $u\'s clock."));
-        $rps{$u}{next} -= $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-        my $csfactor = $rps{$u}{alignment} eq "g" ? 50 :
-                       $rps{$u}{alignment} eq "e" ? 20 :
-                       35;
-        if (rand($csfactor) < 1 && $opp ne $primnick) {
-            $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg(clog("$u has dealt $opp a Critical Strike! ".
-                         duration($gain)." is added to $opp\'s clock."));
-            $rps{$opp}{next} += $gain;
-            chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
-                    ".");
-        }
-        elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                         "pair of gloves","set of leggings","shield",
-                         "pair of boots");
-            my $type = $items[rand(@items)];
-            if (itemlevel($rps{$opp}{item}{$type}) > itemlevel($rps{$u}{item}{$type})) {
-                chanmsg(clog("In the fierce battle, $opp dropped his level ".
-                             itemlevel($rps{$opp}{item}{$type})." $type! $u picks ".
-                             "it up, tossing his old level ".
-                             itemlevel($rps{$u}{item}{$type})." $type to $opp."));
-                my $tempitem = $rps{$u}{item}{$type};
-                $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
-                $rps{$opp}{item}{$type} = $tempitem;
-            }
-        }
-    }
-    else {
-        my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has challenged $opp [$opproll/".
-                     "$oppsum] in combat and lost! ".duration($gain)." is ".
-                     "added to $u\'s clock."));
-        $rps{$u}{next} += $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-    }
+    $opp = $primnick if ($opp eq $u);
+    fight_with_side_effects($u,$opp,"challenged");
+}
+
+sub brawl($) {
+    my @players = grep { $rps{$_}{online} } keys(%rps);
+    return unless(scalar(@players)>=2);
+    my $u = $players[int(rand(@players))];
+    my $opp;
+    while(($opp=$players[int(rand(@players))]) eq $u) { ; }
+    simple_fight($u,$opp,$_[0],"been forced to fight");
 }
 
 sub team_battle { # pit three players against three other players
     my @opp = grep { $rps{$_}{online} } keys(%rps);
     return if @opp < 6;
-    # choose random point       
-    my $x = int(rand($opts{mapx}));
-    my $y = int(rand($opts{mapy}));
-    my %polar = ();
-    for my $player (@opp) {   
-        my $dx = $rps{$player}{x}-$x;
-        my $dy = $rps{$player}{y}-$y;
-        # polar coordinates
-        $polar{$player}{r} = sqrt($dx*$dx+$dy*$dy);
-        $polar{$player}{phi} = atan2($dy,$dx)      
-    }
-    # sort by radius 
-    my @sorted = sort { $polar{$a}{r} <=> $polar{$b}{r} } keys %polar;
-    # get players at least as close as #6
-    @sorted = grep { $polar{$_}{r} <= $polar{$sorted[5]}{r} } @sorted;
-    # pick 6 random players from these  
-    @opp = ();
-    for (my $i = 0; $i < 6; $i++) {
-        $opp[$i] = splice(@sorted,int(rand(@sorted)),1);  
-    }
-    # sort by angle
-    @opp = sort { $polar{$a}{phi} <=> $polar{$b}{phi} } @opp;
-    # shift splitting position
-    my $rot = int(rand(6));
-    @opp = @opp[$rot..5,0..$rot-1];  
+    splice(@opp,int(rand(@opp)),1) while @opp > 6;
+    fisher_yates_shuffle(\@opp);
     my $mysum = itemsum($opp[0],1) + itemsum($opp[1],1) + itemsum($opp[2],1);
     my $oppsum = itemsum($opp[3],1) + itemsum($opp[4],1) + itemsum($opp[5],1);
     my $gain = $rps{$opp[0]}{next};
@@ -1563,218 +1590,133 @@ sub team_battle { # pit three players against three other players
     my $myroll = int(rand($mysum));
     my $opproll = int(rand($oppsum));
     if ($myroll >= $opproll) {
-        chanmsg(clog("$opp[0], $opp[1] and $opp[2] [$myroll/$mysum] have team ".
-                     "battled $opp[3], $opp[4] and $opp[5] [$opproll/$oppsum] ".
-                     "at [$x,$y] and won! ".duration($gain)." is removed ".
-                     "from their clocks."));
+        chanmsg_l("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
+                  "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
+                  "$oppsum] and won! ".duration($gain)." is removed from ".
+                  "their clocks.");
         $rps{$opp[0]}{next} -= $gain;
         $rps{$opp[1]}{next} -= $gain;
         $rps{$opp[2]}{next} -= $gain;
     }
     else {
-        chanmsg(clog("$opp[0], $opp[1] and $opp[2] [$myroll/$mysum] have team ".
-                     "battled $opp[3], $opp[4] and $opp[5] [$opproll/$oppsum] ".
-                     "at [$x,$y] and lost! ".duration($gain)." is added ".
-                     "to their clocks."));
+        chanmsg_l("$opp[0], $opp[1], and $opp[2] [$myroll/$mysum] have ".
+                  "team battled $opp[3], $opp[4], and $opp[5] [$opproll/".
+                  "$oppsum] and lost! ".duration($gain)." is added to ".
+                  "their clocks.");
         $rps{$opp[0]}{next} += $gain;
         $rps{$opp[1]}{next} += $gain;
         $rps{$opp[2]}{next} += $gain;
     }
 }
 
-sub itemlevel {
-    my $level = shift;
-    $level =~ s/\D$//;
-    return $level;
-}
-
-sub itemtag {
-    my $level = shift;
-    $level =~ s/^\d+//;
-    return $level;
-}
-
-sub process_items { # decrease items lying around
-    my $curtime = time();
-
-    for my $xy (keys(%mapitems)) {
-        for my $i (0..$#{$mapitems{$xy}}) {
-            my $level = $mapitems{$xy}[$i]{level};
-            my $ttl = int($opts{rpitembase} * ttl(itemlevel($level)) / 600);
-            if ($mapitems{$xy}[$i]{lasttime} + $ttl <= $curtime ) {
-               $mapitems{$xy}[$i]{lasttime} += $ttl;
-               $mapitems{$xy}[$i]{level} = downgrade_item($level);
-               splice(@{$mapitems{$xy}},$i,1) if ($mapitems{$xy}[$i]{level} == 0);
-               delete($mapitems{$xy}) if (scalar(@{$mapitems{$xy}} == 0));
-            }
-        }
-    }
-}
-
-sub drop_item { # drop item on the map
-    my $u = shift;
-    my $type = shift;
-    my $level = shift;
-    my $ulevel = itemlevel($level);
-    my $x = $rps{$u}{x};
-    my $y = $rps{$u}{y};
-
-    push(@{$mapitems{"$x:$y"}},{type=>$type,level=>$level,lasttime=>time()}) if ($ulevel > 0);
-}
-
 sub downgrade_item { # returns the decreased item level
-    my $level = shift;
-    my $ulevel = itemlevel($level);
-    my $tag = itemtag($level);
-    my %minlevel = (''=>0,a=>50,h=>50,b=>75,d=>150,e=>175,f=>250,g=>300);
-    $tag = '' if ($ulevel == $minlevel{$tag});
+    my $level = $_[0];
+    my ($ulevel,$tag) = ($level =~ /^(\d+)([a-z]?)/);
+    if($tag) {
+	my $uid = $uniques{$tag};
+	$tag = '' if ($ulevel <= $uniques[$uid]{baselevel});
+    }
     $ulevel-- if ($ulevel > 0);
     return "$ulevel$tag";
 }
+sub mapitemlog($$$$) {
+    maplog("$_[0]s back at $_[1], the $_[2] $_[3]") if ($opts{debug});
+}
+sub process_items() { # decrease items lying around
+    my $curtime = time();
+    while (my ($xy,$aref) = each(%mapitems)) {
+	# print STDERR ("Processing ".scalar(@$aref)." items at $xy\n");
+	for (my $i=0; $i<scalar(@$aref); ++$i) { # length may  change on the fly...
+	    my $level = $aref->[$i]{level};
+	    my $levelnum = item_val($level);
+	    my $ttl = itemttl($levelnum);
+	    if ($aref->[$i]{lasttime} + $ttl <= $curtime ) {
+		my $newlevel = downgrade_item($level);
+		mapitemlog(int($curtime - ($aref->[$i]{lasttime} + $ttl)),
+			   $xy,
+			   item_describe($aref->[$i]{typeid},$level,0,1),
+			   "decayed (ttl for $level was $ttl)");
+		$aref->[$i]{lasttime} += $ttl;
+		$aref->[$i]{level} = $newlevel;
+		if ($aref->[$i]{level} eq '0') { splice(@$aref,$i,1); $i--; } # ... here
+		delete($mapitems{$xy}) if (!scalar(@$aref));
+		$mapitems_dirty++;
+	    }
+	}
+    }
+}
 
-sub exchange_item { # take item and drop the current
-    my $u = shift;
-    my $type = shift;
-    my $level = shift;
-    my $ulevel = itemlevel($level);
-    my $tag = itemtag($level);
+sub drop_item($$$) { # drop item on the map
+    my ($xy,$typeid,$level) = @_;
+    my $ulevel = item_val($level);
+    if (!$opts{itemdbfile} or $ulevel <= 0) { return; }
+    # if(!defined($mapitems{$xy})) { $mapitems{$xy} = []; }
+    push(@{$mapitems{$xy}}, { typeid=>$typeid, level=>$level, lasttime=>time() });
+    mapitemlog(0, $xy, item_describe($typeid,$level,0,1), "was dropped");
+    $mapitems_dirty++;
+}
+sub drop_user_item($$) {
+    drop_item("$rps{$_[0]}{x}:$rps{$_[0]}{y}", $_[1], $rps{$_[0]}{item}[$_[1]]);
+}
 
-    if ($tag eq 'a') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Omniscience Grand Crown! ".
-               "Your enemies fall before you as you anticipate their ".
-               "every move.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'b') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Protectorate Plate Mail! ".
-               "Your enemies cower in fear as their attacks have no ".
-               "effect on you.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'c') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Storm Magic Amulet! Your ".
-               "enemies are swept away by an elemental fury before the ".
-               "war has even begun",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'd') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Fury Colossal Sword! Your ".
-               "enemies' hatred is brought to a quick end as you arc your ".
-               "wrist, dealing the crushing blow.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'e') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Cane of Blind Rage! Your ".
-               "enemies are tossed aside as you blindly swing your arm ".
-               "around hitting stuff.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'f') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Magical Boots of ".
-               "Swiftness! Your enemies are left choking on your dust as ".
-               "you run from them very, very quickly.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'g') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Cluehammer of Doom! Your ".
-               "enemies are left with a sudden and intense clarity of ".
-               "mind... even as you relieve them of it.",$rps{$u}{nick});
-    }
-    elsif ($tag eq 'h') {
-        notice("The light of the gods shines down upon you! You have ".
-               "found the level $ulevel Glorious Ring of ".
-               "Sparkliness! You enemies are blinded by both its glory ".
-               "and their greed as you bring desolation upon them.",
-               $rps{$u}{nick});
+sub exchange_object($$$$) {
+    my ($u,$typeid,$level,$suffix)=@_;
+    my $notice;
+    if($suffix) {
+	my $uref = $uniques[$uniques{$suffix}];
+	my $fortune=''; # "The light of the gods shines down upon you! "
+	if($uniquemsg{$rps{$u}{alignment}}) {
+	    $fortune = $uniquemsg{$rps{$u}{alignment}}.' ';
+	}
+	$notice = "${fortune}You have found " . 
+	    item_describe($uref->{typeid},"$level$suffix",1,0) . "! $uref->{enemies}";
     }
     else {
-        notice("You found a level $level $type! Your current $type is only ".
-               "level ".itemlevel($rps{$u}{item}{$type}).", so it seems Luck is ".
-               "with you!",$rps{$u}{nick});
+	my $type = $items[$typeid];
+	$notice = "You found ".item_describe($typeid,$level,1,1).
+	    "! Your current $type is only ".item_describe($typeid,$rps{$u}{item}[$typeid],0,0).
+	    ", so it seems Luck is with you!";
     }
-
-    drop_item($u,$type,$rps{$u}{item}{$type});
-    $rps{$u}{item}{$type} = $level;
+    notice($notice,$rps{$u}{nick});
+    clog($notice);
+    drop_user_item($u, $typeid);
+    $rps{$u}{item}[$typeid] = "$level$suffix";
 }
 
 sub find_item { # find item for argument player
     my $u = shift;
-    my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                 "pair of gloves","set of leggings","shield","pair of boots");
-    my $type = $items[rand(@items)];
     my $level = 1;
-    my $ulevel;
     for my $num (1 .. int($rps{$u}{level}*1.5)) {
         if (rand(1.4**($num/4)) < 1) {
             $level = $num;
         }
     }
-    if ($rps{$u}{level} >= 25 && rand(40) < 1) {
-        $ulevel = 50+int(rand(25));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{helm})) {
-            exchange_item($u,"helm",$ulevel."a");
-            return;
+    for my $m (0 .. $#uniques) {
+        my $uniq = $uniques[$m];
+        if ($rps{$u}{level} >= $uniq->{userlevel} && rand(40) < 1) {
+            my $ulevel = $uniq->{baselevel} + int(rand($uniq->{levelrange}));
+            my $utypeid = $uniq->{typeid};
+            if ($ulevel >= $level && $ulevel > user_item_val($u,$utypeid)) {
+		exchange_object($u, $utypeid, $ulevel, $uniq->{suffix});
+                return;
+            }
         }
     }
-    elsif ($rps{$u}{level} >= 25 && rand(40) < 1) {
-        $ulevel = 50+int(rand(25));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{ring})) {
-            exchange_item($u,"ring",$ulevel."h");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 30 && rand(40) < 1) {
-        $ulevel = 75+int(rand(25));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{tunic})) {
-            exchange_item($u,"tunic",$ulevel."b");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 35 && rand(40) < 1) {
-        $ulevel = 100+int(rand(25));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{amulet})) {
-            exchange_item($u,"amulet",$ulevel."c");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 40 && rand(40) < 1) {
-        $ulevel = 150+int(rand(25));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{weapon})) {
-            exchange_item($u,"weapon",$ulevel."d");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 45 && rand(40) < 1) {
-        $ulevel = 175+int(rand(26));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{weapon})) {
-            exchange_item($u,"weapon",$ulevel."e");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 48 && rand(40) < 1) {
-        $ulevel = 250+int(rand(51));
-        if ($ulevel >= $level && $ulevel >
-            itemlevel($rps{$u}{item}{"pair of boots"})) {
-            exchange_item($u,"pair of boots",$ulevel."f");
-            return;
-        }
-    }
-    elsif ($rps{$u}{level} >= 52 && rand(40) < 1) {
-        $ulevel = 300+int(rand(51));
-        if ($ulevel >= $level && $ulevel > itemlevel($rps{$u}{item}{weapon})) {
-            exchange_item($u,"weapon",$ulevel."g");
-            return;
-        }
-    }
-    if ($level > itemlevel($rps{$u}{item}{$type})) {
-        exchange_item($u,$type,$level);
+
+    my $typeid = int(rand(@items));
+    my $clevel = user_item_val($u,$typeid);
+    if ($level > $clevel) {
+	exchange_object($u, $typeid, $level, '');
     }
     else {
-        notice("You found a level $level $type. Your current $type is level ".
-               itemlevel($rps{$u}{item}{$type}).", so it seems Luck is against you. ".
-               "You toss the $type.",$rps{$u}{nick});
-        drop_item($u,$type,$level);
+	my $type = $items[$typeid];
+	notice("You found ".item_describe($typeid,$level,1,1).
+	       ". Your current $type is ".item_describe($typeid,user_item($u,$typeid),0,0).
+	       ", so it seems Luck is against you. You toss the $type.",
+	       $rps{$u}{nick});
+	# should we drop this on the map - will that clutter the map?
+	# definitely not if there's no decay.
+	drop_item("$rps{$u}{x}:$rps{$u}{y}", $typeid, $level) if($opts{itemdbfile});
     }
 }
 
@@ -1782,22 +1724,60 @@ sub loaddb { # load the players and items database
     backup();
     my $l;
     %rps = ();
+    my $style=0; # 0=old, 1=new with "[ items ]"
+    my $fieldcount=10;
     if (!open(RPS,$opts{dbfile}) && -e $opts{dbfile}) {
         sts("QUIT :loaddb() failed: $!");
     }
     while ($l=<RPS>) {
         chomp($l);
-        next if $l =~ /^#/; # skip comments
-        my @i = split("\t",$l);
-        print Dumper(@i) if @i != 32;
-        if (@i != 32) {
-            sts("QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
-                "wrong fields (".scalar(@i).")");
-            debug("Anomaly in loaddb(); line $. of $opts{dbfile} has wrong ".
-                "fields (".scalar(@i).")",1);
+        # work out if it's old style or new style
+        if(!$style) { 
+            if($l =~ s/\[\s+([\da-z\t]*?)\s+\]\s+//) {
+                my @dbitems=split(/\t/, $1);
+                $fieldcount=@dbitems;
+                debug("INFO: new style with $fieldcount items 0..$#dbitems");
+                if($fieldcount != @items) {
+                    debug("ERROR: db's items 0..$#dbitems differs from our 0..$#items");
+                }
+                $style=1;
+            }
         }
+        next if $l =~ /^#/; # skip comments
+
+        my @dbitems;
+        my @i;
+        my $err;
+        if($style == 1) {
+            if($l !~ s/\[\s+([\da-z\t]*?)\s+\]\s+//) {
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has missing [] section";
+                goto bail_loaddb;
+            }
+            @dbitems = split("\t", $1);
+            if(@dbitems != $fieldcount) {
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} wrong [$fieldcount] section = '$1'";
+                goto bail_loaddb;
+            }
+            @i = split("\t", $l);
+            if(@i != 23) { # was 33 when we had 10 items
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} wrong default section";
+                goto bail_loaddb;
+            }
+        } else {
+            @i = split("\t",$l);
+            if(@i == 32) { push(@i, "u"); }
+            elsif (@i != 33) { 
+                $err = "QUIT: Anomaly in loaddb(); line $. of $opts{dbfile} has ".
+                    "wrong fields (".scalar(@i).")";
+                goto bail_loaddb;
+            }
+            @dbitems = splice(@i,21,10);
+        }
+
+        # Now we have the item fields and the other fields separated from
+        # each other, we can stick them in our internal hash.
         if (!$sock) { # if not RELOADDB
-            if ($i[8]) { $prev_online{$i[7]}=$i[0]; } # log back in
+            if ($i[8]) { $prev_online{$i[7]}=$i[0]; $i[8]=0; } # log back in
         }
         ($rps{$i[0]}{pass},
         $rps{$i[0]}{isadmin},
@@ -1819,80 +1799,112 @@ sub loaddb { # load the players and items database
         $rps{$i[0]}{pen_logout},
         $rps{$i[0]}{created},
         $rps{$i[0]}{lastlogin},
-        $rps{$i[0]}{item}{amulet},
-        $rps{$i[0]}{item}{charm},
-        $rps{$i[0]}{item}{helm},
-        $rps{$i[0]}{item}{"pair of boots"},
-        $rps{$i[0]}{item}{"pair of gloves"},
-        $rps{$i[0]}{item}{ring},
-        $rps{$i[0]}{item}{"set of leggings"},
-        $rps{$i[0]}{item}{shield},
-        $rps{$i[0]}{item}{tunic},
-        $rps{$i[0]}{item}{weapon},
-        $rps{$i[0]}{alignment}) = (@i[1..7],($sock?$i[8]:0),@i[9..$#i]);
+        $rps{$i[0]}{alignment},
+        $rps{$i[0]}{gender}) = @i[1..22];
+
+        # @dbitems may be too long or too short. if too long, they're 
+        # remembered until the next save, and then not written out.
+        # if too short (new items have appeared), then undef stands in
+        # for 0, and hopefully the warnings aren't too noisy.
+        $rps{$i[0]}{item} = [splice(@dbitems,0,@items)];
+        next;
+
+bail_loaddb:
+        sts($err);
+        debug($err,1);
     }
     close(RPS);
     debug("loaddb(): loaded ".scalar(keys(%rps))." accounts, ".
           scalar(keys(%prev_online))." previously online.");
-    if (!open(ITEMS,$opts{itemdbfile}) && -e $opts{itemdbfile}) {
-        sts("QUIT :loaddb() failed: $!");
+
+    return if (!$opts{itemdbfile});
+    %mapitems = ();
+    $mapitems_dirty=0;
+    if(! -e $opts{itemdbfile}) {
+	debug("loaddb(): no items file to load, that's easy.");
+	return;
+    }
+    if (!open(ITEMS,$opts{itemdbfile})) {
+	if (-e $opts{itemdbfile}) { sts("QUIT :loaddb() failed ($opts{itemdbfile}): $!"); }
+	return;
     }
     my $cnt = 0;
-    %mapitems = ();
+    my $curtime = time();
     while ($l=<ITEMS>) {
-        chomp($l);
-        next if $l =~ /^#/; # skip comments
-        my @i = split("\t",$l);
-        print Dumper(@i) if @i != 5;
-        if (@i != 5) {
-            sts("QUIT: Anomaly in loaddb(); line $. of $opts{itemdbfile} has ".
-                "wrong fields (".scalar(@i).")");
-            debug("Anomaly in loaddb(); line $. of $opts{itemdbfile} has wrong ".
-                "fields (".scalar(@i).")",1);
-        }
-        my $curtime = time();
-        push(@{$mapitems{"$i[0]:$i[1]"}},{type=>$i[2],level=>$i[3],lasttime=>$curtime-$i[4]});
-        $cnt++;
+	chomp($l);
+	next if $l =~ /^#/; # skip comments
+	my @i = split("\t",$l);
+	if (@i != 4) {
+	    my $debug="Anomaly in loaddb(); line $. of $opts{itemdbfile} has wrong ".
+		"fields (".scalar(@i).")";
+	    sts("QUIT: $debug");
+	    debug($debug,1);
+	}
+	push(@{$mapitems{$i[0]}}, { typeid=>$i[1], level=>$i[2], lasttime=>$curtime-$i[3] });
+	$cnt++;
     }
     close(ITEMS);
     debug("loaddb(): loaded $cnt items.");
 }
 
+sub movesomeplayers(@) {
+    my @temp=@_;
+    my %positions = ();
+    my $numtomove=scalar(@temp);
+    while(@temp) {
+	my $player=splice(@temp,rand(scalar(@temp)),1);
+        $rps{$player}{x} += int(rand(3))-1;
+        $rps{$player}{y} += int(rand(3))-1;
+        # if player goes over edge, wrap them back around
+        if ($rps{$player}{x} >= $opts{mapx}) { $rps{$player}{x} = 0; }
+        if ($rps{$player}{y} >= $opts{mapy}) { $rps{$player}{y} = 0; }
+        if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}-1; }
+        if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}-1; }
+
+        if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
+            !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
+            if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
+                !$rps{$player}{isadmin} && rand(100) < 1) {
+                chanmsg("$player encounters ".
+                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
+                        " and bows humbly.");
+            }
+            if (rand($numtomove) < 1) {
+                $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
+                collision_fight($player,
+                                $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
+            }
+        }
+        else {
+            $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
+            $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
+        }
+    }
+}
+
 sub moveplayers {
     return unless $lasttime > 1;
-    my $onlinecount = grep { $rps{$_}{online} } keys %rps;
+    my @online = grep { $rps{$_}{online} } keys %rps;
+    my $onlinecount = scalar(@online);
     return unless $onlinecount;
     for (my $i=0;$i<$opts{self_clock};++$i) {
         # temporary hash to hold player positions, detect collisions
-        my %positions = ();
-        if ($quest{type} == 2 && @{$quest{questers}}) {
+        my @questers = ();
+        if ($quest{type} == 2 && (@questers = @{$quest{questers}})) {
             my $allgo = 1; # have all users reached <p1|p2>?
-            for (@{$quest{questers}}) {
-                if ($quest{stage}==1) {
-                    if ($rps{$_}{x} != $quest{p1}->[0] ||
-                        $rps{$_}{y} != $quest{p1}->[1]) {
-                        $allgo=0;
-                        last();
-                    }
-                }
-                else {
-                    if ($rps{$_}{x} != $quest{p2}->[0] ||
-                        $rps{$_}{y} != $quest{p2}->[1]) {
-                        $allgo=0;
-                        last();
-                    }
-                }
+            my ($x,$y) = @{$quest{"p$quest{stage}"}};
+            for (@questers) {
+                if ($rps{$_}{x} != $x || $rps{$_}{y} != $y) { $allgo=0; last; }
             }
             # all participants have reached point 1, now point 2
             if ($quest{stage}==1 && $allgo) {
                 $quest{stage}=2;
-                $allgo=0; # have not all reached p2 yet
+                writequestfile();
             }
             elsif ($quest{stage} == 2 && $allgo) {
-                chanmsg(clog(join(", ",(@{$quest{questers}})[0..2]).", ".
-                             "and $quest{questers}->[3] have completed their ".
-                             "journey! 25% of their burden is eliminated."));
-                for (@{$quest{questers}}) {
+                chanmsg_l(comma_list(\@questers)." have completed their ".
+                          "journey! 25% of their burden is eliminated.");
+                for (@questers) {
                     $rps{$_}{next} = int($rps{$_}{next} * .75);
                 }
                 undef(@{$quest{questers}});
@@ -1901,111 +1913,52 @@ sub moveplayers {
                 writequestfile();
             }
             else {
-                my(%temp,$player);
-                # load keys of %temp with online users
-                ++@temp{grep { $rps{$_}{online} } keys(%rps)};
-                # delete questers from list
-                delete(@temp{@{$quest{questers}}});
-                while ($player = each(%temp)) {
-                    $rps{$player}{x} += int(rand(3))-1;
-                    $rps{$player}{y} += int(rand(3))-1;
-                    # if player goes over edge, wrap them back around
-                    if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x}=0; }
-                    if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y}=0; }
-                    if ($rps{$player}{x} < 0) { $rps{$player}{x}=$opts{mapx}; }
-                    if ($rps{$player}{y} < 0) { $rps{$player}{y}=$opts{mapy}; }
-                    
-                    if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
-                        !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
-                        if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
-                            !$rps{$player}{isadmin} && rand(100) < 1) {
-                            chanmsg("$player encounters ".
-                               $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
-                                    " and bows humbly.");
+                for (@questers) {
+                    if (rand(100) < 1) {
+                        my ($dx,$dy) = ($x-$rps{$_}{x}, $y-$rps{$_}{y});
+                        if(rand(abs($dy))<abs($dx)) {
+                            $rps{$_}{x} += ($x <=> $rps{$_}{x});
                         }
-                        if (rand($onlinecount) < 1) {
-                            $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
-                            collision_fight($player,
-                                $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
-                        }
-                    }
-                    else {
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
-                    }
-                }
-                for (@{$quest{questers}}) {
-                    if ($quest{stage} == 1) {
-                        if (rand(100) < 1) {
-                            if ($rps{$_}{x} != $quest{p1}->[0]) {
-                                $rps{$_}{x} += ($rps{$_}{x} < $quest{p1}->[0] ?
-                                                1 : -1);
-                            }
-                            if ($rps{$_}{y} != $quest{p1}->[1]) {
-                                $rps{$_}{y} += ($rps{$_}{y} < $quest{p1}->[1] ?
-                                                1 : -1);
-                            }
-                        }
-                    }
-                    elsif ($quest{stage}==2) {
-                        if (rand(100) < 1) {
-                            if ($rps{$_}{x} != $quest{p2}->[0]) {
-                                $rps{$_}{x} += ($rps{$_}{x} < $quest{p2}->[0] ?
-                                                1 : -1);
-                            }
-                            if ($rps{$_}{y} != $quest{p2}->[1]) {
-                                $rps{$_}{y} += ($rps{$_}{y} < $quest{p2}->[1] ?
-                                                1 : -1);
-                            }
+                        if(rand(abs($dx))<abs($dy)) {
+                            $rps{$_}{y} += ($y <=> $rps{$_}{y});
                         }
                     }
                 }
             }
+
+            # Always move other players indepenently of what questers are doing
+            my %temp;
+            # load keys of %temp with online users
+            ++@temp{@online};
+            # delete questers from list
+            delete(@temp{@questers});
+            movesomeplayers(keys(%temp));
         }
         else {
-            for my $player (keys(%rps)) {
-                next unless $rps{$player}{online};
-                $rps{$player}{x} += int(rand(3))-1;
-                $rps{$player}{y} += int(rand(3))-1;
-                # if player goes over edge, wrap them back around
-                if ($rps{$player}{x} > $opts{mapx}) { $rps{$player}{x} = 0; }
-                if ($rps{$player}{y} > $opts{mapy}) { $rps{$player}{y} = 0; }
-                if ($rps{$player}{x} < 0) { $rps{$player}{x} = $opts{mapx}; }
-                if ($rps{$player}{y} < 0) { $rps{$player}{y} = $opts{mapy}; }
-                if (exists($positions{$rps{$player}{x}}{$rps{$player}{y}}) &&
-                    !$positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}) {
-                    if ($rps{$positions{$rps{$player}{x}}{$rps{$player}{y}}{user}}{isadmin} &&
-                        !$rps{$player}{isadmin} && rand(100) < 1) {
-                        chanmsg("$player encounters ".
-                           $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}.
-                                " and bows humbly.");
-                    }
-                    if (rand($onlinecount) < 1) {
-                        $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=1;
-                        collision_fight($player,
-                            $positions{$rps{$player}{x}}{$rps{$player}{y}}{user});
-                    }
-                }
-                else {
-                    $positions{$rps{$player}{x}}{$rps{$player}{y}}{battled}=0;
-                    $positions{$rps{$player}{x}}{$rps{$player}{y}}{user}=$player;
-                }
-            }
+            movesomeplayers(@online);
         }
-        # pick up items lying around
-        for my $u (keys(%rps)) {
-            next unless $rps{$u}{online};
-            my $x = $rps{$u}{x};
-            my $y = $rps{$u}{y};
-            next unless exists($mapitems{"$x:$y"});
-            for $i (0..$#{$mapitems{"$x:$y"}}) {
-                my $item = $mapitems{"$x:$y"}[$i];
-                if (itemlevel($item->{level}) > itemlevel($rps{$u}{item}{$item->{type}})) {
-                    exchange_item($u,$item->{type},$item->{level});
-                    splice(@{$mapitems{"$x:$y"}},$i,1);
-                }
-            }
-        }
+	# pick up items lying around, priority amongst players is semi-random
+	# it depends on the order of hash traversal, which can change when the
+	# hash changes.
+	next if (!$opts{itemdbfile});
+	for my $u (keys(%rps)) {
+	    next unless $rps{$u}{online};
+	    my $x = $rps{$u}{x};
+	    my $y = $rps{$u}{y};
+	    next unless exists($mapitems{"$x:$y"});
+	    for (my $i=0; $i<=$#{$mapitems{"$x:$y"}}; ++$i) {
+		my $item = $mapitems{"$x:$y"}[$i];
+		my ($val,$tag) = ($item->{level} =~ /^(\d+)([a-z]?)$/);
+		if ($val > user_item_val($u, $item->{typeid})) {
+		    exchange_object($u, $item->{typeid}, $val, $tag);
+		    mapitemlog(0, "$x:$y", item_describe($item->{typeid},$val,0,1),
+			       "was picked-up");
+		    splice(@{$mapitems{"$x:$y"}},$i,1);
+		    $mapitems_dirty++;
+		    --$i; # everything's shifted up by one
+		}
+	    }
+	}
     }
 }
 
@@ -2017,6 +1970,12 @@ sub chanmsg { # send a message to the channel
     my $msg = shift or return undef;
     if ($silentmode & 1) { return undef; }
     privmsg($msg, $opts{botchan}, shift);
+}
+
+sub chanmsg_l { # log to mod log, and send to chan
+    my $msg = shift or return undef;
+    clog($msg);
+    chanmsg($msg);
 }
 
 sub privmsg { # send a message to an arbitrary entity
@@ -2071,12 +2030,38 @@ usage: $prog [OPTIONS]
   --helpurl            URL to refer new users to
   --admincommurl       URL to refer admins to
 
+  Theme:
+  --itemsfile          File containing all the item/type definitions
+  --eventsfile         File containing all the event definitions
+
+  Database:
+  --dbfile             Store of player state
+  --questfilename      Store of quest state
+  --itemdbfile         Store of dropped item state (blank disables dropping)
+
+  Logging:
+  --debugfile          file logging all the bot input and output, plus actual debugs
+  --modsfile           file logging all changes to players' states
+  --decayfile          file logging all changes to dropped items' states
+
   Timing parameters:
   --rpbase             Base time to level up
   --rpstep             Time to next level = rpbase * (rpstep ** CURRENT_LEVEL)
+  --rpitembase         Base time for lifetime of dropped items
   --rppenstep          PENALTY_SECS=(PENALTY*(RPPENSTEP**CURRENT_LEVEL))
-
 ";
+# missing:
+# software:     --checkupdates, --phonehome
+# network:      --localaddr, --reconnect, --reconnect_wait
+# commands:     --statuscmd, --allowuserinfo, 
+# players:      --casematters, --noccodes, --nononp,
+# irc_settings: --owner, --detectsplits, --splitwait, 
+# irc_features: --modesperline, --senduserlist, --voiceonlogin
+# map:          --mapx, --mapy, --mapurl,
+# game:         --noscale, --self_clock, --top_period, --chal_period
+# penalties:    --limitpen,
+# daemon:       --daemonize, --pidfile,
+# 
 }
 
 sub itemsum {
@@ -2088,12 +2073,13 @@ sub itemsum {
     my $sum = 0;
     if ($user eq $primnick) {
         for my $u (keys(%rps)) {
-            $sum = itemsum($u) if $sum < itemsum($u);
+	    my $usum = itemsum($u);
+	    $sum = $usum if ($sum < $usum);
         }
         return $sum+1;
     }
     if (!exists($rps{$user})) { return -1; }
-    $sum += itemlevel($rps{$user}{item}{$_}) for keys(%{$rps{$user}{item}});
+    $sum += user_item_val($user,$_) for (0..$#items);
     if ($battle) {
         return $rps{$user}{alignment} eq 'e' ? int($sum*.9) :
                $rps{$user}{alignment} eq 'g' ? int($sum*1.1) :
@@ -2127,167 +2113,120 @@ sub daemonize() {
     close(PIDFILE);
 }
 
-sub calamity { # suffer a little one
+sub rewrite_for_items($$$) {
+    my ($s,$t,$ts)=@_;
+    $s =~ s/%item([01]?)%/$ts->[int("0$1")]/g;
+    $s =~ s/%type%/$t/g;
+    return $s;
+}
+sub rewrite_for_players($$) {
+    my ($s,$p)=@_;
+    $s =~ s/%player([01]?)%/$p->[int("0$1")]/g;
+    $s =~ s/%level([01]?)%/$rps{$p->[int("0$1")]}{level}/g;
+    $s =~ s/%players%/comma_list($p)/eg;
+    $s =~ s/%(he|she|they)([01]?)%/they($p->[int("0$2")])/eg;
+    $s =~ s/%(his|her|their)([01]?)%/their($p->[int("0$2")])/eg;
+    $s =~ s/%(him|her|them)([01]?)%/them($p->[int("0$2")])/eg; # her is impossible here
+    $s =~ s/%(is|are)([01]?)%/are($p->[int("0$2")])/eg;
+    $s =~ s/%(was|were)([01]?)%/were($p->[int("0$2")])/eg;
+    $s =~ s/%(has|have)([01]?)%/have($p->[int("0$2")])/eg;
+    #$s =~ s/%(verb|verbs)([01]?)%/verb($p->[int("0$2")])/eg;
+    return $s;
+}
+sub rewrite_programatics($$) {
+    my ($s,$r)=@_;
+    while($s =~ m/.*%\{(.*?)}%/) { # work from inside out - don't worrry about .* complexity
+	my ($start, $end)=($-[1]-2, $+[1]+2);
+        my $len=$end-$start;
+        if(index($1,'|')>=0 or index($1,'#')<0) {
+            my @list=split(/\|/, $1);
+            substr($s,$start,$len) = $list[int(rand(@list))];
+        } elsif($1 =~ m/^([\d.]+)\#(?:([-+])([\d.]+))?\#([\d.]+)$/) {
+            my $step = $3 ? $3 * ($2 eq '-'?-1:1) : 1;
+            my $numsteps = int(($4-$1)/$step)+1;
+            substr($s,$start,$len) = $1+int($r*$numsteps)*$step;
+        } else {
+            debug("No choice in macro ". substr($s,$start,$len));
+            substr($s,$start,$len) = substr($s,$start+2,$len-4);
+        }
+    }
+    return $s;
+}
+
+sub rewrite_event($$$$) {
+    my ($s,$p,$t,$r)=@_;
+    $s=rewrite_for_items($s,$t,undef) if(defined($t));
+    $s=rewrite_programatics($s,$r);
+    # Traditionally, changes lazily miss off the sole leading %player%.
+    # Add it back here, but make it optional. If there's mention of
+    # %player% anywhere in the string, presume there's no laziness.
+    # This permits things like c="Rust develops on %player%'s %type%".
+    if($s !~ m/%player\w?%/) {
+	$s = '%player0%' . (substr($s,0,3) eq "'s " ? '': ' ') . $s;
+    }
+    $s=rewrite_for_players($s,$p);
+    return $s;
+}
+
+sub modify_item($) {
+    my $good = ($_[0] > 0);
     my @players = grep { $rps{$_}{online} } keys(%rps);
     return unless @players;
     my $player = $players[rand(@players)];
-    if (rand(10) < 1) {
-        my @items = ("amulet","charm","weapon","tunic","set of leggings",
-                     "shield");
-        my $type = $items[rand(@items)];
-        if ($type eq "amulet") {
-            chanmsg(clog("$player fell, chipping the stone in his amulet! ".
-                         "$player\'s $type loses 10% of its effectiveness."));
-        }
-        elsif ($type eq "charm") {
-            chanmsg(clog("$player slipped and dropped his charm in a dirty ".
-                         "bog! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        elsif ($type eq "weapon") {
-            chanmsg(clog("$player left his weapon out in the rain to rust! ".
-                         "$player\'s $type loses 10% of its effectiveness."));
-        }
-        elsif ($type eq "tunic") {
-            chanmsg(clog("$player spilled a level 7 shrinking potion on his ".
-                         "tunic! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        elsif ($type eq "shield") {
-            chanmsg(clog("$player\'s shield was damaged by a dragon's fiery ".
-                         "breath! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
-        else {
-            chanmsg(clog("$player burned a hole through his leggings while ".
-                         "ironing them! $player\'s $type loses 10% of its ".
-                         "effectiveness."));
-        }
+    my @changeableitems = grep { defined($good ? $godsend[$_] : $calamity[$_]); } (@fragileitems);
+    if (@changeableitems and rand(10) < 1) {
+	my @change = ('loses', 'gains');
+	my $typeid = $changeableitems[rand(@changeableitems)];
+	my $change = ($good ? $godsend[$typeid] : $calamity[$typeid]);
+	my $type = $items[$typeid];
+	$change = rewrite_event($change, [$player], $type, undef); # random number not used currently
+	# May as well have the punctuation lazy too...
+	my $pling = ($change =~ m/[.!]$/) ? '' : '!';
         my $suffix="";
-        if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
-        $rps{$player}{item}{$type} = int(itemlevel($rps{$player}{item}{$type}) * .9);
-        $rps{$player}{item}{$type}.=$suffix;
+        if ($rps{$player}{item}[$typeid] =~ /^(\d+)(\D)$/) { $suffix=$2; $type=item_describe($typeid,"$1$2",0,1); }
+	$change = "$change$pling $player\'s $type $change[$good] 10% of its effectiveness.";
+        chanmsg_l($change);
+
+        $rps{$player}{item}[$typeid] = int(user_item_val($player,$typeid) * (1+$_[0]*.1));
+        $rps{$player}{item}[$typeid].=$suffix;
     }
     else {
-        my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        if (!open(Q,$opts{eventsfile})) {
-            return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-        }
-        my($i,$actioned);
-        while (my $line = <Q>) {
-            chomp($line);
-            if ($line =~ /^C (.*)/ && rand(++$i) < 1) { $actioned = $1; }
-        }
-        chanmsg(clog("$player $actioned. This terrible calamity has slowed ".
-                     "them ".duration($time)." from level ".
-                     ($rps{$player}{level}+1)."."));
-        $rps{$player}{next} += $time;
+	my @timechange = ('terrible calamity has slowed',
+			  'wondrous godsend has accelerated');
+        my $rand = rand();
+        my $time = int(int(5 + $rand*8) / 100 * $rps{$player}{next});
+	my $playeractioned = get_event($good?'G':'C', [$player], $rand);
+	chanmsg_l("$playeractioned. ".
+		  "This $timechange[$good] ".them($player)." ".
+		  duration($time)." $tofrom[$good] level ".
+		  ($rps{$player}{level}+1).".");
+        $rps{$player}{next} -= $time * ($_[0] <=> 0);
         chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
                 ".");
     }
 }
 
-sub godsend { # bless the unworthy
-    my @players = grep { $rps{$_}{online} } keys(%rps);
-    return unless @players;
-    my $player = $players[rand(@players)];
-    if (rand(10) < 1) {
-        my @items = ("amulet","charm","weapon","tunic","set of leggings",
-                     "shield");
-        my $type = $items[rand(@items)];
-        if ($type eq "amulet") {
-            chanmsg(clog("$player\'s amulet was blessed by a passing cleric! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "charm") {
-            chanmsg(clog("$player\'s charm ate a bolt of lightning! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "weapon") {
-            chanmsg(clog("$player sharpened the edge of his weapon! ".
-                         "$player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "tunic") {
-            chanmsg(clog("A magician cast a spell of Rigidity on $player\'s ".
-                         "tunic! $player\'s $type gains 10% effectiveness."));
-        }
-        elsif ($type eq "shield") {
-            chanmsg(clog("$player reinforced his shield with a dragon's ".
-                         "scales! $player\'s $type gains 10% effectiveness."));
-        }
-        else {
-            chanmsg(clog("The local wizard imbued $player\'s pants with a ".
-                         "Spirit of Fortitude! $player\'s $type gains 10% ".
-                         "effectiveness."));
-        }
-        my $suffix="";
-        if ($rps{$player}{item}{$type} =~ /(\D)$/) { $suffix=$1; }
-        $rps{$player}{item}{$type} = int(itemlevel($rps{$player}{item}{$type}) * 1.1);
-        $rps{$player}{item}{$type}.=$suffix;
-    }
-    else {
-        my $time = int(int(5 + rand(8)) / 100 * $rps{$player}{next});
-        my $actioned;
-        if (!open(Q,$opts{eventsfile})) {
-            return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-        }
-        my $i;
-        while (my $line = <Q>) {
-            chomp($line);
-            if ($line =~ /^G (.*)/ && rand(++$i) < 1) {
-                $actioned = $1;
-            }
-        }
-        chanmsg(clog("$player $actioned! This wondrous godsend has ".
-                     "accelerated them ".duration($time)." towards level ".
-                     ($rps{$player}{level}+1)."."));
-        $rps{$player}{next} -= $time;
-        chanmsg("$player reaches next level in ".duration($rps{$player}{next}).
-                ".");
-    }
-}
-#
-# initializes the quest
-#
+sub calamity { modify_item(-1); }  # suffer a little one
+sub godsend { modify_item(+1); } # bless the unworthy
+
 sub quest {
-    @{$quest{questers}} = grep { $rps{$_}{online} && $rps{$_}{level} > 39 &&
-                                 time()-$rps{$_}{lastlogin}>36000 } keys(%rps);
-    if (@{$quest{questers}} < 4) { return undef(@{$quest{questers}}); }
-    while (@{$quest{questers}} > 4) {
-        splice(@{$quest{questers}},int(rand(@{$quest{questers}})),1);
+    my @questers = grep { $rps{$_}{online} && $rps{$_}{level} > 39 &&
+                              time()-$rps{$_}{lastlogin}>36000 } keys(%rps);
+    if (@questers < 4) { return undef; }
+    while (@questers > 4) {
+        splice(@questers,int(rand(@questers)),1);
     }
-    if (!open(Q,$opts{eventsfile})) {
-        return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
-    }
-    my $i;
-    while (my $line = <Q>) {
-        chomp($line);
-        if ($line =~ /^Q/ && rand(++$i) < 1) {
-            if ($line =~ /^Q1 (.*)/) {
-                $quest{text} = $1;
-                $quest{type} = 1;
-                $quest{qtime} = time() + 43200 + int(rand(43201)); # 12-24 hours
-            }
-            elsif ($line =~ /^Q2 (\d+) (\d+) (\d+) (\d+) (.*)/) {
-                $quest{p1} = [$1,$2];
-                $quest{p2} = [$3,$4];
-                $quest{text} = $5;
-                $quest{type} = 2;
-                $quest{stage} = 1;
-            }
-        }
-    }
-    close(Q);
+    %quest = %{get_quest()};
+    $quest{questers} = \@questers;
+    my $questtext=get_event('QI', \@questers, undef);
+    $questtext =~ s/%quest%/$quest{text}/; # only expect one, more is noise
+    $quest{text} = rewrite_programatics($questtext,undef);
     if ($quest{type} == 1) {
-        chanmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                "$quest{questers}->[3] have been chosen by the gods to ".
-                "$quest{text}. Quest to end in ".duration($quest{qtime}-time()).
-                ".");    
+        $quest{qtime} = time()+43200+int(rand(43201));
+        chanmsg("$quest{text} Quest to end in ".duration($quest{qtime}-time()).".");
     }
     elsif ($quest{type} == 2) {
-        chanmsg(join(", ",(@{$quest{questers}})[0..2]).", and ".
-                "$quest{questers}->[3] have been chosen by the gods to ".
-                "$quest{text}. Participants must first reach [$quest{p1}->[0],".
+        chanmsg("$quest{text} Participants must first reach [$quest{p1}->[0],".
                 "$quest{p1}->[1]], then [$quest{p2}->[0],$quest{p2}->[1]].".
                 ($opts{mapurl}?" See $opts{mapurl} to monitor their journey's ".
                 "progress.":""));
@@ -2300,14 +2239,9 @@ sub questpencheck {
     my ($quester,$player);
     for $quester (@{$quest{questers}}) {
         if ($quester eq $k) {
-            chanmsg(clog("$k\'s prudence and self-regard has brought the ".
-                         "wrath of the gods upon the realm. All your great ".
-                         "wickedness makes you as it were heavy with lead, ".
-                         "and to tend downwards with great weight and ".
-                         "pressure towards hell. Therefore have you drawn ".
-                         "yourselves 15 steps closer to that gaping maw."));
+            chanmsg_l(get_event('QF', [$quester], undef));
             for $player (grep { $rps{$_}{online} } keys %rps) {
-                my $gain = int(15 * penttl($rps{$player}{level}) / $opts{rpbase});
+                my $gain = int(15 * ($opts{rppenstep}**$rps{$player}{level}));
                 $rps{$player}{pen_quest} += $gain;
                 $rps{$player}{next} += $gain;
             }
@@ -2317,113 +2251,82 @@ sub questpencheck {
     }
 }
 
-sub clog {
-    my $mesg = shift;
-    open(B,">>$opts{modsfile}") or do {
-        debug("Error: Cannot open $opts{modsfile}: $!");
-        chanmsg("Error: Cannot open $opts{modsfile}: $!");
+sub flog($$) {
+    my ($file,$mesg) = @_;
+    return $mesg if (!defined($file) || !length($file));
+    open(B,">>$file") or do {
+        debug("Error: Cannot open $file}: $!");
+        chanmsg("Error: Cannot open $file}: $!");
         return $mesg;
     };
     print B ts()."$mesg\n";
     close(B);
     return $mesg;
 }
+sub clog($) {
+    flog($opts{modsfile}, shift);
+}
+sub maplog($) {
+    flog($opts{decayfile}, shift) if ($opts{decayfile});
+}
+sub debug {
+    my ($text, $die) = @_;
+    return if ($debug_reentrancy > 0);
+    $debug_reentrancy++;
+    $text =~ s/[\r\n]//g;
+    flog($opts{debugfile}, $text) if ($opts{debug} || $opts{verbose});
+    if ($die) { die("$text\n"); }
+    $debug_reentrancy--;
+    return $text;
+}
 
 sub backup() {
     if (! -d ".dbbackup/") { mkdir(".dbbackup",0700); }
     if ($^O ne "MSWin32") {
         system("cp $opts{dbfile} .dbbackup/$opts{dbfile}".time());
-        system("cp $opts{itemdbfile} .dbbackup/$opts{itemdbfile}".time());
+	system("cp $opts{itemdbfile} .dbbackup/$opts{itemdbfile}".time())
+	    if(exists($opts{itemdbfile}) and -e $opts{itemdbfile});
     }
     else {
         system("copy $opts{dbfile} .dbbackup\\$opts{dbfile}".time());
-        system("copy $opts{itemdbfile} .dbbackup\\$opts{itemdbfile}".time());
+	system("copy $opts{itemdbfile} .dbbackup\\$opts{itemdbfile}".time())
+	    if(exists($opts{itemdbfile}) and -e $opts{itemdbfile});
     }
 }
 
 sub penalize {
+    my %why = (quit=>['pen_quit',20,undef], part=>['pen_part',200,undef], # don't msg goners
+	       kick=>['pen_kick',250,'being kicked'], logout=>['pen_logout',20,'logging out'],
+	       privmsg=>['pen_mesg',undef,'privmsg'], notice=>['pen_mesg',undef,'notice'],
+	       nick=>['pen_nick',30,'nick change'],);
+
     my $username = shift;
     return 0 if !defined($username);
     return 0 if !exists($rps{$username});
     my $type = shift;
-    my $pen = 0;
     questpencheck($username);
-    if ($type eq "quit") {
-        $pen = int(20 * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_quit}+=$pen;
+    my ($pentype,$pen,$why) = @{$why{$type}};
+    if ($type =~ m/^(?:quit|part|kick|logout)$/) {
         $rps{$username}{online}=0;
     }
     elsif ($type eq "nick") {
         my $newnick = shift;
-        $pen = int(30 * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_nick}+=$pen;
         $rps{$username}{nick} = substr($newnick,1);
-        $rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/e;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "nick change.",$rps{$username}{nick});
+	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
-        $pen = int(shift(@_) * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_mesg}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               $type.".",$rps{$username}{nick});
+        $pen = shift(@_);
     }
-    elsif ($type eq "part") {
-        $pen = int(200 * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_part}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "parting.",$rps{$username}{nick});
-        $rps{$username}{online}=0;
+    $pen = int($pen * ($opts{rppenstep}**$rps{$username}{level}));
+    if ($opts{limitpen} && $pen > $opts{limitpen}) {
+        $pen = $opts{limitpen};
     }
-    elsif ($type eq "kick") {
-        $pen = int(250 * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_kick}+=$pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "being kicked.",$rps{$username}{nick});
-        $rps{$username}{online}=0;
-    }
-    elsif ($type eq "logout") {
-        $pen = int(20 * penttl($rps{$username}{level}) / $opts{rpbase});
-        if ($opts{limitpen} && $pen > $opts{limitpen}) {
-            $pen = $opts{limitpen};
-        }
-        $rps{$username}{pen_logout} += $pen;
-        notice("Penalty of ".duration($pen)." added to your timer for ".
-               "LOGOUT command.",$rps{$username}{nick});
-        $rps{$username}{online}=0;
-    }
+    #debug("penalize($username,$type) -> why=$why, pen=$pen, pentype=$pentype",0);
+    $rps{$username}{$pentype}+=$pen;
     $rps{$username}{next} += $pen;
+    notice("Penalty of ".duration($pen)." added to your timer for $why.",
+           $rps{$username}{nick}) if(defined($why));
     return 1; # successfully penalized a user! woohoo!
-}
-
-sub debug {
-    (my $text = shift) =~ s/[\r\n]//g;
-    my $die = shift;
-    if ($opts{debug} || $opts{verbose}) {
-        open(DBG,">>$opts{debugfile}") or do {
-            chanmsg("Error: Cannot open debug file: $!");
-            return;
-        };
-        print DBG ts()."$text\n";
-        close(DBG);
-    }
-    if ($die) { die("$text\n"); }
-    return $text;
 }
 
 sub finduser {
@@ -2439,7 +2342,7 @@ sub finduser {
 sub ha { # return 0/1 if username has access
     my $user = shift;
     if (!defined($user) || !exists($rps{$user})) {
-        debug("Error: Attempted ha() for invalid username \"$user\"");
+        debug('Error: Attempted ha() for invalid username "'.($user//'(undef)').'"');
         return 0;
     }
     return $rps{$user}{isadmin};
@@ -2455,59 +2358,49 @@ sub checksplits { # removed expired split hosts from the hash
     }
 }
 
-sub collision_fight {
-    my($u,$opp) = @_;
-    my $mysum = itemsum($u,1);
-    my $oppsum = itemsum($opp,1);
-    my $myroll = int(rand($mysum));
-    my $opproll = int(rand($oppsum));
-    if ($myroll >= $opproll) {
-        my $gain = int($rps{$opp}{level}/4);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                     "] and taken them in combat! ".duration($gain)." is ".
-                     "removed from $u\'s clock."));
-        $rps{$u}{next} -= $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
-        if (rand(35) < 1 && $opp ne $primnick) {
-            $gain = int(((5 + int(rand(20)))/100) * $rps{$opp}{next});
-            chanmsg(clog("$u has dealt $opp a Critical Strike! ".
-                         duration($gain)." is added to $opp\'s clock."));
-            $rps{$opp}{next} += $gain;
-            chanmsg("$opp reaches next level in ".duration($rps{$opp}{next}).
-                    ".");
+sub checkdisconnect { # removed expired disconnected hosts from the hash
+    my $host;
+    while ($host = each(%disconnect)) {
+        if (time()-$disconnect{$host}{time} > $opts{disconnectwait}) {
+            $rps{$disconnect{$host}{account}}{online} = 0;
+            delete($disconnect{$host});
+            my $unick = substr((split(/!/,$host))[0],1);
+            my $usrname = finduser($unick);
+	    penalize($usrname,"quit");
         }
-        elsif (rand(25) < 1 && $opp ne $primnick && $rps{$u}{level} > 19) {
-            my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                         "pair of gloves","set of leggings","shield",
-                         "pair of boots");
-            my $type = $items[rand(@items)];
-            if (itemlevel($rps{$opp}{item}{$type}) > itemlevel($rps{$u}{item}{$type})) {
-                chanmsg("In the fierce battle, $opp dropped his level ".
-                        itemlevel($rps{$opp}{item}{$type})." $type! $u picks it up, ".
-                        "tossing his old level ".itemlevel($rps{$u}{item}{$type}).
-                        " $type to $opp.");
-                my $tempitem = $rps{$u}{item}{$type};
-                $rps{$u}{item}{$type}=$rps{$opp}{item}{$type};
-                $rps{$opp}{item}{$type} = $tempitem;
-            }
-        }
-    }
-    else {
-        my $gain = ($opp eq $primnick)?10:int($rps{$opp}{level}/7);
-        $gain = 7 if $gain < 7;
-        $gain = int(($gain/100)*$rps{$u}{next});
-        chanmsg(clog("$u [$myroll/$mysum] has come upon $opp [$opproll/$oppsum".
-                     "] and been defeated in combat! ".duration($gain)." is ".
-                     "added to $u\'s clock."));
-        $rps{$u}{next} += $gain;
-        chanmsg("$u reaches next level in ".duration($rps{$u}{next}).".");
     }
 }
 
+sub collision_fight($$$) { fight_with_side_effects($_[0], $_[1], "come upon"); }
+
+sub restorequest {
+    my %questdef = (
+                    questers => [],
+                    p1 => [], # point 1 for q2
+                    p2 => [], # point 2 for q2
+                    qtime => time() + int(rand(21600)), # first quest starts in <=6 hours
+                    text => "",
+                    type => 1,
+                    stage => 1); # quest info
+    return %questdef unless ($opts{questfilename} and open(QF, "<$opts{questfilename}"));
+    my $type;
+    while(<QF>) {
+        if(m/^T (.*?)\s*$/) { $questdef{text} = $1; }
+        elsif(m/^Y ([12])\s*$/) { $type = $questdef{type} = int($1); }
+        elsif(m/^S (\d+)\s*$/) { $questdef{$type==1?'qtime':'stage'} = int($1); }
+        elsif($type==2 and m/^P (\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/) 
+        { $questdef{p1}=[$1,$2]; $questdef{p2}=[$3,$4]; }
+        elsif(m/^P(\d) (\S+)/) { $questdef{questers}->[$1-1] = $2; }
+        else { debug("Unknown line in questfile $opts{questfilename}: $_"); }
+    }
+    close(QF);
+    my $lack=join('',map{defined($questdef{questers}->[$_])?'':$_}(0..3));
+    if(length($lack)) { debug("Lacking questers: $lack in questfile $opts{questfilename}:"); }
+    return %questdef;
+}
+
 sub writequestfile {
-    return unless $opts{writequestfile};
+    return unless $opts{questfilename};
     open(QF,">$opts{questfilename}") or do {
         chanmsg("Error: Cannot open $opts{questfilename}: $!");
         return;
@@ -2542,16 +2435,15 @@ sub writequestfile {
     close(QF);
 }
 
-sub goodness {
+sub holiness {
     my @players = grep { $rps{$_}{alignment} eq "g" &&
                          $rps{$_}{online} } keys(%rps);
     return unless @players > 1;
     splice(@players,int(rand(@players)),1) while @players > 2;
     my $gain = 5 + int(rand(8));
-    chanmsg(clog("$players[0] and $players[1] have not let the iniquities of ".
-                 "evil men poison them. Together have they prayed to their ".
-                 "god, and it is his light that now shines upon them. $gain\% ".
-                 "of their time is removed from their clocks."));
+    my $holiness=get_event('H', \@players, undef);
+    $holiness =~ s/%gain%/$gain/g;
+    chanmsg_l($holiness);
     $rps{$players[0]}{next} = int($rps{$players[0]}{next}*(1 - ($gain/100)));
     $rps{$players[1]}{next} = int($rps{$players[1]}{next}*(1 - ($gain/100)));
     chanmsg("$players[0] reaches next level in ".
@@ -2569,34 +2461,39 @@ sub evilness {
         # evil only steals from good :^(
         my @good = grep { $rps{$_}{alignment} eq "g" &&
                           $rps{$_}{online} } keys(%rps);
+        return unless @good;
         my $target = $good[rand(@good)];
-        my @items = ("ring","amulet","charm","weapon","helm","tunic",
-                     "pair of gloves","set of leggings","shield",
-                     "pair of boots");
-        my $type = $items[rand(@items)];
-        if (itemlevel($rps{$target}{item}{$type}) > itemlevel($rps{$me}{item}{$type})) {
-            my $tempitem = $rps{$me}{item}{$type};
-            $rps{$me}{item}{$type} = $rps{$target}{item}{$type};
-            $rps{$target}{item}{$type} = $tempitem;
-            chanmsg(clog("$me stole $target\'s level ".
-                         itemlevel($rps{$me}{item}{$type})." $type while they were ".
-                         "sleeping! $me leaves his old level ".
-                         itemlevel($rps{$target}{item}{$type})." $type behind, ".
-                         "which $target then takes."));
-        }
-        else {
-            notice("You made to steal $target\'s $type, but realized it was ".
+	my $didntswap =
+	    swap_items($me, $target,
+		       "%player0% stole %player1%\'s %item1% ".
+		       "while %they1% %were1% sleeping! ".
+		       "%player0% leaves %their0% old %item0% behind, ".
+		       "which %player1% then takes.",
+		       );
+	if($didntswap) {
+            notice("You made to steal $target\'s $didntswap, but realized it was ".
                    "lower level than your own. You creep back into the ".
                    "shadows.",$rps{$me}{nick});
         }
     }
     else { # being evil only pays about half of the time...
         my $gain = 1 + int(rand(5));
-        chanmsg(clog("$me is forsaken by his evil god. ".
-                     duration(int($rps{$me}{next} * ($gain/100)))." is added ".
-                     "to his clock."));
+	my $duration = duration(int($rps{$me}{next} * ($gain/100)));
+	my $evilness=get_event('E',[$me],undef);
+	$evilness =~ s/%duration%/$duration/g;
+	chanmsg_l($evilness);
         $rps{$me}{next} = int($rps{$me}{next} * (1 + ($gain/100)));
         chanmsg("$me reaches next level in ".duration($rps{$me}{next}).".");
+    }
+}
+
+sub fisher_yates_shuffle {
+    my $array = shift;
+    my $i;
+    for ($i = @$array; --$i; ) {
+        my $j = int rand ($i+1);
+        next if $i == $j;
+        @$array[$i,$j] = @$array[$j,$i];
     }
 }
 
@@ -2626,17 +2523,11 @@ sub writedb {
                         "pen_logout",
                         "created",
                         "last login",
-                        "amulet",
-                        "charm",
-                        "helm",
-                        "boots",
-                        "gloves",
-                        "ring",
-                        "leggings",
-                        "shield",
-                        "tunic",
-                        "weapon",
-                        "alignment")."\n";
+                   "[",
+                   (map { "item$_"; } (0..$#items)),
+                   "]",
+                        "alignment",
+                        "gender")."\n";
     my $k;
     keys(%rps); # reset internal pointer
     while ($k=each(%rps)) {
@@ -2662,64 +2553,66 @@ sub writedb {
                                 $rps{$k}{pen_logout},
                                 $rps{$k}{created},
                                 $rps{$k}{lastlogin},
-                                $rps{$k}{item}{amulet},
-                                $rps{$k}{item}{charm},
-                                $rps{$k}{item}{helm},
-                                $rps{$k}{item}{"pair of boots"},
-                                $rps{$k}{item}{"pair of gloves"},
-                                $rps{$k}{item}{ring},
-                                $rps{$k}{item}{"set of leggings"},
-                                $rps{$k}{item}{shield},
-                                $rps{$k}{item}{tunic},
-                                $rps{$k}{item}{weapon},
-                                $rps{$k}{alignment})."\n";
+                           "[",
+                           @{$rps{$k}{item}},
+                           "]",
+                                $rps{$k}{alignment},
+                                $rps{$k}{gender})."\n";
         }
     }
     close(RPS);
+
+    return if(!$opts{itemdbfile});
+    return if(!$mapitems_dirty);
     open(ITEMS,">$opts{itemdbfile}") or do {
-        chanmsg("ERROR: Cannot write $opts{itemdbfile}: $!");
-        return 0;
+	chanmsg("ERROR: Cannot write $opts{itemdbfile}: $!");
+	return;
     };
-    print ITEMS join("\t","# x pos",
-                        "y pos",
-                        "type",
-                        "level",
-                        "age")."\n";
+    print ITEMS join("\t", "# x:y",
+		     "type",
+		     "level",
+		     "age")."\n";
     my $curtime = time();
-    for my $xy (keys(%mapitems)) {
-        for my $i (0..$#{$mapitems{$xy}}) {
-            my @coords = split(/:/,$xy);
-            print ITEMS join("\t",$coords[0],
-                                  $coords[1],
-                                  $mapitems{$xy}[$i]{type},
-                                  $mapitems{$xy}[$i]{level},
-                                  $curtime-$mapitems{$xy}[$i]{lasttime})."\n";
-        }
+    my $cnt=0;
+    while(my ($xy, $aref) = each(%mapitems)) {
+	foreach my $i (@$aref) {
+	    print ITEMS join("\t", $xy,
+			     $i->{typeid},
+			     $i->{level},
+			     $curtime-$i->{lasttime})."\n";
+	    ++$cnt;
+	}
     }
     close(ITEMS);
+    if(!$cnt) {
+	unlink($opts{itemdbfile})
+	    or chanmsg("ERROR: Cannot nuke items file");
+    }
+    $mapitems_dirty=0;
 }
 
 sub readconfig {
-    if (! -e ".irpg.conf") {
-        debug("Error: Cannot find .irpg.conf. Copy it to this directory, ".
+    if (! -e $conffile) {
+        debug("Error: Cannot find $conffile. Copy it to this directory, ".
               "please.",1);
     }
     else {
-        open(CONF,"<.irpg.conf") or do {
-            debug("Failed to open config file .irpg.conf: $!",1);
+        open(CONF,"<$conffile") or do {
+            debug("Failed to open config file $conffile: $!",1);
         };
-        my($line,$key,$val);
+        my($line);
         while ($line=<CONF>) {
             next() if $line =~ /^#/; # skip comments
             $line =~ s/[\r\n]//g;
             $line =~ s/^\s+//g;
             next() if !length($line); # skip blank lines
-            ($key,$val) = split(/\s+/,$line,2);
+            my ($key,$val) = split(/\s+/,$line,2);
             $key = lc($key);
+	    $val//='';
             if (lc($val) eq "on" || lc($val) eq "yes") { $val = 1; }
             elsif (lc($val) eq "off" || lc($val) eq "no") { $val = 0; }
             if ($key eq "die") {
-                die("Please edit the file .irpg.conf to setup your bot's ".
+                die("Please edit the file $conffile to setup your bot's ".
                     "options. Also, read the README file if you haven't ".
                     "yet.\n");
             }
@@ -2727,5 +2620,148 @@ sub readconfig {
             elsif ($key eq "okurl") { push(@{$opts{okurl}},$val); }
             else { $opts{$key} = $val; }
         }
+        close(CONF);
+	if(!defined($opts{rpitembase})) { $opts{rpitembase} = $opts{rpbase}; }
     }
+}
+
+sub read_events {
+    if (!open(Q,$opts{eventsfile})) {
+        return chanmsg("ERROR: Failed to open $opts{eventsfile}: $!");
+    }
+    @quests = ();
+    %events = (G=>[], C=>[], W=>[], L=>[], H=>[], E=>[],
+	       QI=>[], QS=>[], QF=>[],
+	       P=>[], PG=>[], PN=>[], PE=>[], PA=>[]);
+    while (my $line = <Q>) {
+	# Permit "Cf" as shorthand for "C %!+f%" restricting events to single genders
+	# Note - restricting this to C and G only is *totally arbitrary - FIXME!!!
+	$line =~ s/^([CG])([mfn]) /$1 %!+$2% /;
+        if ($line =~ /^([GCWLHE]|Q[ISF]|P[AGNE]?)\s+(.*)/) { push(@{$events{$1}}, $2); }
+        elsif ($line =~ /^Q1 (.*)/) {
+            push(@quests, { type=>1, text=>$1 });
+        }
+        elsif ($line =~ /^Q2 (\d+) (\d+) (\d+) (\d+) (.*)/) {
+            push(@quests,
+                 { type=>2, text=>$5, stage=>1, p1=>[$1,$2], p2=>[$3,$4] });
+        }
+	elsif ($line =~ /^U([GNE]?) (.*)/) {
+	    if($1) { $uniquemsg{lc($1)} = $2; }
+	    else { $uniquemsg{g} = $uniquemsg{n} = $uniquemsg{e} = $2; }
+	}
+        else { debug("Event in $opts{eventsfile} unknown: $line",0); }
+    }
+    close(Q);
+    debug("Read ".@{$events{G}}." godsends, ".@{$events{C}}." calamaties, ".
+          @{$events{W}}." HOG wins, ".@{$events{L}}." HOG losses, ".
+	  @{$events{H}}." holinesses, ".@{$events{E}}." evilnesses, ".
+	  @{$events{PG}}." good, ".@{$events{PN}}." neutral, ".
+	  @{$events{PE}}." evil, and ".@{$events{PA}}." universal penances, ".
+	  " and ".@quests." quests (with ".@{$events{QF}}." intros, ".@{$events{QF}}.
+	  " failures, and ".@{$events{QS}}." sucesses).",0);
+    # Must be at least one HOG win and lose line
+    if(!@{$events{W}}) { push(@{$events{W}},"Weird stuff happened, pushing %player%"); }
+    if(!@{$events{L}}) { push(@{$events{L}},"Weird stuff happened, pulling %player%"); }
+    if(!@{$events{H}}) { push(@{$events{H}},"By cooperating, %player0% and %player1% advance %gain%\% towards their next level"); }
+    if(!@{$events{E}}) { push(@{$events{E}},"%player%'s misdeeds have caught up with %him%. %duration% is added to %their% clock."); }
+    if(!@{$events{QI}}) { push(@{$events{QI}},"%players% have begun a quest to %quest%, for the good of the realm."); }
+    if(!@{$events{QS}}) { push(@{$events{QS}},"%players% have enriched the realm by completing their quest! 25% of their burden is eliminated."); }
+    if(!@{$events{QF}}) { push(@{$events{QF}},"%player%'s selfishness sullies the task %he% and %his% fellow questers were charged with, which brings a great shame upon all the land. You are all punished for %his% transgression."); }
+    if($events{'PA'} and scalar(@{$events{PA}})) {
+	foreach (qw{PG PN PE}) { push(@{$events{$_}}, @{$events{PA}}); };
+	delete($events{PA});
+    }
+    if(!@{$events{PG}}) { push(@{$events{PG}},"%player% realises that %he% %is% doing something terribly wrong with %his% life, and desires to take a step back start again."); }
+    if(!@{$events{PN}}) { push(@{$events{PN}},"%player% realises that %he% %has% lost %his% way, and needs to take a step back and start again."); }
+    if(!@{$events{PE}}) { push(@{$events{PE}},"%player% realises that %he% %has% wasted too much of %his% time doing frivolous things, and needs to take a step back and start again."); }
+    if(!@{$events{P}}) { push(@{$events{P}},"%player% returns to restart level %level% with a clean slate."); }
+}
+
+sub get_event($$$) {
+    my $evsref = $events{$_[0]};
+    my $genderchar = undef;
+    if (my $player1 = $_[1]->[0]) {
+	my $genderfull = name2gender($player1);
+	my %gendermap = ( m=>'m', f=>'f', n=>'n', u=>undef, pc=>undef );
+	$genderchar = $gendermap{$genderfull};
+	# print STDERR ("player1=$player1 genderfull=$genderfull genderchar=$gendermap{$genderfull}=$genderchar\n");
+    }
+    my $event;
+    my $retry = 20;
+    while($retry-- > 0) {
+	$event = $evsref->[int(rand(@$evsref))];
+	if ($event !~ s/^%!([-+])([mfnup]+)%\s+// || !$genderchar) { last; }
+	my $found = index($2, $genderchar);
+	if (($1 eq '+') ? ($found >= 0) : ($found < 0)) { last; }
+    }
+    debug("Argh - letting inappropriate gender $genderchar suffer event $event") if($retry<=0);
+    return rewrite_event($event, $_[1], undef, $_[2]);
+}
+sub get_quest($) {
+    return $quests[int(rand(scalar(@quests)))];    
+}
+
+sub read_items {
+    my $fn = $opts{itemsfile} || 'items.txt';
+    if(!-e $fn) {
+        debug("Error: items file $fn not found, please fix",1);
+    }
+    open(IF,"<$fn") or do {
+        debug("Failed to open items file $fn: $!",1);
+    };
+    @items=@levels=@calamity=@godsend=@uniques=@fragileitems = ();
+    %uniques=();
+    my ($got, $ngot, $gotu)=(0,0,0);
+    my ($line,$ix,$key,$val);
+    while($line=<IF>) {
+        next if $line =~ /^#/; # skip comments
+        $line =~ s/^\s+//g;
+        my $context;
+        if($line =~ s/^item(\d):\s*//) {
+            my $typeid=int($1);
+            if($got>>$typeid & 1 and $line =~ m/n=/) {
+                debug("Already have item$typeid = $items[$typeid]",1);
+            }
+            my $corg=0;
+            while($line =~ s/([ncg])="([^\"]*)"\s+// or
+                  $line =~ s/([ncg])=(\w+)\s+//) {
+                if($1 eq 'n') { $items[$typeid] = $2; $got|=1<<$typeid; ++$ngot; }
+                elsif($1 eq 'c') { $calamity[$typeid] = $2; $corg|=1; }
+                elsif($1 eq 'g') { $godsend[$typeid] = $2; $corg|=2; }
+            }
+            $context=" in item $typeid";
+            if($corg) { push(@fragileitems, $typeid); }
+        }
+        elsif($line =~ s/^levels(\d):\s*(.*?)\s*$//) {
+            my $typeid=int($1);
+            $levels[$typeid]=[split(/,\s*/,$2)];
+        }
+        elsif($line =~ s/^unique:\s*//) {
+            my %hash=();
+	    while($line =~ s/([ubrtsde])="([^\"]*)"\s+// or
+		  $line =~ s/([ubrtsde])=(\w+)\s+//) {
+                if($1 eq 'u') { $hash{'userlevel'} = int($2); }
+                elsif($1 eq 'b') { $hash{'baselevel'} = int($2); }
+                elsif($1 eq 'r') { $hash{'levelrange'} = int($2); }
+                elsif($1 eq 't') { $hash{'typeid'} = int($2); }
+                elsif($1 eq 's') { $hash{'suffix'} = $2; }
+                elsif($1 eq 'd') { $hash{'desc'} = $2; }
+		elsif($1 eq 'e') { $hash{'enemies'} = $2; }
+            }
+            $context="";
+	    $hash{'enemies'} //= ($hash{'desc'} =~ s/^([^!.])[!.]\s*(.*)$/$1/) ? $2 : '';
+            if(!length($line)) { push(@uniques, \%hash); ++$gotu; $uniques{$hash{'suffix'}} = $#uniques; }
+            else { debug("Error: trailing fields defining unique: '$line'",1); }
+        }
+        if(defined($context) and length($line)) {
+            chomp($line);
+            debug("Error: What's '$line'$context in $fn",0);
+        }
+    }
+    while($got) {
+        if(!($got&1)) { debug("Error: item#s not consecutive in $fn",1); }
+        $got>>=1; 
+    }
+    debug("Got $ngot normal items and $gotu unique items.",0);
+    close(IF);
 }
