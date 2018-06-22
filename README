@@ -14,7 +14,7 @@ edit .irpg.conf
 perl bot.pl
 
 Recent Changes:
-ueser disconnect detection (detectdisconnect and disconnectwait in .irpg.conf)
+user disconnect detection (detectdisconnect and disconnectwait in .irpg.conf)
 IPV6 suport (ipv6 option in irpg.conf)
 auto-login (autologin option in irpg.conf)
 various minor fixes
