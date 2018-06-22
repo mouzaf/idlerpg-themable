@@ -1,22 +1,24 @@
 #!/usr/bin/perl
-# irpg bot v3.1.2 by jotun, jotun@idlerpg.net, et al. See http://idlerpg.net/
+# IdleRPG-Themable v1.0 by oddluck https://github.com/oddluck/idlerpg-themable/
+# based on fatphil's idlerpg fork which is itself based on irpg bot v3.1.2 by jotun
+# See http://idlerpg.net/ and http://fatphil.org/idlerpg/
 #
 # Some code within this file was written by authors other than myself. As such,
 # distributing this code or distributing modified versions of this code is
-# strictly prohibited without written authorization from the authors. Contact
-# jotun@idlerpg.net. Please note that this may change (at any time, no less) if
-# authorization for distribution is given by patch submitters.
+# strictly prohibited without written authorization from the authors. 
 #
 # As a side note, patches submitted for this project are automatically taken to
 # be freely distributable and modifiable for any use, public or private, though
 # I make no claim to ownership; original copyrights will be retained.. except as
 # I've just stated.
 #
-# Please mail bugs, etc. to me. Patches are welcome to fix bugs or clean up
-# the code, but please do not use a radically different coding style. Thanks
-# to everyone that's contributed!
+# Please subit bugs, etc. at https://github.com/oddluck/idlerpg-themable/ 
+# Patches are welcome to fix bugs or clean up the code, but please do not 
+# use a radically different coding style. Thanks to everyone that's contributed!
 #
-# NOTE: This code should NOT be run as root. You deserve anything that happens
+# NOTE: This bot will read in vanilla IdleRPG 3.x databases, but once modified
+#	the db is no longer backwards compatible. Make a backup before upgrading.
+#	This code should NOT be run as root. You deserve anything that happens
 #       to you if you run this code as a superuser. Also, note that giving a
 #       user admin access to the bot effectively gives them full access to the
 #       user under which your bot runs, as they can use the PEVAL command to
