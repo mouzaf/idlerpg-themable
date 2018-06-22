@@ -9,7 +9,7 @@ If you want to run the website with leadeboards, world map, player pages, quests
 sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
 
 Requirements:
-Perl > v5.16
+Perl >= v5.16
 
 Installation:
 clone repo
