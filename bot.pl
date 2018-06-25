@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# IdleRPG-Themable v1.0 by oddluck https://github.com/oddluck/idlerpg-themable/
+# IdleRPG-Themable https://github.com/oddluck/idlerpg-themable/
 # based on fatphil's idlerpg fork which is itself based on irpg bot v3.1.2 by jotun
 # See http://idlerpg.net/ and http://fatphil.org/idlerpg/
 #
@@ -405,6 +405,7 @@ sub parse {
             sts("MODE $opts{botchan} +v :$usernick");
             }
             chanmsg("$usernick has reconnected and remains logged in.");
+	    $rps{finduser($usernick)}{online} = 1;
         }
         elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
