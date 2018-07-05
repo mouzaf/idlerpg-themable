@@ -17,7 +17,7 @@ Perl >= v5.16
 
 Installation:
 clone repo
-edit .irpg.conf
+edit irpg.conf, save as .irpg.conf
 perl bot.pl
 
 Recent Changes:
