@@ -399,13 +399,13 @@ sub parse {
             sts("MODE $opts{botchan} +v :$usernick");
             }
         }
-        elsif ($opts{detectdisconnect} && exists($disconnect{substr($arg[0],1)})) {
-            delete($disconnect{substr($arg[0],1)});
+        elsif ($opts{detectdisconnect} && exists($disconnect{$usernick})) {
+            $rps{$disconnect{$usernick}{account}}{online} = 1;
+            delete($disconnect{$usernick});
             if ($opts{voiceonlogin}) {
             sts("MODE $opts{botchan} +v :$usernick");
             }
             chanmsg("$usernick has reconnected and remains logged in.");
-	    $rps{finduser($usernick)}{online} = 1;
         }
         elsif ($opts{botnick} eq $usernick) {
             sts("WHO $opts{botchan}");
@@ -415,6 +415,7 @@ sub parse {
         }
         elsif ($opts{autologin}) {
             for my $k (keys %rps) {
+			if ($opts{hostenforcing}) {
                 if (":".$rps{$k}{userhost} eq $arg[0]) {
                     if ($opts{voiceonlogin}) {          
                         sts("MODE $opts{botchan} +v :$usernick");
@@ -428,8 +429,24 @@ sub parse {
                             duration($rps{$k}{next}).".");       
                     notice("Logon successful. Next level in ".
                            duration($rps{$k}{next}).".", $usernick);
-                }
+			    }  
             }
+			else { 
+			    if ($rps{$k}{nick} eq $usernick) {
+                    if ($opts{voiceonlogin}) {          
+                        sts("MODE $opts{botchan} +v :$usernick");
+                    }
+                    $rps{$k}{online} = 1;
+                    $rps{$k}{userhost} = substr($arg[0],1);
+                    $rps{$k}{lastlogin} = time();
+                    chanmsg("$k, the level $rps{$k}{level} ".
+                            "$rps{$k}{class}, has been automatically logged in ".
+                            "from nickname $usernick. Next level in ".
+                            duration($rps{$k}{next}).".");       
+                    notice("Logon successful. Next level in ".
+                           duration($rps{$k}{next}).".", $usernick);
+			}
+			}
         }   
     }
     elsif ($arg[1] eq 'quit') {
@@ -446,8 +463,8 @@ sub parse {
         elsif ($opts{detectdisconnect} &&
                "@arg[2..$#arg]" !~ /Nice downgrade/) {
             if (defined($username)) { # user was online
-                $disconnect{substr($arg[0],1)}{time}=time();
-                $disconnect{substr($arg[0],1)}{account}=$username;
+                $disconnect{$usernick}{time}=time();
+                $disconnect{$usernick}{account}=$username;
             }
         }
         else {
