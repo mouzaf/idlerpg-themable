@@ -9,7 +9,7 @@ If you want to run the website with leadeboards, world map, player pages, quests
 sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
 
 Autologin and disconnect detection are now usernick based rather than userhost (too many users with dynamic IPs
-complaining about not being logged back automatically on reconnect) Make sure you have some kind of nickserv
+complaining about not being logged back in automatically on reconnect) Make sure you have some kind of nickserv
 in place to prevent any potential abuse or disable autologins and disconnect detection in irpg.conf
 
 Requirements:
