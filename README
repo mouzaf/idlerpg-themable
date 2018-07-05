@@ -1,12 +1,16 @@
 IdleRPG-Themable adds new features to Themable IdleRPG by FatPhil (http://fatphil.org/idlerpg/) 
-itself built on IdleRPG by Jotan (https://idlerpg.net/)
-Also added some features from other idlerpg bots (https://github.com/ticklemynausea/idlerpg) 
+itself built on IdleRPG by Jotan (https://idlerpg.net/) + patches from (http://idle.quyo.de/patches.php)
+Additional patches/source from (https://github.com/ticklemynausea/idlerpg)
 
 Exisiting idlerpg 3.x databases can be read in by this bot but once modified are no longer compatible with 
 vanilla idlerpg, so make a backup before trying this bot if upgrading. 
 
 If you want to run the website with leadeboards, world map, player pages, quests, etc. You'll need modified 
 sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
+
+Autologin and disconnect detection are now usernick based rather than userhost (too many users with dynamic IPs
+complaining about not being logged back automatically on reconnect) Make sure you have some kind of nickserv
+in place to prevent any potential abuse or disable autologins and disconnect detection in irpg.conf
 
 Requirements:
 Perl >= v5.16
