@@ -1,17 +1,16 @@
-H %player0% and %player1% have not let the iniquities of evil men poison them. Together have they prayed to %their% god, and it is %his% light that now shines upon them. %gain%\% of %their% time is removed from %their% clocks.
+H %player0% and %player1% have not let the iniquities of evil men poison them. Together have they prayed to their god, and it is his light that now shines upon them. %gain%% of their time is removed from their clocks.
 E %player% is forsaken by %their% evil god. %duration% is added to %their% clock.
 W Verily I say unto thee, the Heavens have burst forth and the blessed hand of God carried %player%
-L Thereupon %he% stretched out %his% little finger among %them% and consumed %player% with fire, slowing the heathen
+L Thereupon %he% stretched out %his% little finger and consumed %player% with fire, slowing the heathen
 U The light of the gods shines down upon you!
-C was bitten by drdink
 C fell into a hole
 C bit %their% tongue
 C set themself on fire
 C ate a poisonous fruit
 C lost %their% mind
-C died, temporarily..
+C died, temporarily...
 C was caught in a terrible snowstorm
-C EXPLODED, somewhat..
+C EXPLODED, somewhat...
 C got knifed in a dark alley
 C saw an episode of Ally McBeal
 C got turned INSIDE OUT, practically
@@ -22,13 +21,13 @@ C was struck by lightning
 C was attacked by a rabid cow
 C was attacked by a rabid wolverine
 C was set on fire
-C was decapitated, temporarily..
+C was decapitated, temporarily...
 C was tipped by a cow
 C was bucked from a horse
-C was bitten by a møøse
+C was bitten by a moose
 C was sat on by a giant
 C ate a plate of discounted, day-old sushi
-C got harassed by peer
+C stepped on a rake
 C got lost in the woods
 C misplaced %his% map
 C broke %his% compass
@@ -48,20 +47,18 @@ G tamed a wild horse
 G found a one-time-use spell of quickness
 G bought a faster computer
 G bribed the local IRPG administrator
+G got root access to the local university's supercluster!
 G stopped using dial-up
 G invented the wheel
 G gained a sixth sense
-G got a kiss from drwiii
 G had %his% clothes laundered by a passing fairy
 G was rejuvenated by drinking from a magic stream
 G was bitten by a radioactive spider
-G hit it off with a drunk sorority chick named Jenny
-G was accepted into Pi Beta Phi
 Q2 225 415 280 460 lay waste to the Towers of Ankh-Allor, wherein lies the terrible sorceror Croocq
 Q1 locate the centuries-lost tomes of the grim prophet Haplashak Mhadhu
 Q2 400 475 480 380 explore and chart the dark lands of T'rnalvph
-Q1 locate the ancient writings of Ahmo, prophet of the blind god Io, namely his last and hidden work, Time as Deity, thought to answer all of mankind's greater wonders
-Q2 290 65 325 270 slay the great and horrible troll, Dokt'r Wiii
+Q1 locate the ancient writings of Ahmo, prophet of the blind god Io, namely his last and hidden work, Time as Deity, thought to answer all of mankind's greatest questions
+Q2 290 65 325 270 slay the great and horrible troll, Torgo
 Q2 480 415 325 270 return the stolen relics of Iao-Sabao to the city of Velvragh, quieting the religious riot that has sprung up from their loss
 Q2 70 315 325 270 guard the secret passage to Bharash until the full moon has passed, and the evil returned to its resting place
 Q2 50 350 325 270 destroy the bandits terrorizing the roads passing through the Great Shahlil mountains
@@ -75,5 +72,5 @@ Q2 155 155 325 270 live among and learn the ancient magick of the tribe of pygmi
 Q2 70 125 170 100 kill the resurrected Jow Botzian zombies produced by a young wizard's wayward spell
 Q1 worship the sacred Cow until such time as she is satiated
 QI %players% have been chosen by the gods to %quest%.
-QF %player%'s prudence and self-regard has brought the wrath of the gods upon the realm. All your great wickedness makes you as it were heavy with lead, and to tend downwards with great weight and pressure towards hell. Therefore have you drawn yourselves 15 steps closer to that gaping maw.
+QF %player%'s prudence and self-regard has brought the wrath of the gods upon the realm. All your great wickedness makes you as if heavy with lead, and to tend downwards with great weight and pressure towards hell. Therefore have you drawn yourselves 15 steps closer to that gaping maw.
 QS %players% have blessed the realm by completing their quest! 25% of their burden is eliminated.
