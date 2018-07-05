@@ -415,24 +415,7 @@ sub parse {
         }
         elsif ($opts{autologin}) {
             for my $k (keys %rps) {
-			if ($opts{hostenforcing}) {
-                if (":".$rps{$k}{userhost} eq $arg[0]) {
-                    if ($opts{voiceonlogin}) {          
-                        sts("MODE $opts{botchan} +v :$usernick");
-                    }
-                    $rps{$k}{online} = 1;
-                    $rps{$k}{nick} = $usernick;
-                    $rps{$k}{lastlogin} = time();
-                    chanmsg("$k, the level $rps{$k}{level} ".
-                            "$rps{$k}{class}, has been automatically logged in ".
-                            "from nickname $usernick. Next level in ".
-                            duration($rps{$k}{next}).".");       
-                    notice("Logon successful. Next level in ".
-                           duration($rps{$k}{next}).".", $usernick);
-			    }  
-            }
-			else { 
-			    if ($rps{$k}{nick} eq $usernick) {
+                if ($rps{$k}{nick} eq $usernick) {
                     if ($opts{voiceonlogin}) {          
                         sts("MODE $opts{botchan} +v :$usernick");
                     }
@@ -445,8 +428,8 @@ sub parse {
                             duration($rps{$k}{next}).".");       
                     notice("Logon successful. Next level in ".
                            duration($rps{$k}{next}).".", $usernick);
-			}
-			}
+                }
+            }
         }   
     }
     elsif ($arg[1] eq 'quit') {
