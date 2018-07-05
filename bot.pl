@@ -287,7 +287,7 @@ CONNECT: # cheese.
 
 loaddb();
 
-while (!$sock && $conn_tries < 2*@{$opts{servers}}) {
+while (!$sock && $conn_tries < 100000*@{$opts{servers}}) {
     debug("Connecting to $opts{servers}->[0]...");
     my %sockinfo = (PeerAddr => $opts{servers}->[0],
                     PeerPort => 6667);
