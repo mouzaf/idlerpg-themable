@@ -16,9 +16,10 @@ now set genders and bot messages will dynamically use the correct pronouns.
 The default theme is similar to that of vanilla IdleRPG. Other various fixes and patches are detailed below, 
 as well as information on how to edit the theme files.
 
-Autologin and disconnect detection are now usernick based rather than userhost (too many users with dynamic 
-IPs complaining about not being logged back in automatically on reconnect) Make sure you have some kind of 
-nickserv in place to prevent any potential abuse or disable autologins and disconnect detection in irpg.conf
+Autologin and disconnect detection are now usernick based rather than userhost (too many users with 
+dynamic IPs complaining about not being logged back in automatically on reconnect) Make sure you have 
+some kind of nickserv in place to prevent any potential abuse or disable autologins and disconnect 
+detection in irpg.conf
 
 Requirements:
 Perl >= v5.16
