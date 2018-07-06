@@ -5,16 +5,16 @@ Additional patches/source from (https://github.com/ticklemynausea/idlerpg)
 Exisiting idlerpg 3.x databases can be read in by this bot but once modified are no longer compatible with 
 vanilla idlerpg, so make a backup before trying this bot if upgrading. 
 
-If you want to run the website with leadeboards, world map, player pages, quests, etc. You'll need modified 
-sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
+If you want to run the website with leadeboards, world map, player pages, quests, etc. You'll need 
+modified sitecode, which you can find at https://github.com/oddluck/idlerpg-themable-site
 
 Major differences between this bot and vanilla IdleRPG are that all item names and descriptions/modifiers 
 are now editable in addition to event and quest descriptions, so you can tailor every facet of the game 
 to your desire. Several pre-built themes from FatPhil are also available. In addition to this, users can 
 now set genders and bot messages will dynamically use the correct pronouns.
 
-The default theme is similar to that of vanilla IdleRPG. Other various fixes and patches are detailed below, 
-as well as information on how to edit the theme files.
+The default theme is similar to that of vanilla IdleRPG. Other various fixes and patches are detailed 
+below, as well as information on how to edit the theme files.
 
 Autologin and disconnect detection are now usernick based rather than userhost (too many users with 
 dynamic IPs complaining about not being logged back in automatically on reconnect) Make sure you have 
