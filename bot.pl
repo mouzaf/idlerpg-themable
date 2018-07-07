@@ -2314,8 +2314,8 @@ sub penalize {
     }
     elsif ($type eq "nick") {
         my $newnick = shift;
-        $rps{$username}{nick} = substr($newnick,1);
-	$rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
+        $rps{$username}{nick} = $newnick;
+        $rps{$username}{userhost} =~ s/^[^!]+/$rps{$username}{nick}/;
     }
     elsif ($type eq "privmsg" || $type eq "notice") {
         $pen = shift(@_);
