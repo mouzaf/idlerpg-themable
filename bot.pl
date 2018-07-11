@@ -373,11 +373,9 @@ sub parse {
     $in =~ s/[\r\n]//g; # strip all \r and \n
     debug("<- $in");
     if (defined($messagecheck)) {
-    debug ("Deleting $messagecheck");
     undef($messagecheck);
     }
     $messagecheck = time();
-    debug ("creating $messagecheck");
     my @arg = split(/\s/,$in); # split into "words"$messagecheck{time} = time();
     my $usernick = substr((split(/!/,$arg[0]))[0],1);
     # logged in char name of nickname, or undef if nickname is not online
@@ -2023,11 +2021,9 @@ sub privmsg { # send a message to an arbitrary entity
         sts("PRIVMSG $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
         if (defined($messagecheck)) {
-        debug ("Deleting $messagecheck");
         undef($messagecheck);
         }
         $messagecheck = time();
-        debug ("creating $messagecheck");
     }
 }
 
@@ -2043,11 +2039,9 @@ sub notice { # send a notice to an arbitrary entity
         sts("NOTICE $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
         if (defined($messagecheck)) {
-        debug ("Deleting $messagecheck");
         undef($messagecheck);
         }
         $messagecheck = time();
-        debug ("creating $messagecheck");
     }
 }
 
@@ -2419,7 +2413,6 @@ sub messagecheck { # check that the bot is still recieving server messages
         if (time()-$messagecheck > $opts{messagecheck}) {
             undef($messagecheck);
             undef($sock);
-            debug("No messages in > $opts{messagecheck} seconds.");
             goto CONNECT;
         }
     }
