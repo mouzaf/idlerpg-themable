@@ -33,8 +33,8 @@ Recent Changes:
 Messagecheck: bot now stores the last time it receives and/or sent a message. If the bot has 
 not sent or received a message in longer than the messagecheck interval, assume the bot has lost 
 connection to server and perform a reconnect. This provides much more robust disconnect detection 
-than the old code provided. Set messagecheck interval in irgpg.conf it should be set to slight higher 
-then the ping interval for your sever (typically 120 seconds) default is set at 150 seconds.
+than the old code provided. Set messagecheck interval in irgpg.conf it should be set to slightly
+higher than the ping interval for your sever (typically 120 seconds) default is set at 150 seconds.
 
 Less Recent Changes:
 user disconnect detection (detectdisconnect and disconnectwait in .irpg.conf)
