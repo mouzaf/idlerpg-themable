@@ -25,6 +25,7 @@ edit irpg.conf, save as .irpg.conf
 perl bot.pl
 
 Recent Changes:
+
 Messagecheck: bot now stores the last time it receives and/or sent a message. If the bot has 
 not sent or received a message in longer than the messagecheck interval, assume the bot has lost 
 connection to server and perform a reconnect. This provides much more robust disconnect detection 
@@ -32,6 +33,7 @@ than the old code provided. Set messagecheck interval in irgpg.conf it should be
 higher than the ping interval for your sever (typically 120 seconds) default is set at 150 seconds.
 If you experience unwanted reconnects, increase the messagecheck interval. If reconnects are disabled
 in .irpg.conf this setting has no effect.
+
 Autologin and disconnect detection are now usernick based rather than userhost (too many users with 
 dynamic IPs complaining about not being logged back in automatically on reconnect) Make sure you have 
 some kind of nickserv in place to prevent any potential abuse or disable autologins and disconnect 
