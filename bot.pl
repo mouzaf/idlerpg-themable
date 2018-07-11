@@ -79,6 +79,7 @@ GetOptions(\%opts,
     "casematters",
     "detectsplits",
     "detectdisconnect",
+    "messagecheck=i",
     "autologin",
     "splitwait=i",
     "disconnectwait=i",
@@ -178,8 +179,8 @@ my $conn_tries = 0; # number of connection tries. gives up after trying each
 my $sock; # IO::Socket::INET object
 my %split; # holds nick!user@hosts for clients that have been netsplit
 my %disconnect; #holds nick!user@hosts for clients that have been disconnected
+my $messagecheck;
 my $freemessages = 4; # number of "free" privmsgs we can send. 0..$freemessages
-
 sub daemonize(); # prototype to avoid warnings
 
 if (! -e $opts{dbfile}) {
@@ -371,7 +372,13 @@ sub parse {
     $inbytes += length($in); # increase parsed byte count
     $in =~ s/[\r\n]//g; # strip all \r and \n
     debug("<- $in");
-    my @arg = split(/\s/,$in); # split into "words"
+    if (defined($messagecheck)) {
+    debug ("Deleting $messagecheck");
+    undef($messagecheck);
+    }
+    $messagecheck = time();
+    debug ("creating $messagecheck");
+    my @arg = split(/\s/,$in); # split into "words"$messagecheck{time} = time();
     my $usernick = substr((split(/!/,$arg[0]))[0],1);
     # logged in char name of nickname, or undef if nickname is not online
     my $username = finduser($usernick);
@@ -458,11 +465,36 @@ sub parse {
     elsif ($arg[1] eq 'nick') {
         # if someone (nickserv) changes our nick for us, update $opts{botnick}
         if ($usernick eq $opts{botnick}) {
-            $opts{botnick} = substr($arg[2],1);
+            $opts{botnick} = $arg[2];
         }
         # if we see our nick come open, grab it (skipping queue), unless it was
         # us who just lost it
         elsif ($usernick eq $primnick) { sts("NICK $primnick",1); }
+        elsif ($opts{detectdisconnect} && exists($disconnect{$arg[2]})) {
+            $rps{$disconnect{$arg[2]}{account}}{online} = 1;
+            delete($disconnect{$arg[2]});
+            if ($opts{voiceonlogin}) {
+            sts("MODE $opts{botchan} +v :$arg[2]");
+            }
+            chanmsg("$arg[2] has reconnected and remains logged in.");
+        }
+        elsif ($opts{autologin}) {
+            for my $k (keys %rps) {
+                if ($rps{$k}{nick} eq $arg[2]) {
+                    if ($opts{voiceonlogin}) {          
+                        sts("MODE $opts{botchan} +v :$arg[2]");
+                    }
+                    $rps{$k}{online} = 1;
+                    $rps{$k}{lastlogin} = time();
+                    chanmsg("$k, the level $rps{$k}{level} ".
+                            "$rps{$k}{class}, has been automatically logged in ".
+                            "from nickname $arg[2]. Next level in ".
+                            duration($rps{$k}{next}).".");       
+                    notice("Logon successful. Next level in ".
+                           duration($rps{$k}{next}).".", $arg[2]);
+                }
+            }
+        }   
         else {
             penalize($username,"nick",$arg[2]);
             $onchan{substr($arg[2],1)} = delete($onchan{$usernick});
@@ -495,10 +527,7 @@ sub parse {
         if (keys(%auto_login)) {
             # not a true measure of size, but easy
 	    chanmsg("Recognised ". scalar(keys(%auto_login))." users on channel. ".
-		    "Automatically logging " .
-		    ((length("%auto_login") < 1024 && $opts{senduserlist})
-		     ? "in accounts: ".join(", ",keys(%auto_login))
-		     : "them in."));
+		    "Automatically logging them in.");
             if ($opts{voiceonlogin}) {
                 my @vnicks = map { $rps{$_}{nick} } keys(%auto_login);
                 while (@vnicks) {
@@ -1277,6 +1306,7 @@ sub rpcheck { # check levels, update database
     # check splits hash to see if any split users have expired
     checksplits() if $opts{detectsplits};
     checkdisconnect() if $opts{detectdisconnect};
+    messagecheck();
     # send out $freemessages lines of text from the outgoing message queue
     fq();
     # clear registration limiting
@@ -1992,6 +2022,12 @@ sub privmsg { # send a message to an arbitrary entity
     while (length($msg)) {
         sts("PRIVMSG $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
+        if (defined($messagecheck)) {
+        debug ("Deleting $messagecheck");
+        undef($messagecheck);
+        }
+        $messagecheck = time();
+        debug ("creating $messagecheck");
     }
 }
 
@@ -2006,6 +2042,12 @@ sub notice { # send a notice to an arbitrary entity
     while (length($msg)) {
         sts("NOTICE $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
+        if (defined($messagecheck)) {
+        debug ("Deleting $messagecheck");
+        undef($messagecheck);
+        }
+        $messagecheck = time();
+        debug ("creating $messagecheck");
     }
 }
 
@@ -2368,6 +2410,17 @@ sub checkdisconnect { # removed expired disconnected hosts from the hash
             $rps{$disconnect{$host}{account}}{online} = 0;
             penalize($disconnect{$host}{account},"quit");
             delete($disconnect{$host});
+        }
+    }
+}
+
+sub messagecheck { # check that the bot is still recieving server messages
+    if (defined($messagecheck)) {
+        if (time()-$messagecheck > $opts{messagecheck}) {
+            undef($messagecheck);
+            undef($sock);
+            debug("No messages in > $opts{messagecheck} seconds.");
+            goto CONNECT;
         }
     }
 }
