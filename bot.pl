@@ -2414,7 +2414,9 @@ sub messagecheck { # check that the bot is still recieving server messages
             undef($messagecheck);
             undef($sock);
 	    debug("No messages in > $opts{messagecheck} seconds. Reconnecting");
-            goto CONNECT;
+            if ($opts{reconnect}) {
+	    goto CONNECT;
+	    }
         }
     }
 }
