@@ -35,7 +35,8 @@ not sent or received a message in longer than the messagecheck interval, assume 
 connection to server and perform a reconnect. This provides much more robust disconnect detection 
 than the old code provided. Set messagecheck interval in irgpg.conf it should be set to slightly
 higher than the ping interval for your sever (typically 120 seconds) default is set at 150 seconds.
-If you experience unwanted reconnects, increase the messagecheck interval.
+If you experience unwanted reconnects, increase the messagecheck interval. If reconnects are disabled
+in .irpg.conf this setting has no effect.
 
 Less Recent Changes:
 user disconnect detection (detectdisconnect and disconnectwait in .irpg.conf)
