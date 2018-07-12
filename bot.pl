@@ -30,7 +30,6 @@
 use strict;
 use warnings;
 use IO::Socket::INET6;
-use IO::Socket::SSL;
 use IO::Select;
 use Data::Dumper;
 use Getopt::Long;
