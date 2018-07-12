@@ -18,7 +18,7 @@ below, as well as information on how to edit the theme files.
 
 Requirements:
 Perl >= v5.16
-cpan IO::Socket::INET6
+cpan IO::Socket::INET6, IO::Select
 
 Installation:
 clone repo
