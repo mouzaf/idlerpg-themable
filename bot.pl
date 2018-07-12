@@ -29,7 +29,8 @@
 
 use strict;
 use warnings;
-use IO::Socket;
+use IO::Socket::INET6;
+use IO::Socket::SSL;
 use IO::Select;
 use Data::Dumper;
 use Getopt::Long;
@@ -53,6 +54,7 @@ GetOptions(\%opts,
     "modsfile=s",
     "decayfile=s",
     "server|s=s",
+    "ssl",
     "botnick|n=s",
     "botuser|u=s",
     "botrlnm|r=s",
@@ -294,12 +296,18 @@ while (!$sock && $conn_tries < 100000*@{$opts{servers}}) {
                     PeerPort => 6667);
     if ($opts{localaddr}) { $sockinfo{LocalAddr} = $opts{localaddr}; }
     if ($opts{ipv6}) {
-        $sock = IO::Socket::INET6->new(%sockinfo) or
-        debug("Error: failed to connect: $!\n");
+        $sock = IO::Socket::INET6->new(
+            Domain => AF_INET6, 
+            %sockinfo 
+            ) or
+            debug("Error: failed to connect: $!\n");
     }
     else {
-        $sock = IO::Socket::INET->new(%sockinfo) or
-        debug("Error: failed to connect: $!\n");
+        $sock = IO::Socket::INET6->new(
+            Domain => AF_INET,
+            %sockinfo
+            ) or
+            debug("Error: failed to connect: $!\n");
     }
     ++$conn_tries;
     if (!$sock) {
