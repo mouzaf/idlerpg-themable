@@ -324,7 +324,7 @@ $conn_tries=0;
 
 $sel = IO::Select->new($sock);
 
-if (defined($opts{server_pass})) {
+if (exists $opts{server_pass}) {
 sts("PASS $opts{server_pass}");
 }
 sts("NICK $opts{botnick}");
