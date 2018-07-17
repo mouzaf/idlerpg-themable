@@ -1147,6 +1147,10 @@ sub sts { # send to server
             print $sock "$text\r\n";
             $outbytes += length($text) + 2;
             debug("-> $text");
+	    if (defined($messagecheck)) {
+                undef($messagecheck);
+            }
+            $messagecheck = time();
         }
         else {
             # something is wrong. the socket is closed. clear the queue
@@ -1184,6 +1188,10 @@ sub fq { # deliver message(s) from queue
             --$freemessages if $freemessages > 0;
             print $sock "$line\r\n";
             $sentbytes += length($line) + 2;
+	    if (defined($messagecheck)) {
+                undef($messagecheck);
+            }
+            $messagecheck = time();
         }
         else {
             undef(@queue);
@@ -2032,10 +2040,6 @@ sub privmsg { # send a message to an arbitrary entity
     while (length($msg)) {
         sts("PRIVMSG $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
-        if (defined($messagecheck)) {
-        undef($messagecheck);
-        }
-        $messagecheck = time();
     }
 }
 
@@ -2050,10 +2054,6 @@ sub notice { # send a notice to an arbitrary entity
     while (length($msg)) {
         sts("NOTICE $target :".substr($msg,0,450),$force);
         substr($msg,0,450)="";
-        if (defined($messagecheck)) {
-        undef($messagecheck);
-        }
-        $messagecheck = time();
     }
 }
 
