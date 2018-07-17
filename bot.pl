@@ -329,8 +329,6 @@ sts("PASS $opts{server_pass}");
 }
 sts("NICK $opts{botnick}");
 sts("USER $opts{botuser} 0 0 :$opts{botrlnm}");
-sts("NICK $opts{botnick}");
-sts("USER $opts{botuser} 0 0 :$opts{botrlnm}");
 
 while (1) {
     my($readable) = IO::Select->select($sel,undef,undef,0.5);
