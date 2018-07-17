@@ -488,9 +488,13 @@ sub parse {
             }
             chanmsg("$arg[2] has reconnected and remains logged in.");
         }
-        elsif ($opts{autologin}) {
+        else {
+            penalize($username,"nick",$arg[2]);
+            $onchan{$arg[2]} = delete($onchan{$usernick});
+        }
+        if ($opts{autologin}) {
             for my $k (keys %rps) {
-                if ($rps{$k}{nick} eq $arg[2]) {
+                if ($rps{$k}{nick} eq $arg[2] && $rps{$k}{online} eq '0') {
                     if ($opts{voiceonlogin}) {          
                         sts("MODE $opts{botchan} +v :$arg[2]");
                     }
@@ -505,10 +509,6 @@ sub parse {
                 }
             }
         }   
-        else {
-            penalize($username,"nick",$arg[2]);
-            $onchan{substr($arg[2],1)} = delete($onchan{$usernick});
-        }
     }
     elsif ($arg[1] eq 'part') {
         penalize($username,"part");
