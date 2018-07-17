@@ -388,7 +388,7 @@ sub parse {
     undef($messagecheck);
     }
     $messagecheck = time();
-    my @arg = split(/\s/,$in); # split into "words"$messagecheck{time} = time();
+    my @arg = split(/\s/,$in); # split into "words"
     my $usernick = substr((split(/!/,$arg[0]))[0],1);
     # logged in char name of nickname, or undef if nickname is not online
     my $username = finduser($usernick);
