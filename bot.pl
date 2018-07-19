@@ -498,6 +498,7 @@ sub parse {
                     }
                     $rps{$k}{online} = 1;
                     $rps{$k}{lastlogin} = time();
+		    $onchan{$arg[2]}=time();
                     chanmsg("$k, the level $rps{$k}{level} ".
                             "$rps{$k}{class}, has been automatically logged in ".
                             "from nickname $arg[2]. Next level in ".
