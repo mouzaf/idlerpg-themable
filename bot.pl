@@ -563,6 +563,11 @@ sub parse {
             $rps{$prev_online{$arg[7]."!".$arg[4]."\@".$arg[5]}}{online} = 1;
             $auto_login{$prev_online{$arg[7]."!".$arg[4]."\@".$arg[5]}}=1;
         }
+        else {
+            if ($opts{botnick} ne $arg[7]) {
+            sts("MODE $opts{botchan} -v :$arg[7]");
+            }
+        }
     }
     elsif ($arg[1] eq 'privmsg') {
         $arg[0] = substr($arg[0],1); # strip leading : from privmsgs
