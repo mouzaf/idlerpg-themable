@@ -471,6 +471,7 @@ sub parse {
         delete($onchan{$usernick});
     }
     elsif ($arg[1] eq 'nick') {
+        $onchan{$arg[2]} = delete($onchan{$usernick});
         # if someone (nickserv) changes our nick for us, update $opts{botnick}
         if ($usernick eq $opts{botnick}) {
             $opts{botnick} = $arg[2];
@@ -486,11 +487,7 @@ sub parse {
             }
             chanmsg("$arg[2] has reconnected and remains logged in.");
         }
-        else {
-            penalize($username,"nick",$arg[2]);
-            $onchan{$arg[2]} = delete($onchan{$usernick});
-        }
-        if ($opts{autologin}) {
+        elsif ($opts{autologin}) {
             for my $k (keys %rps) {
                 if ($rps{$k}{nick} eq $arg[2] && $rps{$k}{online} eq '0') {
                     if ($opts{voiceonlogin}) {          
@@ -498,7 +495,6 @@ sub parse {
                     }
                     $rps{$k}{online} = 1;
                     $rps{$k}{lastlogin} = time();
-		    $onchan{$arg[2]}=time();
                     chanmsg("$k, the level $rps{$k}{level} ".
                             "$rps{$k}{class}, has been automatically logged in ".
                             "from nickname $arg[2]. Next level in ".
@@ -507,7 +503,10 @@ sub parse {
                            duration($rps{$k}{next}).".", $arg[2]);
                 }
             }
-        }   
+        }
+        else {
+            penalize($username,"nick",$arg[2]);
+        }
     }
     elsif ($arg[1] eq 'part') {
         penalize($username,"part");
