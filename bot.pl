@@ -382,9 +382,6 @@ sub parse {
     $inbytes += length($in); # increase parsed byte count
     $in =~ s/[\r\n]//g; # strip all \r and \n
     debug("<- $in");
-    if (defined($messagecheck)) {
-    undef($messagecheck);
-    }
     $messagecheck = time();
     my @arg = split(/\s/,$in); # split into "words"
     my $usernick = substr((split(/!/,$arg[0]))[0],1);
@@ -471,7 +468,7 @@ sub parse {
         delete($onchan{$usernick});
     }
     elsif ($arg[1] eq 'nick') {
-        $onchan{$arg[2]} = delete($onchan{$usernick});
+        $onchan{$arg[2]} = time();
         # if someone (nickserv) changes our nick for us, update $opts{botnick}
         if ($usernick eq $opts{botnick}) {
             $opts{botnick} = $arg[2];
@@ -502,10 +499,16 @@ sub parse {
                     notice("Logon successful. Next level in ".
                            duration($rps{$k}{next}).".", $arg[2]);
                 }
+                else {
+                    penalize($username,"nick",$arg[2]);
+                    $onchan{$arg[2]} = delete($onchan{$usernick});
+                    last;
+                }
             }
         }
         else {
             penalize($username,"nick",$arg[2]);
+            $onchan{$arg[2]} = delete($onchan{$usernick});
         }
     }
     elsif ($arg[1] eq 'part') {
@@ -1150,9 +1153,6 @@ sub sts { # send to server
             print $sock "$text\r\n";
             $outbytes += length($text) + 2;
             debug("-> $text");
-	    if (defined($messagecheck)) {
-                undef($messagecheck);
-            }
             $messagecheck = time();
         }
         else {
@@ -1191,9 +1191,6 @@ sub fq { # deliver message(s) from queue
             --$freemessages if $freemessages > 0;
             print $sock "$line\r\n";
             $sentbytes += length($line) + 2;
-	    if (defined($messagecheck)) {
-                undef($messagecheck);
-            }
             $messagecheck = time();
         }
         else {
