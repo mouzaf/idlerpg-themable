@@ -486,7 +486,7 @@ sub parse {
         }
         elsif ($opts{autologin}) {
             for my $k (keys %rps) {
-                if ($rps{$k}{nick} eq $arg[2] && $rps{$k}{online} eq '0') {
+                if ($rps{$k}{nick} eq $arg[2] && $rps{$k}{online} == 0) {
                     if ($opts{voiceonlogin}) {          
                         sts("MODE $opts{botchan} +v :$arg[2]");
                     }
